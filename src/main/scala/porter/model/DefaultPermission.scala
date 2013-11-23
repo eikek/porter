@@ -25,6 +25,10 @@ final case class DefaultPermission(parts: Parts) extends Permission {
 
 object DefaultPermission {
 
+  val factory: PermissionFactory = {
+    case str => DefaultPermission(str)
+  }
+
   def apply(str: String): DefaultPermission = {
     new DefaultPermission(split(str))
   }

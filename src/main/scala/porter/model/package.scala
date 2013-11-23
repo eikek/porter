@@ -9,6 +9,8 @@ package object model {
 
   type Rule = Either[Revocation, Permission]
 
+  type PermissionFactory = PartialFunction[String, Permission]
+
   implicit def permRule(p:Permission): Rule = Right(p)
   implicit def revocRule(r:Revocation): Rule = Left(r)
 

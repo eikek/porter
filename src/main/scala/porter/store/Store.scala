@@ -15,6 +15,8 @@ trait Store {
 
   def findAccounts(realm: Ident, names: Set[Ident]): Try[Iterable[Account]]
 
+  def findAccountsFor(realm: Ident, creds: Set[Credentials]): Try[Iterable[Account]]
+
   def findGroups(realm: Ident, names: Set[Ident]): Try[Iterable[Group]]
 
   def allRealms(): Try[Iterable[Realm]]
@@ -22,4 +24,10 @@ trait Store {
   def allAccounts(realm: Ident): Try[Iterable[Account]]
 
   def allGroups(realm: Ident): Try[Iterable[Group]]
+}
+
+trait StoreProvider {
+
+  def store: Store
+
 }

@@ -24,4 +24,13 @@ class PolicyTest extends FunSuite with ShouldMatchers {
 
     policy grantsAll List(Permission("read:z:a"), Permission("read:x:a")) should be (false)
   }
+
+  test("reduce policy") {
+    val fac = ResourcePermission.factory
+    val policy = new Policy(Set(
+      fac("resource:read:/**"),
+      fac("resource:read:/main/**")
+    ))
+    policy.rules should have size (1)
+  }
 }

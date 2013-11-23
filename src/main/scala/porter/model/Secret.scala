@@ -24,12 +24,19 @@ object Secret {
   def apply(name: Ident, data: String): Secret = Secret(name, data.getBytes(Codec.UTF8.name).toVector)
   def apply(name: Ident, data: Array[Byte]): Secret = Secret(name, data.toVector)
 
+
+  object Types {
+    val bcrypt = Ident("bcrypt-password")
+    val scrypt = Ident("scrypt-password")
+    val pbkdf = Ident("pbkdf2sha1-password")
+  }
+
   def pbkdf2PasswordWithParams(pw: String, salt: Vector[Byte], n: Int) = {
     val len = 160
     val enc = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1")
       .generateSecret(new PBEKeySpec(pw.toCharArray, salt.toArray, n, len))
       .getEncoded
-    Secret("pbkdf2sha1-password", "$pbkdf2-sha1$"+n+"$"+ Base64.encode(salt) +"$"+Base64.encode(enc))
+    Secret(Types.pbkdf, "$pbkdf2-sha1$"+n+"$"+ Base64.encode(salt) +"$"+Base64.encode(enc))
   }
 
   def pbkdf2Password(pw: String) = {
@@ -40,9 +47,9 @@ object Secret {
   }
 
   def scryptPassword(pw: String, n: Int = math.pow(2, 11 + intBelow(7)).toInt, r: Int = 16, p: Int = 2) =
-    Secret("scrypt-password", SCryptUtil.scrypt(pw, n, r, p))
+    Secret(Types.scrypt, SCryptUtil.scrypt(pw, n, r, p))
 
   def bcryptPassword(pw: String, salt: String = BCrypt.gensalt(10 + intBelow(5))): Secret =
-    Secret("bcrypt-password", BCrypt.hashpw(pw, salt))
+    Secret(Types.bcrypt, BCrypt.hashpw(pw, salt))
 
 }

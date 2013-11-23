@@ -72,4 +72,10 @@ class PropertiesStoreTest extends FunSuite with ShouldMatchers {
     val store = new PropertiesStore(createProps())
     store.findAccounts("app1", Set("john")).get should be (List(acc))
   }
+
+  test ("find accounts with credentials") {
+    val store = new PropertiesStore(createProps())
+    val creds: Credentials = new PasswordCredentials("john", "bla")
+    store.findAccountsFor("app1", Set(creds)).get should be (List(acc))
+  }
 }

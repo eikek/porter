@@ -44,17 +44,9 @@ object Permission {
     check.exists(pb => given.exists(pa => pa implies pb))
 
   def reduce(perms: Iterable[Permission]): Set[Permission] = {
-    @tailrec
-    def loop(ps: Iterable[Permission], acc: Set[Permission]): Set[Permission] = {
-      if (ps.isEmpty) acc
-      else {
-        val next = ps.take(1).toList
-        val rest = ps.drop(1)
-        if (impliesAll(rest, next)) loop(rest, acc)
-        else loop(rest, acc ++ next)
-      }
+    perms.foldLeft(perms.toSet) { (set, p) =>
+      val rest = set.filterNot(_ == p)
+      if (impliesAll(rest, List(p))) rest else set
     }
-    loop(perms.toList, Set.empty)
   }
-
 }

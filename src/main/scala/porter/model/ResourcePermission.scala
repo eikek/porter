@@ -25,11 +25,17 @@ final case class ResourcePermission(parts: Parts) extends Permission {
 
 object ResourcePermission {
 
+  private val prefix = "resource:"
+
+  val factory: PermissionFactory = {
+    case str if str startsWith prefix => ResourcePermission(str)
+  }
+
   def apply(str: String): ResourcePermission = {
     if (str.isEmpty) {
       throw new IllegalArgumentException("Empty permission strings not allowed")
     }
-    val perm = if (str.startsWith("resource:")) str else "resource:"+str
+    val perm = if (str startsWith prefix) str else prefix+str
     val parts = DefaultPermission.split(perm)
     ResourcePermission(parts)
   }

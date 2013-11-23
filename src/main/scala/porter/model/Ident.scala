@@ -11,6 +11,7 @@ import java.util.UUID
   */
 sealed trait Ident extends Serializable {
   def name: String
+  def is(otherName:String) = name == otherName
 }
 
 object Ident {

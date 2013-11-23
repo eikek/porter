@@ -48,8 +48,7 @@ class PropertiesStore(props: Properties) extends Store {
       name,
       props.propMap(s"porter.${realm.id.name}.account.$name.props"),
       props.propList(s"porter.${realm.id.name}.account.$name.groups").toSet.map(Ident.apply),
-    //TODO make this secret name somehow available, add feature to quickly generate those password
-      Seq(Secret("bcrypt-password", props.prop(s"porter.${realm.id.name}.account.$name.secret")))
+      Seq(Secret(Secret.Types.bcrypt, props.prop(s"porter.${realm.id.name}.account.$name.secret")))
     )
 
   def findRealms(names: Set[Ident]) = Try {
@@ -61,6 +60,11 @@ class PropertiesStore(props: Properties) extends Store {
       (r, a) <- accounts
       if r.id == realm && names.contains(a.name)
     } yield a
+  }
+
+  def findAccountsFor(realm: Ident, creds: Set[Credentials]) = {
+    lazy val nameSet = creds.collect({ case ac: AccountCredentials => ac.accountName })
+    findAccounts(realm, nameSet)
   }
 
   def findGroups(realm: Ident, names: Set[Ident]) = Try {
