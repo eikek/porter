@@ -1,6 +1,7 @@
 package porter.store
 
 import scala.util.Try
+import scala.concurrent.Future
 
 /**
  *
@@ -11,19 +12,19 @@ trait Store {
 
   import porter.model._
 
-  def findRealms(names: Set[Ident]): Try[Iterable[Realm]]
+  def findRealms(names: Set[Ident]): Future[Iterable[Realm]]
 
-  def findAccounts(realm: Ident, names: Set[Ident]): Try[Iterable[Account]]
+  def findAccounts(realm: Ident, names: Set[Ident]): Future[Iterable[Account]]
 
-  def findAccountsFor(realm: Ident, creds: Set[Credentials]): Try[Iterable[Account]]
+  def findAccountsFor(realm: Ident, creds: Set[Credentials]): Future[Iterable[Account]]
 
-  def findGroups(realm: Ident, names: Set[Ident]): Try[Iterable[Group]]
+  def findGroups(realm: Ident, names: Set[Ident]): Future[Iterable[Group]]
 
-  def allRealms(): Try[Iterable[Realm]]
+  def allRealms(): Future[Iterable[Realm]]
 
-  def allAccounts(realm: Ident): Try[Iterable[Account]]
+  def allAccounts(realm: Ident): Future[Iterable[Account]]
 
-  def allGroups(realm: Ident): Try[Iterable[Group]]
+  def allGroups(realm: Ident): Future[Iterable[Group]]
 }
 
 trait StoreProvider {

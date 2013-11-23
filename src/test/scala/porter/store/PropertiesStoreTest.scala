@@ -3,6 +3,7 @@ package porter.store
 import org.scalatest.FunSuite
 import org.scalatest.matchers.ShouldMatchers
 import scala.util.Success
+import scala.concurrent.Await
 
 /**
  *
@@ -11,6 +12,7 @@ import scala.util.Success
  */
 class PropertiesStoreTest extends FunSuite with ShouldMatchers {
   import porter.model._
+  import scala.concurrent.duration._
 
   val testPw = Secret.bcryptPassword("test")
   val acc = Account("john", Map("email" -> "john@mail.com", "enabled" -> "true"), Set("users", "admin"), Seq(testPw))
@@ -42,40 +44,40 @@ class PropertiesStoreTest extends FunSuite with ShouldMatchers {
       "porter.app3.name" -> "A realm 3",
       "porter.app4.name" -> "A realm 4"
     )))
-    store.allRealms() should be (Success(List(Realm("app1", "A realm 1"),
-      Realm("app2", "A realm 2"), Realm("app3", "A realm 3"))))
+    Await.result(store.allRealms(), 5.seconds) should be (List(Realm("app1", "A realm 1"),
+      Realm("app2", "A realm 2"), Realm("app3", "A realm 3")))
   }
 
   test("find realms") {
     val store = PropertiesStore(createProps())
-    store.findRealms(Set("app1")) should be (Success(List(Realm("app1", "My Realm"))))
-    store.findRealms(Set("asdasd")) should be (Success(List()))
+    Await.result(store.findRealms(Set("app1")), 5.seconds) should be (List(Realm("app1", "My Realm")))
+    Await.result(store.findRealms(Set("asdasd")), 5.seconds) should be (List())
   }
 
   test("list groups") {
     val store = PropertiesStore(createProps())
-    store.allGroups("app1") should be (Success(List(
-      Group(name = "admin", rules = Set("resource:read:/main/**", "base:manage")), Group("users"))))
+    Await.result(store.allGroups("app1"), 5.seconds) should be (List(
+      Group(name = "admin", rules = Set("resource:read:/main/**", "base:manage")), Group("users")))
   }
 
   test ("find groups") {
     val store = PropertiesStore(createProps())
-    store.findGroups("app1", Set("users")) should be (Success(List(Group("users"))))
+    Await.result(store.findGroups("app1", Set("users")), 5.seconds) should be (List(Group("users")))
   }
 
   test ("list accounts") {
     val store = PropertiesStore(createProps())
-    store.allAccounts("app1").get should be (List(acc))
+    Await.result(store.allAccounts("app1"), 5.seconds) should be (List(acc))
   }
 
   test ("find accounts") {
     val store = PropertiesStore(createProps())
-    store.findAccounts("app1", Set("john")).get should be (List(acc))
+    Await.result(store.findAccounts("app1", Set("john")), 5.seconds) should be (List(acc))
   }
 
   test ("find accounts with credentials") {
     val store = PropertiesStore(createProps())
     val creds: Credentials = new PasswordCredentials("john", "bla")
-    store.findAccountsFor("app1", Set(creds)).get should be (List(acc))
+    Await.result(store.findAccountsFor("app1", Set(creds)), 5.seconds) should be (List(acc))
   }
 }

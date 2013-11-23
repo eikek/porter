@@ -2,6 +2,7 @@ package porter.auth
 
 import porter.store.StoreProvider
 import scala.util.Try
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
  * @author Eike Kettner eike.kettner@gmail.com
@@ -12,7 +13,7 @@ trait AuthC {
 
   import porter.model._
 
-  def authenticate(realm: Ident)(creds: Set[Credentials]): Try[AuthToken] = {
+  def authenticate(realm: Ident, creds: Set[Credentials])(implicit ec: ExecutionContext): Future[AuthToken] = {
     for {
       r <- store.findRealms(Set(realm))
       if r.nonEmpty
@@ -21,7 +22,7 @@ trait AuthC {
     } yield auth(AuthToken(r.toList(0), a.take(1).toList(0), creds))
   }
 
-  def authenticate(realm: Ident)(account: Account, creds: Set[Credentials]): Try[AuthToken] = {
+  def authenticate(realm: Ident, account: Account, creds: Set[Credentials])(implicit ec: ExecutionContext): Future[AuthToken] = {
     for {
       r <- store.findRealms(Set(realm))
       if r.nonEmpty
