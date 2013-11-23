@@ -35,7 +35,7 @@ class PropertiesStoreTest extends FunSuite with ShouldMatchers {
   }
 
   test("list realms") {
-    val store = new PropertiesStore(createProps(Map(
+    val store = PropertiesStore(createProps(Map(
       "porter.realms" -> "app1,app2,app3",
       "porter.app1.name" -> "A realm 1",
       "porter.app2.name" -> "A realm 2",
@@ -47,34 +47,34 @@ class PropertiesStoreTest extends FunSuite with ShouldMatchers {
   }
 
   test("find realms") {
-    val store = new PropertiesStore(createProps())
+    val store = PropertiesStore(createProps())
     store.findRealms(Set("app1")) should be (Success(List(Realm("app1", "My Realm"))))
     store.findRealms(Set("asdasd")) should be (Success(List()))
   }
 
   test("list groups") {
-    val store = new PropertiesStore(createProps())
+    val store = PropertiesStore(createProps())
     store.allGroups("app1") should be (Success(List(
       Group(name = "admin", rules = Set("resource:read:/main/**", "base:manage")), Group("users"))))
   }
 
   test ("find groups") {
-    val store = new PropertiesStore(createProps())
+    val store = PropertiesStore(createProps())
     store.findGroups("app1", Set("users")) should be (Success(List(Group("users"))))
   }
 
   test ("list accounts") {
-    val store = new PropertiesStore(createProps())
+    val store = PropertiesStore(createProps())
     store.allAccounts("app1").get should be (List(acc))
   }
 
   test ("find accounts") {
-    val store = new PropertiesStore(createProps())
+    val store = PropertiesStore(createProps())
     store.findAccounts("app1", Set("john")).get should be (List(acc))
   }
 
   test ("find accounts with credentials") {
-    val store = new PropertiesStore(createProps())
+    val store = PropertiesStore(createProps())
     val creds: Credentials = new PasswordCredentials("john", "bla")
     store.findAccountsFor("app1", Set(creds)).get should be (List(acc))
   }

@@ -33,27 +33,21 @@ object PasswordAuthenticator extends Authenticator {
   }
 
   private def checkBCryptPassword: Matcher = {
-    case (up: PasswordCredentials, secret: Secret) if secret.name == Types.bcrypt => {
-      if (BCrypt.checkpw(up.password, secret.asString)) {
-        secret -> Vote.Success
-      } else {
-        secret -> Vote.Failed()
-      }
+    case (up: PasswordCredentials, secret) if secret.name == Types.bcrypt => {
+      if (BCrypt.checkpw(up.password, secret.asString)) secret -> Vote.Success
+      else secret -> Vote.Failed()
     }
   }
 
   private def checkSCryptPassword: Matcher = {
-    case (up: PasswordCredentials, secret: Secret) if secret.name == Types.scrypt => {
-      if (SCryptUtil.check(up.password, secret.asString)) {
-        secret -> Vote.Success
-      } else {
-        secret -> Vote.Failed()
-      }
+    case (up: PasswordCredentials, secret) if secret.name == Types.scrypt => {
+      if (SCryptUtil.check(up.password, secret.asString)) secret -> Vote.Success
+      else secret -> Vote.Failed()
     }
   }
 
   private def checkPBKDF2Password: Matcher = {
-    case (up: PasswordCredentials, secret: Secret) if secret.name == Types.pbkdf => {
+    case (up: PasswordCredentials, secret) if secret.name == Types.pbkdf => {
       val pass = secret.asString
       pass.split("\\$").toList.drop(1) match {
         case name::iter::salt::pw::Nil => {

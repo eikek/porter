@@ -8,10 +8,10 @@ import scala.util.Try
  * @author Eike Kettner eike.kettner@gmail.com
  * @since 23.11.13 00:08
  */
-trait RuleProvider {
+trait RuleFactory {
   import porter.model._
 
-  def permissionFactory: PermissionFactory = RuleProvider.defaultFactory
+  def permissionFactory: PermissionFactory = RuleFactory.defaultFactory
 
   def createRule(rstr: String): Try[Rule] = createRuleWith(permissionFactory)(rstr)
 
@@ -21,7 +21,7 @@ trait RuleProvider {
   }
 }
 
-object RuleProvider {
+object RuleFactory {
   import porter.model._
 
   private val emptyFactory: PermissionFactory = PartialFunction.empty

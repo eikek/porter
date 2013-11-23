@@ -25,7 +25,7 @@ trait AuthC {
     for {
       r <- store.findRealms(Set(realm))
       if r.nonEmpty
-    } yield auth(AuthToken(r.take(1).toList(0), account, creds))
+    } yield auth(AuthToken(r.toList(0), account, creds))
   }
 
   private def auth(token: AuthToken): AuthToken =

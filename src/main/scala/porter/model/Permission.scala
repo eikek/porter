@@ -1,7 +1,5 @@
 package porter.model
 
-import scala.annotation.tailrec
-
 /**
  * @author Eike Kettner eike.kettner@gmail.com
  * @since 21.11.13 20:29
@@ -43,6 +41,13 @@ object Permission {
   def impliesOne(given: Iterable[Permission], check: Iterable[Permission]): Boolean =
     check.exists(pb => given.exists(pa => pa implies pb))
 
+  /**
+   * Reduces the list of permissions by removing those that are
+   * implied by others in the list.
+   *
+   * @param perms
+   * @return
+   */
   def reduce(perms: Iterable[Permission]): Set[Permission] = {
     perms.foldLeft(perms.toSet) { (set, p) =>
       val rest = set.filterNot(_ == p)

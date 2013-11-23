@@ -1,7 +1,7 @@
 package porter.store
 
-import java.util.Properties
-import scala.util.{Success, Try}
+import java.io.File
+import scala.util.Try
 
 /**
  * Simple store based on java's properties files.
@@ -23,9 +23,9 @@ import scala.util.{Success, Try}
  *
  * @since 22.11.13 19:41
  */
-class PropertiesStore(props: Properties) extends Store {
+class PropertiesStore(props: Map[String, String]) extends SimpleStore {
   import porter.model._
-  import porter.util._
+  import PropertiesStore._
 
   lazy val realms = (for (id <- props.propList("porter.realms"))
     yield Realm(id, props.prop(s"porter.$id.name"))).toList
@@ -50,33 +50,31 @@ class PropertiesStore(props: Properties) extends Store {
       props.propList(s"porter.${realm.id.name}.account.$name.groups").toSet.map(Ident.apply),
       Seq(Secret(Secret.Types.bcrypt, props.prop(s"porter.${realm.id.name}.account.$name.secret")))
     )
+}
 
-  def findRealms(names: Set[Ident]) = Try {
-    realms filter (r => names.contains(r.id))
+object PropertiesStore {
+  import porter.util._
+  import java.util.{Properties => JProperties}
+
+  def apply(props: Map[String, String]): PropertiesStore = new PropertiesStore(props)
+  def apply(props: java.util.Properties): PropertiesStore = new PropertiesStore(props.toMap)
+  def apply(file: File): Try[PropertiesStore] = Properties.fromFile(file).map(apply)
+
+  private implicit class StoreMap(map: Map[String, String]) {
+    def prop(key: String) = map.get(key)
+        .getOrElse(throw new IllegalArgumentException(s"Invalid store. Cannot find property '$key'."))
+
+    def propList(key: String) =
+      map.get(key).getOrElse("").split(',').map(_.trim).filterNot(_.isEmpty)
+
+    def propMap(key: String): Map[String, String] = (for {
+      kv <- propList(key)
+      pair <- List(kv.split("\\Q->\\E"))
+      if pair.length == 2
+    } yield pair(0).trim -> pair(1).trim).toMap
   }
 
-  def findAccounts(realm: Ident, names: Set[Ident]) = Try {
-    for {
-      (r, a) <- accounts
-      if r.id == realm && names.contains(a.name)
-    } yield a
+  private implicit class JPropertiesAdds(props: JProperties) {
+    def toMap = Properties.toMap(props)
   }
-
-  def findAccountsFor(realm: Ident, creds: Set[Credentials]) = {
-    lazy val nameSet = creds.collect({ case ac: AccountCredentials => ac.accountName })
-    findAccounts(realm, nameSet)
-  }
-
-  def findGroups(realm: Ident, names: Set[Ident]) = Try {
-    for {
-      (r, g) <- groups
-      if r.id == realm && names.contains(g.name)
-    } yield g
-  }
-
-  def allRealms() = Success(realms)
-
-  def allAccounts(realm: Ident) = Try(for ((r,a) <- accounts; if r.id == realm) yield a)
-
-  def allGroups(realm: Ident) = Try(for ((r,g) <- groups; if r.id == realm) yield g)
 }

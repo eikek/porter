@@ -1,5 +1,8 @@
 package porter
 
+import java.io.{FileInputStream, BufferedInputStream, File}
+import scala.util.Try
+
 /**
  *
  * @since 22.11.13 21:25
@@ -7,19 +10,37 @@ package porter
  */
 package object util {
 
-  implicit class PropertiesPimped(props: java.util.Properties) {
-    def propList(key: String) =
-      Option(props.getProperty(key)).getOrElse("").split(',').map(_.trim).filterNot(_.isEmpty)
+  import java.util.{Properties => JProperties}
 
-    def prop(key: String) =
-      Option(props.getProperty(key))
-        .getOrElse(throw new IllegalArgumentException(s"Invalid store. Cannot find property '$key'."))
+  object Properties {
 
-    def propMap(key: String): Map[String, String] = (for {
-        kv <- propList(key)
-        pair <- List(kv.split("\\Q->\\E"))
-        if pair.length == 2
-      } yield pair(0).trim -> pair(1).trim).toMap
+    def toMap(props: JProperties): Map[String, String] = {
+      import scala.collection.JavaConverters._
+      val buf = collection.mutable.ListBuffer[(String, String)]()
+      for (k <- props.propertyNames().asScala) {
+        buf append (k.toString -> props.getProperty(k.toString))
+      }
+      buf.toMap
+    }
 
+    def fromPairs(values: Iterable[(String, String)]): JProperties = {
+      val p = new JProperties()
+      for ((k,v) <- values) p.setProperty(k, v)
+      p
+    }
+
+    def fromPairs(values: (String, String)*): JProperties = {
+      val p = new JProperties()
+      for ((k,v) <- values) p.setProperty(k, v)
+      p
+    }
+
+    def fromFile(f: File): Try[JProperties] = Try {
+      val p = new JProperties()
+      val in = new BufferedInputStream(new FileInputStream(f))
+      try { p.load(in) }
+      finally { in.close() }
+      p
+    }
   }
 }

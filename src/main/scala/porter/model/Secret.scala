@@ -29,6 +29,7 @@ object Secret {
     val bcrypt = Ident("bcrypt-password")
     val scrypt = Ident("scrypt-password")
     val pbkdf = Ident("pbkdf2sha1-password")
+    val all = Set(bcrypt, scrypt, pbkdf)
   }
 
   def pbkdf2PasswordWithParams(pw: String, salt: Vector[Byte], n: Int) = {

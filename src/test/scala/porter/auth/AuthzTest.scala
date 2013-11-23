@@ -13,9 +13,9 @@ import scala.util.{Failure, Success}
  */
 class AuthzTest extends FunSuite with ShouldMatchers {
   val testPw = Secret.bcryptPassword("test")
-  val factory = RuleProvider.defaultFactory
+  val factory = RuleFactory.defaultFactory
 
-  object TestAuth extends AuthZ with RuleProvider with StoreProvider {
+  object TestAuth extends AuthZ with RuleFactory with StoreProvider {
     def store = new Store {
       def findRealms(names: Set[Ident]) = Success(List(Realm(Ident.randomIdent, "")))
       def findAccounts(realm: Ident, names: Set[Ident]) =

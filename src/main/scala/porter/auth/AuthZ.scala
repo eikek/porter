@@ -8,7 +8,7 @@ import scala.util.Try
  * @since 22.11.13 23:50
  */
 trait AuthZ {
-  self: StoreProvider with RuleProvider =>
+  self: StoreProvider with RuleFactory =>
 
   import porter.model._
 
