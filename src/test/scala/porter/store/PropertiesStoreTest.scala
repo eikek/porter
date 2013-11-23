@@ -26,7 +26,7 @@ class PropertiesStoreTest extends FunSuite with ShouldMatchers {
     props.setProperty("porter.app1.account.john.groups", "admin, users")
     props.setProperty("porter.app1.account.john.props", "email -> john@mail.com, enabled->true")
     props.setProperty("porter.app1.groups", " admin,  users ")
-    props.setProperty("porter.app1.group.admin.permissions", "resource:read:/main/**, base:manage")
+    props.setProperty("porter.app1.group.admin.rules", "resource:read:/main/**, base:manage")
     props
   }
 

@@ -18,7 +18,7 @@ import scala.util.Try
  *   porter.realm1.account.john.groups=g1,g2,g3
  *   porter.realm1.account.john.props=enabled -> true, email -> email@test.org
  *   porter.realm1.groups=admin,g1,g2
- *   porter.realm1.group.admin.permissions=printer:manage:*, !printer:manage:superprinter
+ *   porter.realm1.group.admin.rules=printer:manage:*, !printer:manage:superprinter
  * }}}
  *
  * @since 22.11.13 19:41
@@ -37,7 +37,7 @@ class PropertiesStore(props: Map[String, String]) extends SimpleStore {
     } yield realm -> Group(
       name,
       props.propMap(s"porter.${realm.id.name}.group.$name.props"),
-      props.propList(s"porter.${realm.id.name}.group.$name.permissions").toSet
+      props.propList(s"porter.${realm.id.name}.group.$name.rules").toSet
     )
 
   lazy val accounts =

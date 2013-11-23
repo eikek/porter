@@ -17,8 +17,8 @@ package object util {
     def toMap(props: JProperties): Map[String, String] = {
       import scala.collection.JavaConverters._
       val buf = collection.mutable.ListBuffer[(String, String)]()
-      for (k <- props.propertyNames().asScala) {
-        buf append (k.toString -> props.getProperty(k.toString))
+      for (k <- props.stringPropertyNames().asScala) {
+        buf append (k -> props.getProperty(k))
       }
       buf.toMap
     }

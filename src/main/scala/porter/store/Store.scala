@@ -1,7 +1,7 @@
 package porter.store
 
-import scala.util.Try
 import scala.concurrent.Future
+import porter.model.Ident
 
 /**
  *
@@ -27,8 +27,25 @@ trait Store {
   def allGroups(realm: Ident): Future[Iterable[Group]]
 }
 
+trait MutableStore {
+  import porter.model._
+
+  def updateRealm(realm: Realm): Future[Boolean]
+
+  def deleteRealm(realm: Ident): Future[Boolean]
+
+  def updateAccount(realm: Ident, account: Account): Future[Boolean]
+
+  def deleteAccount(realm: Ident, accId: Ident): Future[Account]
+
+  def updateGroup(realm: Ident, group: Group): Future[Boolean]
+
+  def deleteGroup(realm: Ident, groupId: Ident): Future[Group]
+}
+
 trait StoreProvider {
 
   def store: Store
 
+  def mutableStore: Option[MutableStore] = None
 }
