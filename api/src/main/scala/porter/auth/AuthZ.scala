@@ -19,7 +19,9 @@ trait AuthZ {
       if a.nonEmpty
       groups <- store.findGroups(realm, a.toList(0).groups)
     } yield groups.flatMap(_.rules)
-    rules map { rstr =>
+    val f = rules.transform(identity, ex =>
+      new IllegalStateException("Error getting policy!", ex))
+    f map { rstr =>
       val toRule = createRuleWith(permissionFactory)_
       new Policy(rstr.map(s => toRule(s).get).toSet)
     }

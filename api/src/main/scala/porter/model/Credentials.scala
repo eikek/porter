@@ -13,4 +13,6 @@ trait AccountCredentials extends Credentials {
 }
 
 @SerialVersionUID(20131122)
-class PasswordCredentials(val accountName: Ident, val password: String) extends AccountCredentials
+class PasswordCredentials(val accountName: Ident, val password: String) extends AccountCredentials {
+  override def toString = s"${getClass.getSimpleName}(${accountName.name}, ***)"
+}

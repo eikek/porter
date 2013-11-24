@@ -47,5 +47,5 @@ trait StoreProvider {
 
   def store: Store
 
-  def mutableStore: Option[MutableStore] = None
+  def mutableStore(realm: Ident): Option[MutableStore] = None
 }

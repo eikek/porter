@@ -13,20 +13,20 @@ trait AuthC {
 
   import porter.model._
 
-  def authenticate(realm: Ident, creds: Set[Credentials])(implicit ec: ExecutionContext): Future[AuthToken] = {
+  def authenticate(realm: Ident, creds: Set[Credentials])(implicit ec: ExecutionContext): Future[AuthResult] = {
     for {
       r <- store.findRealms(Set(realm))
       if r.nonEmpty
       a <- store.findAccountsFor(realm, creds)
       if a.nonEmpty
-    } yield auth(AuthToken(r.toList(0), a.take(1).toList(0), creds))
+    } yield auth(AuthToken(r.toList(0), a.take(1).toList(0), creds)).toResult
   }
 
-  def authenticate(realm: Ident, account: Account, creds: Set[Credentials])(implicit ec: ExecutionContext): Future[AuthToken] = {
+  def authenticate(realm: Ident, account: Account, creds: Set[Credentials])(implicit ec: ExecutionContext): Future[AuthResult] = {
     for {
       r <- store.findRealms(Set(realm))
       if r.nonEmpty
-    } yield auth(AuthToken(r.toList(0), account, creds))
+    } yield auth(AuthToken(r.toList(0), account, creds)).toResult
   }
 
   private def auth(token: AuthToken): AuthToken =
