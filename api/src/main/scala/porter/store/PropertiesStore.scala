@@ -2,6 +2,7 @@ package porter.store
 
 import java.io.File
 import scala.util.Try
+import porter.util.Properties
 
 /**
  * Simple store based on java's properties files.
@@ -26,6 +27,9 @@ import scala.util.Try
 class PropertiesStore(props: Map[String, String]) extends SimpleStore {
   import porter.model._
   import PropertiesStore._
+
+  def this(filename: String) = this(Properties.toMap(Properties.fromFile(new java.io.File(filename)).get))
+  def this(props: java.util.Properties) = this(Properties.toMap(props))
 
   lazy val realms = (for (id <- props.propList("porter.realms"))
     yield Realm(id, props.prop(s"porter.$id.name"))).toList
@@ -57,7 +61,7 @@ object PropertiesStore {
   import java.util.{Properties => JProperties}
 
   def apply(props: Map[String, String]): PropertiesStore = new PropertiesStore(props)
-  def apply(props: java.util.Properties): PropertiesStore = new PropertiesStore(props.toMap)
+  def apply(props: java.util.Properties): PropertiesStore = new PropertiesStore(props)
   def apply(file: File): Try[PropertiesStore] = Properties.fromFile(file).map(apply)
 
   private implicit class StoreMap(map: Map[String, String]) {
@@ -72,9 +76,5 @@ object PropertiesStore {
       pair <- List(kv.split("\\Q->\\E"))
       if pair.length == 2
     } yield pair(0).trim -> pair(1).trim).toMap
-  }
-
-  private implicit class JPropertiesAdds(props: JProperties) {
-    def toMap = Properties.toMap(props)
   }
 }

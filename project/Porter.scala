@@ -19,17 +19,22 @@ object Deps {
   )
 
   val akka = Seq(
-    "com.typesafe.akka" %% "akka-actor" % "2.2.3"
+    "com.typesafe.akka" %% "akka-actor" % "2.2.3",
+    "com.typesafe.akka" %% "akka-remote" % "2.2.3"
+  )
+
+  val casbah = Seq(
+    "org.mongodb" %% "casbah-commons" % "2.6.3",
+    "org.mongodb" %% "casbah-query" % "2.6.3",
+    "org.mongodb" %% "casbah-core" % "2.6.3"
   )
 }
 
 object Porter extends sbt.Build {
-  import sbtbuildinfo.Plugin._
-
   lazy val module = Project(
     id = "porter",
     base = file("."),
-    settings = Project.defaultSettings ++ buildInfoSettings ++ Seq(
+    settings = Project.defaultSettings ++ Seq(
       name := "porter",
       publish := {},
       publishLocal := {},
@@ -49,15 +54,26 @@ object Porter extends sbt.Build {
 }
 
 object Api extends sbt.Build {
+  import sbtbuildinfo.Plugin._
 
   lazy val module = Project(
     id = "api",
     base = file("api"),
-    settings = Project.defaultSettings ++ Seq(
+    settings = Project.defaultSettings ++ buildInfoSettings ++ Seq(
       name := "porter-api",
+      sourceGenerators in Compile <+= buildInfo,
+      buildInfoKeys := Seq(name, version, scalaVersion, buildTimeKey, gitRevKey),
+      buildInfoPackage := "porter",
       libraryDependencies ++= Deps.apiCompile ++ Deps.testBasics
     )
   )
+
+  lazy val buildTimeKey = BuildInfoKey.action("buildTime") {
+    System.currentTimeMillis
+  }
+  lazy val gitRevKey = BuildInfoKey.action("revision") {
+    Process("git rev-parse HEAD").lines.head
+  }
 }
 
 object App extends sbt.Build {
@@ -67,7 +83,7 @@ object App extends sbt.Build {
     base = file("app"),
     settings = Project.defaultSettings ++ Seq(
       name := "porter-app",
-      libraryDependencies ++= Deps.akka ++ Deps.testBasics
+      libraryDependencies ++= Deps.akka ++ Deps.testBasics ++ Deps.casbah
     )
   ) dependsOn Api.module
 }
