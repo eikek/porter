@@ -2,7 +2,7 @@ package porter.app.akka.telnet
 
 import scala.concurrent.{Future, ExecutionContext}
 import akka.util.Timeout
-import scala.util.{Failure, Success}
+import scala.util.{Try, Failure, Success}
 import akka.actor.ActorRef
 
 /**
@@ -26,6 +26,18 @@ trait Commands {
 
   private def notFound: Command = {
     case Input(msg, conn, _, _) => conn ! tcp(s"Command '$msg' not found")
+  }
+}
+
+object Commands {
+
+  def makePairs(str: String): Try[Map[String, String]] = Try {
+    str.split("[\\s,]").withFilter(s => s.trim.nonEmpty).map { s =>
+      s.split('=').toList match {
+        case k::v::Nil => k.trim -> v.trim
+        case _ => throw new IllegalArgumentException("Cannot create pair from: "+ s)
+      }
+    }.toMap
   }
 
 }

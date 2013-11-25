@@ -5,7 +5,7 @@ import porter.model.Realm
 import akka.io.Tcp
 import akka.util.ByteString
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
+import scala.util.{Try, Failure, Success}
 
 /**
  *
@@ -17,12 +17,18 @@ package object telnet {
   case class Session(var realm: Option[Realm])
   case class Input(msg: String, conn: ActorRef, porter: ActorRef, session: Session = Session(None)) {
 
-    def andThen[A](f: Future[A])(callback: A => Unit)(implicit ec: ExecutionContext) {
-      f.andThen {
-        case Success(a) => callback(a)
-        case Failure(x) => conn ! tcp("Error: "+ x.getMessage)
-      }
+    def sendError: PartialFunction[Throwable, Unit] = {
+      case x => conn ! tcp("Error: "+ x.getMessage)
     }
+
+    def onSuccess[A](f: Future[A])(callback: A => Unit)(implicit ec: ExecutionContext) {
+      f.map(callback).recover(sendError)
+    }
+
+    def onSuccess[A](t: Try[A])(f: A => Unit) {
+      t.map(f).recover(sendError)
+    }
+
   }
 
   type Command = PartialFunction[Input, Unit]
