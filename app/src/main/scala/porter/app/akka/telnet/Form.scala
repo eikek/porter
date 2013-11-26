@@ -1,12 +1,15 @@
 package porter.app.akka.telnet
 
 import scala.util.{Success, Try}
+import java.util.UUID
 
 /**
  * @author Eike Kettner eike.kettner@gmail.com
  * @since 26.11.13 22:25
  */
-trait Form extends Command {
+abstract class Form extends Command {
+  private val randPrefix = UUID.randomUUID().toString
+  private lazy val prefixedFields = fields.map(f => randPrefix + f)
 
   def fields: List[String]
 
@@ -22,11 +25,11 @@ trait Form extends Command {
   private def chain: Command = {
     case in if show.isDefinedAt(in) =>
       if (show(in)) {
-        in.token = fields.head
+        in.token = prefixedFields.head
         in.conn ! tcp(fields.head+": ")
       }
 
-    case in if in.token.exists(fields.contains) =>
+    case in if in.token.exists(prefixedFields.contains) =>
       findNext(in) match {
         case None => close(in)
         case Some(key) =>

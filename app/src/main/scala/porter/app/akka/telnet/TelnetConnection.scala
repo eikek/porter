@@ -19,7 +19,7 @@ class TelnetConnection(conn: ActorRef, server: ActorRef) extends Actor {
   implicit val timeout = Timeout(5000)
 
   private val session = new Session(None)
-  private val cmds = (HelpCommands ++ RealmCommands ++ AccountCommands).reduce
+  private val cmds = (HelpCommands ++ RealmCommands ++ AccountCommands ++ GroupCommands).reduce
 
   def receive = {
     case Tcp.Received(data) if data.utf8String.trim == "\\q" =>

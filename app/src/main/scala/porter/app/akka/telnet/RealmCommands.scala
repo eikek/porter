@@ -22,7 +22,7 @@ object RealmCommands extends Commands {
         val f = (porter.ref ? FindRealm(Set(rid))).mapTo[Iterable[Realm]]
         in.onSuccess(f) { iter =>
           sess.realm = iter.headOption
-          if (iter.headOption.isDefined) conn ! prompt("Using realm "+ iter)
+          if (iter.headOption.isDefined) conn ! prompt("Using realm "+ iter.headOption.get)
           else conn ! prompt("Realm not found")
         }
       }
