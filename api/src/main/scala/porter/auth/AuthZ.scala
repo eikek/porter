@@ -1,7 +1,7 @@
 package porter.auth
 
 import porter.store.StoreProvider
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
@@ -29,4 +29,11 @@ trait AuthZ {
 
   def authorized(realm: Ident, account: Ident, perms: Iterable[Permission])(implicit ec: ExecutionContext): Future[Boolean] =
     getPolicy(realm, account).map(_ grantsAll perms)
+
+  def authorizedPlain(realm: Ident, account: Ident, perms: Iterable[String])
+                     (implicit ec: ExecutionContext): Future[Boolean] =
+    Try(perms.map(permissionFactory)) match {
+      case Success(ps) => authorized(realm, account, ps)
+      case Failure(ex) => Future.failed(new IllegalArgumentException("Cannot create permissions!", ex))
+    }
 }

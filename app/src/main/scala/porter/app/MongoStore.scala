@@ -30,7 +30,7 @@ class MongoStore(cfg: Config) extends Store with MutableStore {
   }
 
   def findAccounts(realm: Ident, names: Set[Ident])(implicit ec: ExecutionContext) = Future {
-    val q = "_id" $all names.map(n => "a:"+ n.name).toSeq
+    val q = "_id" $in names.map(n => "a:"+ n.name).toSeq
     (for {
       dbo <- db(realm.name).find(q)
     } yield dbo.toAccount).toList
@@ -42,7 +42,7 @@ class MongoStore(cfg: Config) extends Store with MutableStore {
   }
 
   def findGroups(realm: Ident, names: Set[Ident])(implicit ec: ExecutionContext) = Future {
-    val q = "_id" $all names.map(n => "g:"+n.name).toSeq
+    val q = "_id" $in names.map(n => "g:"+n.name).toSeq
     (for (dbo <- db(realm.name).find(q)) yield dbo.toGroup).toList
   }
 

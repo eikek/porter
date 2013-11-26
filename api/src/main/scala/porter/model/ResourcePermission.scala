@@ -21,6 +21,8 @@ final case class ResourcePermission(parts: Parts) extends Permission {
 
   private def implyPaths(other: List[List[String]]) =
     other.forall(op => paths.exists(tp => Glob.matchesPath(tp, op)))
+
+  override def toString = parts.map(gl => gl.mkString(",")).mkString(":")
 }
 
 object ResourcePermission {

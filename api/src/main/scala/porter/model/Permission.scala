@@ -12,9 +12,13 @@ trait Permission extends Serializable {
 
 object Permission {
 
-  val allPermission = new Permission {
+  val allPermission: Permission = new Permission {
     def implies(other: Permission) = true
-    override def toString = "AllPermission"
+    override def toString = "porter.AllPermission"
+  }
+
+  val allPermissionFactory: PermissionFactory = {
+    case perms if perms == allPermission.toString => allPermission
   }
 
   def apply(str: String) = DefaultPermission(str)

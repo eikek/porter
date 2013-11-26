@@ -6,6 +6,7 @@ package porter.model
  */
 final case class Revocation(perm: Permission) {
   def revokes(p: Permission) = perm implies p
+  override def toString = "!"+perm.toString
 }
 
 object Revocation {

@@ -7,24 +7,22 @@ import porter.model.Secret
 object HelpCommands extends Commands {
 
   def make(implicit executor: ExecutionContext, to: Timeout) = Seq({
-    case Input(help, conn, _, _) if help == "help" =>
-      conn ! prompt(
-        """
+    case in@Input(help, conn, _, _) if help == "help" =>
+      in << """
           |This is a simple interface for managing accounts.
           |
           |TODO
-        """.stripMargin)
+        """.stripMargin
 
-    case Input(pwreq, conn, _, _) if pwreq.startsWith("crypt pw") =>
+    case in@Input(pwreq, conn, _, _) if pwreq.startsWith("crypt pw") =>
       val plain = pwreq.substring("crypt pw".length).trim
-      conn ! prompt(Secret.bcryptPassword(plain).asString)
+      in << Secret.bcryptPassword(plain).asString
 
-    case Input(show, conn, porter, _) if show == "show settings" =>
+    case in@Input(show, conn, porter, _) if show == "show settings" =>
       val as = porter.settings.authenticators.mkString(" ", "\n", "")
       val ss = porter.settings.stores.mkString(" ", "\n", "")
       val ms = porter.settings.mutableStores.mkString(" ", "\n", "")
-      conn ! prompt(
-        s"""
+      in << s"""
           |Authenticators
           |--------------
           |$as
@@ -38,7 +36,7 @@ object HelpCommands extends Commands {
           |$ms
           |
           |Porter Actorpath: ${porter.porterPath}
-        """.stripMargin)
+        """.stripMargin
   })
 
 }

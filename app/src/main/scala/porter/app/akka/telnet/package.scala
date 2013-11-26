@@ -41,12 +41,10 @@ package object telnet {
     }
   }
 
-  case class Key[+A](name: String)
-
   case class Input(msg: String, conn: ActorRef, porter: PorterExt, session: Session = new Session(None)) {
 
     def sendError: PartialFunction[Throwable, Unit] = {
-      case x => conn ! prompt("Error: "+ x.getMessage)
+      case x => this << ("Error: "+ x.getMessage)
     }
 
     def onSuccess[A](f: Future[A])(callback: A => Unit)(implicit ec: ExecutionContext) {
@@ -59,16 +57,25 @@ package object telnet {
 
     def withRealm(f: Realm => Unit) {
       session.realm.map(f).getOrElse {
-        conn ! prompt("Error: No realm defined. Set one with 'use realm <id>'.")
+        this << "Error: No realm defined. Set one with 'use realm <id>'."
       }
     }
 
     def token_=(t: String) { session.token = t }
     def token = session.token
     def tokenIs(s: String): Boolean = token == Some(s)
+
+    def << (m: String) {
+      conn ! prompt(m, session.realm)
+    }
   }
 
-  def prompt(s: String) = Tcp.Write(ByteString(s+"\nporter> "))
+  def prompt(s: String, realm: Option[Realm] = None) = {
+    realm match {
+      case Some(r) => Tcp.Write(ByteString(s"$s\n(${r.id.name}) porter> "))
+      case _ => Tcp.Write(ByteString(s+"\nporter> "))
+    }
+  }
   def tcp(s: String) = Tcp.Write(ByteString(s))
 
 

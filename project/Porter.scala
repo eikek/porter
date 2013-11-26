@@ -30,8 +30,13 @@ object Deps {
   )
 
   val logback = Seq(
+    "org.slf4j" % "slf4j-api" % "1.7.5",
     "ch.qos.logback" % "logback-classic" % "1.0.13" % "runtime",
     "com.typesafe.akka" %% "akka-slf4j" % "2.2.3" % "runtime"
+  )
+
+  val spray = Seq(
+    "io.spray" % "spray-can" % "1.2-RC4"
   )
 }
 
@@ -51,6 +56,7 @@ object Porter extends sbt.Build {
 
   override lazy val settings = super.settings ++ Seq(
     version := "0.1.0",
+    resolvers ++= Seq("spray repo" at "http://repo.spray.io"),
     organization := "org.eknet.porter",
     scalaVersion := Version.scala,
     scalacOptions := Seq("-unchecked", "-deprecation", "-feature"),
@@ -88,7 +94,7 @@ object App extends sbt.Build {
     base = file("app"),
     settings = Project.defaultSettings ++ Seq(
       name := "porter-app",
-      libraryDependencies ++= Deps.akka ++ Deps.testBasics ++ Deps.casbah ++ Deps.logback
+      libraryDependencies ++= Deps.akka ++ Deps.testBasics ++ Deps.casbah ++ Deps.spray ++ Deps.logback
     )
   ) dependsOn Api.module
 }

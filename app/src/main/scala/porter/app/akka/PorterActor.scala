@@ -27,7 +27,7 @@ class PorterActor(porter: Porter) extends Actor {
         .map(AuthResponse.apply).pipeTo(sender)
 
     case req @ Authorized(realm, acc, perms) =>
-      porter.authorized(realm, acc, perms)
+      porter.authorizedPlain(realm, acc, perms)
         .map(AuthzResponse(req, _)).pipeTo(sender)
 
     case req @ FindAccount(realm, acc) =>
@@ -89,7 +89,7 @@ object PorterActor {
   case class Authenticate(realm: Ident, creds: Set[Credentials]) extends PorterMessage
   case class AuthResponse(token: AuthResult) extends PorterMessage
 
-  case class Authorized(realm: Ident, account: Ident, perms: Set[Permission]) extends PorterMessage
+  case class Authorized(realm: Ident, account: Ident, perms: Set[String]) extends PorterMessage
   case class AuthzResponse(req: Authorized, result: Boolean) extends PorterMessage
 
   case class FindAccount(realm: Ident, accounts: Set[Ident]) extends PorterMessage

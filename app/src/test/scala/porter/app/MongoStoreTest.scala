@@ -89,4 +89,14 @@ class MongoStoreTest extends FunSuite with ShouldMatchers with BeforeAndAfterAll
     val to = PasswordAuthenticator.authenticate(AuthToken(r, acc2, Set(PasswordCredentials("mary", "test"))))
     to.toResult.successCount should be (1)
   }
+
+  test("find groups") {
+    val r = createRealm()
+    val g1 = Group("g1", Map("enabled" -> "true"), Set("some:perm:1"))
+    val g2 = Group("g2", Map.empty, Set("some:perm:2", "!some:perm:3"))
+    Await.result(store.updateGroup(r.id, g1), 5 seconds)
+    Await.result(store.updateGroup(r.id, g2), 5 seconds)
+    val list = Await.result(store.findGroups(r.id, Set("g1", "g2")), 5 seconds)
+    list.toSet should be (Set(g1, g2))
+  }
 }

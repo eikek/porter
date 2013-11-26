@@ -23,13 +23,13 @@ object AccountCommands extends Commands {
       case (key, value) if key == AccountDetails.name =>
         Try(Ident(value))
       case (key, value) if key == AccountDetails.groups =>
-        Try { Commands.makeList(value).map(s => Ident(s.trim)).toSet }
+        Try { Commands.makeList(',')(value).map(s => Ident(s.trim)).toSet }
       case (key, value) if key == AccountDetails.props =>
         Commands.makePairs(value)
     }
 
     def show = {
-      case in @ Input(msg, conn, porter, sess) if msg.startsWith("update account") =>
+      case in @ Input(msg, conn, porter, sess) if msg == "update account" =>
         in.withRealm { r =>
           conn ! tcp("Enter the account details.\n")
         }
@@ -40,7 +40,7 @@ object AccountCommands extends Commands {
       val ad = AccountDetails.toAccount(in.session)
       in.withRealm { r =>
         in.onSuccess(in.porter.ref ? UpdateAccount(r.id, ad.get)) { x =>
-          in.conn ! prompt("Account created.")
+          in << "Account created."
         }
       }
     }
@@ -52,7 +52,7 @@ object AccountCommands extends Commands {
         in.onSuccess((porter.ref ? ListAccounts(r.id)).mapTo[Iterable[Account]]) { list =>
           val groups = (a: Account) => a.groups.map(_.name).mkString("(", ",", ")")
           val props = (a: Account) => a.props.map({case (k,v) => k +"="+v}).mkString("[", ",", "]")
-          conn ! prompt(list.map(a => s"${a.name.name} ${groups(a)} ${props(a)}").mkString("\n"))
+          in << list.map(a => s"${a.name.name} ${groups(a)} ${props(a)}").mkString("\n")
         }
       }
   }
@@ -63,7 +63,7 @@ object AccountCommands extends Commands {
         val name = Try(Ident(msg.substring("delete account".length).trim))
         in.onSuccess(name) { id =>
           in.onSuccess(porter.ref ? DeleteAccount(realm.id, id)) { _ =>
-            conn ! prompt("Account deleted.")
+            in << "Account deleted."
           }
         }
       }

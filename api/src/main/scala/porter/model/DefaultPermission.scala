@@ -21,6 +21,7 @@ final case class DefaultPermission(parts: Parts) extends Permission {
     a == Set("*") || b.subsetOf(a)
   }
 
+  override def toString = parts.map(gl => gl.mkString(",")).mkString(":")
 }
 
 object DefaultPermission {

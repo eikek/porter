@@ -25,7 +25,7 @@ trait Commands {
     (make :+ notFound) reduce (_ orElse _)
 
   private def notFound: Command = {
-    case Input(msg, conn, _, _) => conn ! prompt(s"Command '$msg' not found")
+    case in@Input(msg, _, _, _) => in << s"Command '$msg' not found"
   }
 }
 
@@ -40,7 +40,7 @@ object Commands {
     }.toMap
   }
 
-  def makeList(str: String) =
-    str.split(',').filter(s => s.trim.nonEmpty).toList
+  def makeList(sep: Char)(str: String) =
+    str.split(sep).filter(s => s.trim.nonEmpty).toList
 
 }

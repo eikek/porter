@@ -22,7 +22,7 @@ object GroupCommands extends Commands {
         in.onSuccess((porter.ref ? ListGroups(realm.id)).mapTo[Iterable[Group]]) { groups =>
           val gs = groups.toList.sortBy(_.name.name).map(g =>
             s"${g.name.name}: ${g.rules.mkString("\n  ", "\n  ", "\n")}  ${g.props.map(p => p._1+"="+p._2).mkString("[", ",","]")}")
-          conn ! prompt(gs.mkString("\n"))
+          in << gs.mkString("\n")
         }
       }
   }
@@ -40,7 +40,7 @@ object GroupCommands extends Commands {
 
     def validateConvert = {
       case ("name", value) => Try(Ident(value))
-      case ("rules", value) => Try(Commands.makeList(value).map(_.trim).toSet)
+      case ("rules", value) => Try(Commands.makeList(',')(value).map(_.trim).toSet)
       case ("props", value) => Commands.makePairs(value)
     }
 
@@ -52,7 +52,7 @@ object GroupCommands extends Commands {
       )
       in.withRealm { realm =>
         in.onSuccess(in.porter.ref ? UpdateGroup(realm.id, g)) { _=>
-          in.conn ! prompt("Group updated.")
+          in << "Group updated."
         }
       }
     }
@@ -64,7 +64,7 @@ object GroupCommands extends Commands {
         val name = Try(Ident(msg.substring("delete group".length).trim))
         in.onSuccess(name) { gid =>
           in.onSuccess(porter.ref ? DeleteGroup(realm.id, gid)) { _=>
-            conn ! prompt("Group deleted")
+            in << "Group deleted"
           }
         }
       }

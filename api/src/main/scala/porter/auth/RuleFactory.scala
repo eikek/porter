@@ -30,7 +30,8 @@ object RuleFactory {
   private[this] def createCustomFactory = factories.get().foldRight(emptyFactory){ _ orElse _ }
 
   private val customFactory = new AtomicReference[PermissionFactory](createCustomFactory)
-  private val providedFactory: PermissionFactory = ResourcePermission.factory orElse DefaultPermission.factory
+  private val providedFactory: PermissionFactory = ResourcePermission.factory orElse
+    Permission.allPermissionFactory orElse DefaultPermission.factory
 
   def defaultFactory: PermissionFactory = customFactory.get() orElse providedFactory
 

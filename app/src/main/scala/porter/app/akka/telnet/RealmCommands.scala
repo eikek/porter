@@ -22,8 +22,8 @@ object RealmCommands extends Commands {
         val f = (porter.ref ? FindRealm(Set(rid))).mapTo[Iterable[Realm]]
         in.onSuccess(f) { iter =>
           sess.realm = iter.headOption
-          if (iter.headOption.isDefined) conn ! prompt("Using realm "+ iter.headOption.get)
-          else conn ! prompt("Realm not found")
+          if (iter.headOption.isDefined) in << s"Using realm ${sess.realm.get.id.name}: ${sess.realm.get.name}"
+          else in << "Realm not found"
         }
       }
   }
@@ -35,7 +35,7 @@ object RealmCommands extends Commands {
         case iter =>
           val s = new StringBuilder(s"Realm list (${iter.size})\n")
           s append iter.map(r => s"${r.id}: ${r.name}").mkString(" ", "\n", "")
-          conn ! prompt(s.toString())
+          in << s.toString()
       }
   }
 
@@ -49,7 +49,7 @@ object RealmCommands extends Commands {
         in.session[Ident]("realm id"),
         in.session[String]("realm name"))
       in.onSuccess(in.porter.ref ? UpdateRealm(realm)) { _ =>
-        in.conn ! prompt("Realm updated: "+ realm)
+        in << ("Realm updated: "+ realm)
       }
     }
 
@@ -66,7 +66,7 @@ object RealmCommands extends Commands {
     case in @ Input(msg, conn, porter, _) if msg.startsWith("delete realm") =>
       val name = msg.substring("delete realm".length).trim
       in.onSuccess(porter.ref ? DeleteRealm(name)) { x =>
-        conn ! prompt("Realm deleted.")
+        in << "Realm deleted."
       }
   }
 }
