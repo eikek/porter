@@ -1,6 +1,6 @@
 package porter.store
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import porter.model.Ident
 
 /**
@@ -12,35 +12,35 @@ trait Store {
 
   import porter.model._
 
-  def findRealms(names: Set[Ident]): Future[Iterable[Realm]]
+  def findRealms(names: Set[Ident])(implicit ec: ExecutionContext): Future[Iterable[Realm]]
 
-  def findAccounts(realm: Ident, names: Set[Ident]): Future[Iterable[Account]]
+  def findAccounts(realm: Ident, names: Set[Ident])(implicit ec: ExecutionContext): Future[Iterable[Account]]
 
-  def findAccountsFor(realm: Ident, creds: Set[Credentials]): Future[Iterable[Account]]
+  def findAccountsFor(realm: Ident, creds: Set[Credentials])(implicit ec: ExecutionContext): Future[Iterable[Account]]
 
-  def findGroups(realm: Ident, names: Set[Ident]): Future[Iterable[Group]]
+  def findGroups(realm: Ident, names: Set[Ident])(implicit ec: ExecutionContext): Future[Iterable[Group]]
 
-  def allRealms(): Future[Iterable[Realm]]
+  def allRealms(implicit ec: ExecutionContext): Future[Iterable[Realm]]
 
-  def allAccounts(realm: Ident): Future[Iterable[Account]]
+  def allAccounts(realm: Ident)(implicit ec: ExecutionContext): Future[Iterable[Account]]
 
-  def allGroups(realm: Ident): Future[Iterable[Group]]
+  def allGroups(realm: Ident)(implicit ec: ExecutionContext): Future[Iterable[Group]]
 }
 
 trait MutableStore {
   import porter.model._
 
-  def updateRealm(realm: Realm): Future[Boolean]
+  def updateRealm(realm: Realm)(implicit ec: ExecutionContext): Future[Boolean]
 
-  def deleteRealm(realm: Ident): Future[Boolean]
+  def deleteRealm(realm: Ident)(implicit ec: ExecutionContext): Future[Boolean]
 
-  def updateAccount(realm: Ident, account: Account): Future[Boolean]
+  def updateAccount(realm: Ident, account: Account)(implicit ec: ExecutionContext): Future[Boolean]
 
-  def deleteAccount(realm: Ident, accId: Ident): Future[Account]
+  def deleteAccount(realm: Ident, accId: Ident)(implicit ec: ExecutionContext): Future[Boolean]
 
-  def updateGroup(realm: Ident, group: Group): Future[Boolean]
+  def updateGroup(realm: Ident, group: Group)(implicit ec: ExecutionContext): Future[Boolean]
 
-  def deleteGroup(realm: Ident, groupId: Ident): Future[Group]
+  def deleteGroup(realm: Ident, groupId: Ident)(implicit ec: ExecutionContext): Future[Boolean]
 }
 
 trait StoreProvider {

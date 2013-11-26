@@ -14,11 +14,22 @@ import scala.util.{Try, Failure, Success}
  */
 package object telnet {
 
-  case class Session(var realm: Option[Realm])
-  case class Input(msg: String, conn: ActorRef, porter: ActorRef, session: Session = Session(None)) {
+  class Session(var realm: Option[Realm]) {
+    private val attr = collection.mutable.Map.empty[Any, Any]
+
+    def put(key: Any, a: Any) {
+      this.attr.put(key, a)
+    }
+    def get(key: Any) = this.attr.get(key)
+    def remove(key: Any) = this.attr.remove(key)
+    def hasKey(key: Any) = this.attr.get(key).isDefined
+    def noKey(key: Any) = !hasKey(key)
+  }
+
+  case class Input(msg: String, conn: ActorRef, porter: PorterExt, session: Session = new Session(None)) {
 
     def sendError: PartialFunction[Throwable, Unit] = {
-      case x => conn ! tcp("Error: "+ x.getMessage)
+      case x => conn ! prompt("Error: "+ x.getMessage)
     }
 
     def onSuccess[A](f: Future[A])(callback: A => Unit)(implicit ec: ExecutionContext) {
@@ -29,9 +40,15 @@ package object telnet {
       t.map(f).recover(sendError)
     }
 
+    def withRealm(f: Realm => Unit) {
+      session.realm.map(f).getOrElse {
+        conn ! prompt("Error: No realm defined. Set one with 'use realm <id>'.")
+      }
+    }
   }
 
   type Command = PartialFunction[Input, Unit]
 
-  def tcp(s: String) = Tcp.Write(ByteString(s+"\nporter> "))
+  def prompt(s: String) = Tcp.Write(ByteString(s+"\nporter> "))
+  def tcp(s: String) = Tcp.Write(ByteString(s))
 }

@@ -11,15 +11,15 @@ import porter.BuildInfo
  * @since 24.11.13 23:16
  */
 class TelnetConnection(conn: ActorRef, server: ActorRef) extends Actor {
-  val porter = PorterExt(context.system).ref
+  val porter = PorterExt(context.system)
   context.watch(conn)
-  context.watch(porter)
+  context.watch(porter.ref)
 
   implicit val executor = context.dispatcher
   implicit val timeout = Timeout(5000)
 
   private val session = new Session(None)
-  private val cmds = (HelpCommands ++ RealmCommands).reduce
+  private val cmds = (HelpCommands ++ RealmCommands ++ AccountCommands).reduce
 
   def receive = {
     case Tcp.Received(data) if data.utf8String.trim == "\\q" =>
@@ -44,7 +44,7 @@ class TelnetConnection(conn: ActorRef, server: ActorRef) extends Actor {
   }
 
   override def preStart() = {
-    val welcome = tcp(
+    val welcome = prompt(
       s"""
         |Welcome to porter ${BuildInfo.version}
         |

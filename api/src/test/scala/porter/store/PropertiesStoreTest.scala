@@ -13,6 +13,7 @@ import scala.concurrent.Await
 class PropertiesStoreTest extends FunSuite with ShouldMatchers {
   import porter.model._
   import scala.concurrent.duration._
+  import scala.concurrent.ExecutionContext.Implicits.global
 
   val testPw = Secret.bcryptPassword("test")
   val acc = Account("john", Map("email" -> "john@mail.com", "enabled" -> "true"), Set("users", "admin"), Seq(testPw))
@@ -44,7 +45,7 @@ class PropertiesStoreTest extends FunSuite with ShouldMatchers {
       "porter.app3.name" -> "A realm 3",
       "porter.app4.name" -> "A realm 4"
     )))
-    Await.result(store.allRealms(), 5.seconds) should be (List(Realm("app1", "A realm 1"),
+    Await.result(store.allRealms, 5.seconds) should be (List(Realm("app1", "A realm 1"),
       Realm("app2", "A realm 2"), Realm("app3", "A realm 3")))
   }
 

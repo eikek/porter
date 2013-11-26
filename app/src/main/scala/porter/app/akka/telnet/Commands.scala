@@ -25,19 +25,22 @@ trait Commands {
     (make :+ notFound) reduce (_ orElse _)
 
   private def notFound: Command = {
-    case Input(msg, conn, _, _) => conn ! tcp(s"Command '$msg' not found")
+    case Input(msg, conn, _, _) => conn ! prompt(s"Command '$msg' not found")
   }
 }
 
 object Commands {
 
   def makePairs(str: String): Try[Map[String, String]] = Try {
-    str.split("[\\s,]").withFilter(s => s.trim.nonEmpty).map { s =>
+    str.split(',').withFilter(s => s.trim.nonEmpty).map { s =>
       s.split('=').toList match {
         case k::v::Nil => k.trim -> v.trim
         case _ => throw new IllegalArgumentException("Cannot create pair from: "+ s)
       }
     }.toMap
   }
+
+  def makeList(str: String) =
+    str.split(',').filter(s => s.trim.nonEmpty).toList
 
 }

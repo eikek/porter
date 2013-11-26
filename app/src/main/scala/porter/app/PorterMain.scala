@@ -7,6 +7,7 @@ import com.typesafe.config.ConfigFactory
 import porter.app.akka.PorterExt
 import java.net.InetSocketAddress
 import porter.app.akka.telnet.TelnetServer
+import porter.app.akka.PorterActor.ListRealms
 
 /**
  * @author Eike Kettner eike.kettner@gmail.com
@@ -43,13 +44,10 @@ object PorterMain extends App {
 
     val telnetEndpoint = new InetSocketAddress("localhost", 2345)
     val telnetServer = system.actorOf(Props(classOf[TelnetServer]), name = "porter-telnet")
-
     val telnetF = IO(Tcp) ? Tcp.Bind(telnetServer, telnetEndpoint)
     telnetF.onSuccess { case Tcp.Bound(addr) =>
       println("Bound telnet to " + addr)
     }
-
-    // print what's going on
   }
 
 }

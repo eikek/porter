@@ -51,21 +51,21 @@ class PorterSettings(cfg: Config, dynamicAccess: DynamicAccess = new ReflectiveD
     for (c <- list) yield authMaker(c).get
   }.toList
 
-  private val storeObjects = {
+  val storeObjects = {
     val storeMaker = makeInstance[AnyRef](dynamicAccess)_ andThen(_.get)
     cfg.getConfigList("stores").asScala.map(c => c -> storeMaker(c)).toList
   }
 
-  lazy val stores = storeObjects.collect({ case (_, s: Store) => s }).toList
+  val stores = storeObjects.collect({ case (_, s: Store) => s }).toList
 
-  lazy val mutableStores = storeObjects.collect {
+  val mutableStores = storeObjects.collect {
     case (c, s: MutableStore) => optGet(c, "realms").map(Ident.apply) -> s
   }
 
   def findMutableStore(realm: Ident): Option[MutableStore] =
-    mutableStores.collect{
+    mutableStores.collect({
       case (ids, s) if ids.contains(realm) => s
-    }.headOption.orElse(firstMutableStore)
+    }).headOption.orElse(firstMutableStore)
 
   def firstMutableStore = mutableStores.headOption.map(_._2)
 
@@ -84,6 +84,6 @@ class PorterSettings(cfg: Config, dynamicAccess: DynamicAccess = new ReflectiveD
     lazy val configCtor = dynAccess.createInstanceFor(fqcn, args :+ (classOf[Config] -> cfg))
     val defctor = dynAccess.createInstanceFor(fqcn, args)
 
-    loadObject orElse configCtor orElse defctor
+    configCtor orElse defctor orElse loadObject
   }
 }

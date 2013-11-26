@@ -28,6 +28,11 @@ object Deps {
     "org.mongodb" %% "casbah-query" % "2.6.3",
     "org.mongodb" %% "casbah-core" % "2.6.3"
   )
+
+  val logback = Seq(
+    "ch.qos.logback" % "logback-classic" % "1.0.13" % "runtime",
+    "com.typesafe.akka" %% "akka-slf4j" % "2.2.3" % "runtime"
+  )
 }
 
 object Porter extends sbt.Build {
@@ -83,7 +88,7 @@ object App extends sbt.Build {
     base = file("app"),
     settings = Project.defaultSettings ++ Seq(
       name := "porter-app",
-      libraryDependencies ++= Deps.akka ++ Deps.testBasics ++ Deps.casbah
+      libraryDependencies ++= Deps.akka ++ Deps.testBasics ++ Deps.casbah ++ Deps.logback
     )
   ) dependsOn Api.module
 }

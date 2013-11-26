@@ -9,6 +9,7 @@ import porter.model._
 import porter.model.Group
 import porter.model.Realm
 import porter.model.Account
+import scala.concurrent.ExecutionContext
 
 /**
  * @author Eike Kettner eike.kettner@gmail.com
@@ -42,17 +43,17 @@ class PorterSettingsTest extends FunSuite with ShouldMatchers {
 }
 
 class TestMStore extends Store with MutableStore {
-  def findRealms(names: Set[Ident]) = ???
-  def findAccounts(realm: Ident, names: Set[Ident]) = ???
-  def findAccountsFor(realm: Ident, creds: Set[Credentials]) = ???
-  def findGroups(realm: Ident, names: Set[Ident]) = ???
-  def allRealms() = ???
-  def allAccounts(realm: Ident) = ???
-  def allGroups(realm: Ident) = ???
-  def updateRealm(realm: Realm) = ???
-  def deleteRealm(realm: Ident) = ???
-  def updateAccount(realm: Ident, account: Account) = ???
-  def deleteAccount(realm: Ident, accId: Ident) = ???
-  def updateGroup(realm: Ident, group: Group) = ???
-  def deleteGroup(realm: Ident, groupId: Ident) = ???
+  def findRealms(names: Set[Ident])(implicit ec: ExecutionContext) = ???
+  def findAccounts(realm: Ident, names: Set[Ident])(implicit ec: ExecutionContext) = ???
+  def findAccountsFor(realm: Ident, creds: Set[Credentials])(implicit ec: ExecutionContext) = ???
+  def findGroups(realm: Ident, names: Set[Ident])(implicit ec: ExecutionContext) = ???
+  def allRealms(implicit ec: ExecutionContext) = ???
+  def allAccounts(realm: Ident)(implicit ec: ExecutionContext) = ???
+  def allGroups(realm: Ident)(implicit ec: ExecutionContext) = ???
+  def updateRealm(realm: Realm)(implicit ec: ExecutionContext) = ???
+  def deleteRealm(realm: Ident)(implicit ec: ExecutionContext) = ???
+  def updateAccount(realm: Ident, account: Account)(implicit ec: ExecutionContext) = ???
+  def deleteAccount(realm: Ident, accId: Ident)(implicit ec: ExecutionContext) = ???
+  def updateGroup(realm: Ident, group: Group)(implicit ec: ExecutionContext) = ???
+  def deleteGroup(realm: Ident, groupId: Ident)(implicit ec: ExecutionContext) = ???
 }

@@ -42,7 +42,7 @@ class PorterActor(porter: Porter) extends Actor {
       porter.store.findRealms(ids).pipeTo(sender)
 
     case ListRealms =>
-      porter.store.allRealms().pipeTo(sender)
+      porter.store.allRealms.pipeTo(sender)
 
     case ListAccounts(realm) =>
       porter.store.allAccounts(realm).pipeTo(sender)
