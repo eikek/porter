@@ -1,11 +1,12 @@
 package porter.app.akka
 
 import akka.actor.ActorRef
-import porter.model.Realm
+import porter.model.{Properties, Realm}
 import akka.io.Tcp
 import akka.util.ByteString
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Try, Failure, Success}
+import scala.reflect.ClassTag
 
 /**
  *
@@ -14,17 +15,33 @@ import scala.util.{Try, Failure, Success}
  */
 package object telnet {
 
-  class Session(var realm: Option[Realm]) {
-    private val attr = collection.mutable.Map.empty[Any, Any]
+  type Command = PartialFunction[Input, Unit]
 
-    def put(key: Any, a: Any) {
-      this.attr.put(key, a)
+  class Session(var realm: Option[Realm]) {
+    private var attr = Map.empty[String, Any]
+    private var _token: Option[String] = None
+
+    def token_=(t: String) {
+      this._token = Some(t)
     }
-    def get(key: Any) = this.attr.get(key)
-    def remove(key: Any) = this.attr.remove(key)
-    def hasKey(key: Any) = this.attr.get(key).isDefined
-    def noKey(key: Any) = !hasKey(key)
+    def token = _token
+    def removeToken() { this._token = None }
+
+    def apply[A](key: String) = get(key).map(_.asInstanceOf[A])
+      .getOrElse(throw new NoSuchElementException(s"No value for key '$key' in $attr"))
+
+    def add(key: String, value: Any) {
+      this.attr = this.attr.updated(key, value)
+    }
+    def get(k: String) = attr.collect({ case (`k`, v) => v }).headOption
+
+    def remove(ks: String*) {
+      val set = ks.toSet
+      this.attr = attr.filter({case (k, _) => !set.contains(k)})
+    }
   }
+
+  case class Key[+A](name: String)
 
   case class Input(msg: String, conn: ActorRef, porter: PorterExt, session: Session = new Session(None)) {
 
@@ -45,10 +62,14 @@ package object telnet {
         conn ! prompt("Error: No realm defined. Set one with 'use realm <id>'.")
       }
     }
-  }
 
-  type Command = PartialFunction[Input, Unit]
+    def token_=(t: String) { session.token = t }
+    def token = session.token
+    def tokenIs(s: String): Boolean = token == Some(s)
+  }
 
   def prompt(s: String) = Tcp.Write(ByteString(s+"\nporter> "))
   def tcp(s: String) = Tcp.Write(ByteString(s))
+
+
 }
