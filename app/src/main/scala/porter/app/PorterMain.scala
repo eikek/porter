@@ -8,6 +8,8 @@ import porter.app.akka.PorterExt
 import java.net.InetSocketAddress
 import porter.app.akka.telnet.TelnetServer
 import porter.app.akka.PorterActor.ListRealms
+import porter.app.akka.http.HttpHandler
+import spray.can.Http
 
 /**
  * @author Eike Kettner eike.kettner@gmail.com
@@ -42,11 +44,20 @@ object PorterMain extends App {
     import _root_.akka.pattern.ask
     implicit val bindTimeout = Timeout(2.seconds)
 
-    val telnetEndpoint = new InetSocketAddress("localhost", 2345)
-    val telnetServer = system.actorOf(Props(classOf[TelnetServer]), name = "porter-telnet")
-    val telnetF = IO(Tcp) ? Tcp.Bind(telnetServer, telnetEndpoint)
-    telnetF.onSuccess { case Tcp.Bound(addr) =>
-      println("Bound telnet to " + addr)
+    val config = system.settings.config.getConfig("porter")
+    if (config.getBoolean("telnet.enabled")) {
+      val telnetEndpoint = new InetSocketAddress(config.getString("telnet.host"), config.getInt("telnet.port"))
+      val telnetServer = system.actorOf(Props(classOf[TelnetServer]), name = "porter-telnet")
+      val telnetF = IO(Tcp) ? Tcp.Bind(telnetServer, telnetEndpoint)
+      telnetF.onSuccess { case Tcp.Bound(addr) =>
+        println("Bound telnet to " + addr)
+      }
+    }
+    if (config.getBoolean("http.enabled")) {
+      val httpHandler = system.actorOf(Props(classOf[HttpHandler]), name = "porter-http")
+      val host = config.getString("http.host")
+      val port = config.getInt("http.port")
+      val f = IO(Http) ! Http.Bind(httpHandler, interface = host, port = port)
     }
   }
 

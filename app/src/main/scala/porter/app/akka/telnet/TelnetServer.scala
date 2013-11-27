@@ -29,7 +29,7 @@ class TelnetServer extends Actor with ActorLogging {
   }
 
   def logConnections() {
-    log.info(s"There are currently $connections connections.")
+    log.info(s"There are currently $connections telnet connections.")
   }
 }
 
