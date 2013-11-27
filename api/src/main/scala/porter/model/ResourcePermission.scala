@@ -15,7 +15,7 @@ final case class ResourcePermission(parts: Parts) extends Permission {
 
   def implies(other: Permission) = other match {
     case rp: ResourcePermission =>
-      actions == Set("*") || rp.actions.subsetOf(actions) && implyPaths(rp.paths)
+      (actions == Set("*") || rp.actions.subsetOf(actions)) && implyPaths(rp.paths)
     case _ => false
   }
 

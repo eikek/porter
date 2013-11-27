@@ -9,8 +9,9 @@ import org.scalatest.matchers.ShouldMatchers
  */
 class ResourcePermissionTest extends FunSuite with ShouldMatchers {
 
+  val factory = ResourcePermission.factory
+
   test("simple implies") {
-    val factory = ResourcePermission.factory
     val rp0 = factory("resource:read,write:/manager/**")
     val rp1 = factory("resource:read,write:/manager/html/**")
     val rp2 = factory("resource:read:/manager/test.html")
@@ -26,5 +27,13 @@ class ResourcePermissionTest extends FunSuite with ShouldMatchers {
     val rp5 = factory("resource:read:/main/**")
     rp4 implies rp5 should be (true)
     rp5 implies rp4 should be (false)
+  }
+
+  test("implies where actions=*") {
+    val rp0 = factory("resource:*:/main/**")
+    val p1 = factory("resource:read:/test.html")
+    val p2 = factory("resource:read:/xa/test.html")
+    rp0 implies p1 should be (false)
+    rp0 implies p2 should be (false)
   }
 }
