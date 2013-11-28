@@ -10,6 +10,7 @@ import scala.concurrent.{ExecutionContext, Future}
  */
 trait SimpleStore extends Store {
   import porter.model._
+  import porter.util._
 
   def realms: Iterable[Realm]
 
@@ -21,7 +22,7 @@ trait SimpleStore extends Store {
     realms filter (r => names.contains(r.id))
   }
 
-  def findAccounts(realm: Ident, names: Set[Ident])(implicit ec: ExecutionContext) = Future.successful {
+  def findAccounts(realm: Ident, names: Set[Ident])(implicit ec: ExecutionContext) = Future.immediate {
     for {
       (r, a) <- accounts
       if r.id == realm && names.contains(a.name)
@@ -33,18 +34,18 @@ trait SimpleStore extends Store {
     findAccounts(realm, nameSet)
   }
 
-  def findGroups(realm: Ident, names: Set[Ident])(implicit ec: ExecutionContext) = Future.successful {
+  def findGroups(realm: Ident, names: Set[Ident])(implicit ec: ExecutionContext) = Future.immediate {
     for {
       (r, g) <- groups
       if r.id == realm && names.contains(g.name)
     } yield g
   }
 
-  def allRealms(implicit ec: ExecutionContext) = Future.successful(realms)
+  def allRealms(implicit ec: ExecutionContext) = Future.immediate(realms)
 
   def allAccounts(realm: Ident)(implicit ec: ExecutionContext) =
-    Future.successful(for ((r,a) <- accounts; if r.id == realm) yield a)
+    Future.immediate(for ((r,a) <- accounts; if r.id == realm) yield a)
 
   def allGroups(realm: Ident)(implicit ec: ExecutionContext) =
-    Future.successful(for ((r,g) <- groups; if r.id == realm) yield g)
+    Future.immediate(for ((r,g) <- groups; if r.id == realm) yield g)
 }

@@ -16,10 +16,11 @@ import porter.auth.{Vote, AuthResult}
  * @since 28.11.13 02:11
  */
 class PorterHttp(addr: InetSocketAddress) {
+  import porter.util.JsonHelper._
 
   def this() = this(new InetSocketAddress("localhost", 6789))
 
-  private def post[A](path: String, data: String)(f: String => A)(implicit ec: ExecutionContext): Future[A] = Future {
+  private def post(path: String, data: String)(implicit ec: ExecutionContext): Future[String] = Future {
     val url = new URL("http", addr.getHostName, addr.getPort, path)
     val conn = url.openConnection().asInstanceOf[HttpURLConnection]
     conn.setRequestMethod("POST")
@@ -40,17 +41,17 @@ class PorterHttp(addr: InetSocketAddress) {
     val in = conn.getInputStream
     val result = Try(io.Source.fromInputStream(in).getLines().mkString)
     in.close()
-    result.map(f).get
+    result.get
   }
 
   def authorize(realm: Ident, login: Ident, perms: Set[String])(implicit ec: ExecutionContext): Future[Boolean] = {
-    val req = porter.util.toJsonString(Map(
+    val req = toJsonString(Map(
       "realm" -> realm.name,
       "login" -> login.name,
       "perms" -> perms
     ))
 
-    post("/api/authz", req) { data =>
+    post("/api/authz", req) map { data =>
       JSON.parseRaw(data) match {
         case Some(JSONObject(map)) =>
           map.get("result").exists(x => x == true)
@@ -60,45 +61,15 @@ class PorterHttp(addr: InetSocketAddress) {
   }
 
   def authenticate(realm: Ident, login: Ident, password: String)(implicit ec: ExecutionContext): Future[AuthResult] = {
-    val req = porter.util.toJsonString(Map(
+    val req = toJsonString(Map(
       "realm" -> realm.name,
       "login" -> login.name,
       "password" -> password
     ))
 
-    def voteBool(v: Boolean): Vote = if (v) Vote.Success else Vote.Failed()
-
-    post("/api/authc", req) { data =>
-      JSON.parseRaw(data) match {
-        case Some(JSONObject(map)) =>
-          val props = map.get("account").flatMap {
-            case JSONObject(bmap) => Some(bmap.map { case (k, v) =>
-              k.toString -> v.toString
-            })
-            case _ => None
-          }
-          val votes = map.get("votes").flatMap {
-            case JSONObject(bmap) => Some(bmap.map { case(k, v) =>
-              Ident(k.toString) -> voteBool(v.toString.toBoolean)
-            })
-            case _ => None
-          }
-          val realm = map.get("realm").flatMap {
-            case JSONObject(bmap) =>
-              val id = bmap.get("id").map(_.toString)
-              val name = bmap.get("name").map(_.toString)
-              Try(Realm(id.get, name.get)).toOption
-            case _ => None
-          }
-          (realm, props, votes) match {
-            case (Some(r), Some(p), Some(v)) =>
-              AuthResult(r, login, v, p)
-            case _ =>
-              throw new IllegalArgumentException("Invalid response: "+ data)
-          }
-        case _ =>
-          throw new IllegalStateException("Invalid response: "+ data)
-      }
+    post("/api/authc", req) map {
+      case JsonAuthResult(r) => r
+      case data => throw new IllegalStateException("Invalid response: " + data)
     }
   }
 }

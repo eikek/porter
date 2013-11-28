@@ -1,6 +1,6 @@
 package porter.app.akka.telnet
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{Future, ExecutionContext}
 import akka.util.Timeout
 import scala.util.Try
 import porter.model.{Group, Ident, PasswordCredentials}
@@ -13,6 +13,7 @@ import porter.app.akka.PorterActor.Authorized
 
 object AuthCommands extends Commands {
   import akka.pattern.ask
+  import porter.util._
 
   def make(implicit executor: ExecutionContext, to: Timeout) =
     List(authenticate, authorize, showPolicy)
@@ -20,55 +21,46 @@ object AuthCommands extends Commands {
 
   def authenticate(implicit executor: ExecutionContext, to: Timeout): Command = {
     case in@Input(msg, conn, porter, _) if msg.startsWith("authc") =>
-      in.withRealm { realm =>
-        val creds = msg.substring("authc".length).trim.split("\\s+").toList match {
-          case a::b::Nil => Try(PasswordCredentials(a.trim, b.trim))
-          case _ => Failure(new IllegalArgumentException(s"Cannot get username-password pair from: '$msg'"))
-        }
-        in.onSuccess(creds) { up =>
-          in.onSuccess((porter.ref ? Authenticate(realm.id, Set(up))).mapTo[AuthResponse]) { res =>
-            val s = res.token.votes.map({ case(n, v) => s"${n.name} -> $v" })
-            in << s.mkString("\n")
-          }
-        }
+      val creds = msg.substring("authc".length).trim.split("\\s+").toList match {
+        case a::b::Nil => Try(PasswordCredentials(a.trim, b.trim))
+        case _ => Failure(new IllegalArgumentException(s"Cannot get username-password pair from: '$msg'"))
       }
+      val result = for {
+        realm <- in.realmFuture
+        up <- Future.immediate(creds)
+        res <- (porter.ref ? Authenticate(realm.id, Set(up))).mapTo[AuthResponse]
+      } yield res.token.votes.map({ case(n, v) => s"${n.name} -> $v" })
+      in <<< result
   }
 
   def authorize(implicit executor: ExecutionContext, to: Timeout): Command = {
     case in@Input(msg, conn, porter, _) if msg.startsWith("authz") =>
-      in.withRealm { realm =>
-        val perms = msg.substring("authc".length).trim.split("\\s+", 2).toList match {
-          case a::b::Nil => Try(Ident(a.trim) -> Commands.makeList(' ')(b.trim).map(_.trim).toSet)
-          case _ => Failure(new IllegalArgumentException(s"Cannot get username-password pair from: '$msg'"))
-        }
-        in.onSuccess(perms) { case (login, plist) =>
-          in.onSuccess((porter.ref ? Authorized(realm.id, login, plist)).mapTo[AuthzResponse]) { resp =>
-            in << s"Result: ${resp.result}"
-          }
-        }
+      val perms = msg.substring("authc".length).trim.split("\\s+", 2).toList match {
+        case a::b::Nil => Try(Ident(a.trim) -> Commands.makeList(' ')(b.trim).map(_.trim).toSet)
+        case _ => Failure(new IllegalArgumentException(s"Cannot get permissions from: '$msg'"))
       }
+      val result = for {
+        realm <- in.realmFuture
+        (login, plist) <- Future.immediate(perms)
+        resp <- (porter.ref ? Authorized(realm.id, login, plist)).mapTo[AuthzResponse]
+      } yield s"Result: ${resp.result}"
+      in << result
   }
 
   def showPolicy(implicit executor: ExecutionContext, to: Timeout): Command = {
     case in@Input(msg, conn, porter, _) if msg.startsWith("show policy") =>
-      in.withRealm { realm =>
-        val loginTry = Try(Ident(msg.substring("show policy".length).trim))
-        in.onSuccess(loginTry) { login =>
-          val fp = (porter.ref ? GetPolicy(realm.id, login)).mapTo[PolicyResponse]
-          val fg = (porter.ref ? ListGroups(realm.id)).mapTo[Iterable[Group]]
-          val fstring = for (pr <- fp; gr <- fg) yield {
-            for {
-              rule <- pr.policy.rules.toList.sortBy(_.isLeft)
-            } yield {
-              val perms = rule.fold(_.toString, _.toString)
-              val groups = gr.filter(g => g.rules.contains(perms)).map(g => g.name.name)
-              s"$perms ${groups.mkString("(", ",", ")")}"
-            }
-          }
-          in.onSuccess(fstring) { outs =>
-            in << outs.mkString("\n")
-          }
+      val result = for {
+        r <- in.realmFuture
+        login <- Future.immediate(Ident(msg.substring("show policy".length).trim))
+        fp <- (porter.ref ? GetPolicy(r.id, login)).mapTo[PolicyResponse]
+        fg <- (porter.ref ? ListGroups(r.id)).mapTo[Iterable[Group]]
+      } yield {
+        for (rule <- fp.policy.rules.toList.sortBy(_.isLeft)) yield {
+          val perms = rule.fold(_.toString, _.toString)
+          val groups = fg.filter(g => g.rules.contains(perms)).map(g => g.name.name)
+          s"$perms ${groups.mkString("(", ",", ")")}"
         }
       }
+      in <<< result
   }
 }

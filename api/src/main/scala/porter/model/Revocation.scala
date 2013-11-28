@@ -21,4 +21,10 @@ object Revocation {
     val ps = Permission.reduce(rev.map(_.perm))
     ps.map(Revocation.apply)
   }
+
+  def union(one: Set[Revocation], two: Set[Revocation]): Set[Revocation] =
+    Permission.union(one.map(_.perm), two.map(_.perm)).map(apply)
+
+  def diff(current: Set[Revocation], remove: Set[Revocation]): Set[Revocation] =
+    Permission.diff(current.map(_.perm), remove.map(_.perm)).map(apply)
 }

@@ -67,6 +67,9 @@ class PorterActor(porter: Porter) extends Actor {
 
     case DeleteGroup(realm, group) =>
       withMutableStore(realm)(s => s.deleteGroup(realm, group))
+
+    case MakeRules(rules) =>
+      Future{ MakeRulesResponse(rules.map(porter.createRule).map(_.get)) } pipeTo sender
   }
 
   private def withMutableStore[A](realm: Ident)(f: MutableStore => Future[A]) {
@@ -97,6 +100,11 @@ object PorterActor {
 
   case class FindGroup(realm: Ident, groups: Set[Ident]) extends PorterMessage
   case class GroupResponse(req: FindGroup, groups: Iterable[Group]) extends PorterMessage
+
+  case class MakeRules(rules: Set[String]) extends PorterMessage
+  case class MakeRulesResponse(rules: Set[Rule]) extends PorterMessage {
+    lazy val (permissions, revocations) = partitionRules(rules)
+  }
 
   case class FindRealm(realms: Set[Ident]) extends PorterMessage
 

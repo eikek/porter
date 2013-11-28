@@ -26,17 +26,11 @@ object AuthRequests {
   }
 
   def authc(implicit ec: ExecutionContext, timeout: Timeout) = onPath("/api/authc") { token =>
+    import porter.util.JsonHelper._
     token.req.entity.asString match {
       case JsonAuth(realm, login, creds) =>
         val f = token.porter.ref ? Authenticate(realm, Set(PasswordCredentials(login, creds)))
-        f.mapTo[AuthResponse].map { resp => Map(
-          "votes" -> resp.token.votes.map({case (k, v) => s"${k.name}" -> v.toBoolean }),
-          "failed" -> resp.token.failedCount,
-          "success" -> resp.token.successCount,
-          "oneSuccess" -> resp.token.oneSuccess,
-          "realm" -> Map("id" -> resp.token.realm.id.name, "name" -> resp.token.realm.name),
-          "account" -> resp.token.props
-        )}
+        f.mapTo[AuthResponse].map { resp => resp.token.toJson }
       case _ => Future.failed(new IllegalArgumentException("Invalid request"))
     }
   }

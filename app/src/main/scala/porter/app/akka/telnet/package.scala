@@ -47,26 +47,31 @@ package object telnet {
       case x => this << ("Error: "+ x.getMessage)
     }
 
-    def onSuccess[A](f: Future[A])(callback: A => Unit)(implicit ec: ExecutionContext) {
-      f.map(callback).recover(sendError)
-    }
-
-    def onSuccess[A](t: Try[A])(f: A => Unit) {
-      t.map(f).recover(sendError)
-    }
-
     def withRealm(f: Realm => Unit) {
       session.realm.map(f).getOrElse {
         this << "Error: No realm defined. Set one with 'use realm <id>'."
       }
     }
 
+    def realmFuture = {
+      import _root_.porter.util._
+      Future.immediate(session.realm,
+        "No realm defined. Set one with 'use realm <id>'.")
+    }
+
     def token_=(t: String) { session.token = t }
     def token = session.token
-    def tokenIs(s: String): Boolean = token == Some(s)
 
     def << (m: String) {
       conn ! prompt(m, session.realm)
+    }
+
+    def << (fm: Future[String])(implicit ec: ExecutionContext) {
+      fm.map(s => this << s).recover(sendError)
+    }
+
+    def <<<[I <: Iterable[String]] (fm: Future[I])(implicit ec: ExecutionContext) {
+      fm.map(is => this << is.mkString("\n")).recover(sendError)
     }
   }
 
@@ -78,5 +83,5 @@ package object telnet {
   }
   def tcp(s: String) = Tcp.Write(ByteString(s))
 
-
+  def illegalArg(m: String) = new IllegalArgumentException(m)
 }

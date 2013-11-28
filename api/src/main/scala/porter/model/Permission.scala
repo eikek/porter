@@ -58,4 +58,14 @@ object Permission {
       if (impliesAll(rest, List(p))) rest else set
     }
   }
+
+  def diff(current: Set[Permission], remove: Set[Permission]): Set[Permission] = {
+    remove.foldLeft(current) { (set, r) =>
+      set.filterNot(p => impliesAll(remove, Set(p)))
+    }
+  }
+
+  def union(one: Set[Permission], two: Set[Permission]): Set[Permission] = {
+    reduce(one ++ two)
+  }
 }

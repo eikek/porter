@@ -15,6 +15,7 @@ import spray.http.HttpResponse
 class HttpConnection extends Actor with ActorLogging {
   import akka.pattern.pipe
   import context.dispatcher
+  import porter.util.JsonHelper._
   implicit val timeout = Timeout(5000)
   implicit val porterExt = PorterExt(context.system)
   context.watch(porterExt.ref)
@@ -37,7 +38,7 @@ class HttpConnection extends Actor with ActorLogging {
   def jsonResponse(data: Any): HttpResponse =
     HttpResponse(entity = HttpEntity(
       ContentTypes.`application/json`,
-      porter.util.toJsonString(data)), headers = defaultHeaders)
+      toJsonString(data)), headers = defaultHeaders)
 
   def recoverResponse: PartialFunction[Throwable, HttpResponse] = {
     case x =>
