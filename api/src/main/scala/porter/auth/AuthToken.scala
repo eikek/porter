@@ -16,5 +16,5 @@ final case class AuthToken(realm: Realm,
 
   def vote(v: (Secret, Vote)) = copy(votes = votes + (v._1.name -> v._2))
 
-  def toResult = AuthResult(realm, account.name, votes)
+  def toResult = AuthResult(realm, account.name, votes, account.props)
 }

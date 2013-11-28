@@ -1,13 +1,13 @@
 package porter.auth
 
-import porter.model.{Realm, Ident}
+import porter.model.{Properties, Realm, Ident}
 
 /**
  * @author Eike Kettner eike.kettner@gmail.com
  * @since 23.11.13 17:33
  */
 @SerialVersionUID(20131123)
-final case class AuthResult(realm: Realm, accountId: Ident, votes: Map[Ident, Vote]) extends Serializable {
+final case class AuthResult(realm: Realm, accountId: Ident, votes: Map[Ident, Vote], props: Properties) extends Serializable {
 
   lazy val successCount = votes.values.foldLeft(0) { (s, v) =>
     s + (if (v == Vote.Success) 1 else 0)

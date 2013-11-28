@@ -7,14 +7,20 @@ import porter.model.Ident
  * @since 22.11.13 19:16
  */
 @SerialVersionUID(20131122)
-sealed trait Vote extends Serializable
+sealed trait Vote extends Serializable {
+  def toBoolean: Boolean
+}
 
 object Vote {
   @SerialVersionUID(20131122)
-  case object Success extends Vote
+  case object Success extends Vote {
+    def toBoolean = true
+  }
 
   @SerialVersionUID(20131122)
-  case class Failed(reasons: Map[Ident, String] = Map.empty) extends Vote
+  final case class Failed(reasons: Map[Ident, String] = Map.empty) extends Vote {
+    def toBoolean = false
+  }
 
   object Failed {
     def apply(values: (Ident, String)*): Failed = apply(values.toMap)
