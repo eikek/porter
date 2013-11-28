@@ -57,7 +57,7 @@ object PorterMain extends App {
       val httpHandler = system.actorOf(Props(classOf[HttpHandler]), name = "porter-http")
       val host = config.getString("http.host")
       val port = config.getInt("http.port")
-      val f = IO(Http) ! Http.Bind(httpHandler, interface = host, port = port)
+      IO(Http) ! Http.Bind(httpHandler, interface = host, port = port)
     }
   }
 

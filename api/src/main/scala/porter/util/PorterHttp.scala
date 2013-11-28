@@ -10,7 +10,7 @@ import porter.auth.{Vote, AuthResult}
 
 /**
  * Simple client for performing authentication and authorization on a remote
- * http porter instance.
+ * instance using http.
  *
  * @author Eike Kettner eike.kettner@gmail.com
  * @since 28.11.13 02:11
