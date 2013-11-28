@@ -21,7 +21,7 @@ object AuthRequests {
       case JsonPerm(realm, login, perms) =>
         val f = (token.porter.ref ? Authorized(realm, login, perms)).mapTo[AuthzResponse]
         f.map(resp => Map("result" -> resp.result))
-      case _ => Future.failed(new IllegalArgumentException("Bad authorization request."))
+      case _ => Future.failed(new IllegalArgumentException("Bad authorization request: "+ token.req.entity.asString))
     }
   }
 
@@ -34,6 +34,7 @@ object AuthRequests {
           "failed" -> resp.token.failedCount,
           "success" -> resp.token.successCount,
           "oneSuccess" -> resp.token.oneSuccess,
+          "realm" -> Map("id" -> resp.token.realm.id.name, "name" -> resp.token.realm.name),
           "account" -> resp.token.props
         )}
       case _ => Future.failed(new IllegalArgumentException("Invalid request"))

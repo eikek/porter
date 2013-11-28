@@ -37,27 +37,6 @@ package object http {
     HttpHeaders.`Cache-Control`(CacheDirectives.`no-cache`)
   )
 
-  def toJsonString(obj: Any): String = {
-    obj match {
-      case n: Number => n.toString
-      case s: String => "\""+ s +"\""
-      case b: Boolean => b.toString
-      case pairs: Map[_, _] =>
-        val elems = pairs.map({ case (k, v) => "\""+ k +"\": "+ toJsonString(v) })
-        elems.mkString("{", ",", "}")
-      case iter: Iterable[_] =>
-        iter.map(toJsonString).mkString("[", ",", "]")
-      case o => toJsonString(o.toString)
-    }
-  }
-
   case class ReqToken(req: HttpRequest, porter: PorterExt, sender: ActorRef)
-
-  def jsonResponse(data: Any): HttpResponse =
-    HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, toJsonString(data)), headers = defaultHeaders)
-
-  def recoverResponse: PartialFunction[Throwable, HttpResponse] = {
-    case x => HttpResponse(status = StatusCodes.BadRequest, entity = x.getMessage)
-  }
 
 }

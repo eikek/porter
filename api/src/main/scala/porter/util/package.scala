@@ -3,11 +3,6 @@ package porter
 import java.io.{FileInputStream, BufferedInputStream, File}
 import scala.util.Try
 
-/**
- *
- * @since 22.11.13 21:25
- *
- */
 package object util {
 
   import java.util.{Properties => JProperties}
@@ -41,6 +36,20 @@ package object util {
       try { p.load(in) }
       finally { in.close() }
       p
+    }
+  }
+
+  def toJsonString(obj: Any): String = {
+    obj match {
+      case n: Number => n.toString
+      case s: String => "\""+ s +"\""
+      case b: Boolean => b.toString
+      case pairs: Map[_, _] =>
+        val elems = pairs.map({ case (k, v) => "\""+ k +"\": "+ toJsonString(v) })
+        elems.mkString("{", ",", "}")
+      case iter: Iterable[_] =>
+        iter.map(toJsonString).mkString("[", ",", "]")
+      case o => toJsonString(o.toString)
     }
   }
 }
