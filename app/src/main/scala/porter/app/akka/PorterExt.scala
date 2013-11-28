@@ -2,7 +2,7 @@ package porter.app.akka
 
 import akka.actor._
 import porter.app.PorterSettings
-import porter.auth.Porter
+import porter.auth.{RuleFactory, Porter}
 import porter.store.MultiStore
 import porter.model.Ident
 
@@ -27,6 +27,9 @@ object PorterExt extends ExtensionId[PorterExt] with ExtensionIdProvider {
       }
       val authenticators = settings.authenticators
       override def mutableStore(realm: Ident) = settings.findMutableStore(realm)
+    }
+    for (pf <- settings.permissionFactories) {
+      RuleFactory.register(pf)
     }
     val pa = system.actorOf(Props(classOf[PorterActor], porter), name = "porter-api")
     new PorterExt(pa, settings, system.provider.getDefaultAddress)

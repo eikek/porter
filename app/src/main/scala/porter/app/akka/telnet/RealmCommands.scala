@@ -15,26 +15,23 @@ object RealmCommands extends Commands {
   def make(implicit executor: ExecutionContext, to: Timeout): Seq[Command] =
     List(changeRealm, listRealms, updateRealm, deleteRealm)
 
-
   def changeRealm(implicit executor: ExecutionContext, to: Timeout): Command = {
     case in @ Input(msg, conn, porter, sess) if msg.startsWith("use realm") =>
-      for {
-        realm <- in.realmFuture
-        iter <- (porter.ref ? FindRealm(Set(realm.id))).mapTo[Iterable[Realm]]
-      } {
+      in << (for {
+        realm <- Future.immediate(Ident(msg.substring("use realm".length).trim))
+        iter <- (porter.ref ? FindRealm(Set(realm))).mapTo[Iterable[Realm]]
+      } yield {
         sess.realm = iter.headOption
-        if (iter.headOption.isDefined) in << s"Using realm ${sess.realm.get.id.name}: ${sess.realm.get.name}"
-        else in << "Realm not found"
-      }
+        if (iter.headOption.isDefined) s"Using realm ${sess.realm.get.id.name}: ${sess.realm.get.name}"
+        else "Realm not found"
+      })
   }
 
   def listRealms(implicit executor: ExecutionContext, to: Timeout): Command = {
     case in @ Input(msg, conn, porter, _) if msg == "lr" =>
-      for (iter <- (porter.ref ? PorterActor.ListRealms).mapTo[Iterable[Realm]]) {
-        val s = new StringBuilder(s"Realm list (${iter.size})\n")
-        s append iter.map(r => s"${r.id}: ${r.name}").mkString(" ", "\n", "")
-        in << s.toString()
-      }
+      in << (for (iter <- (porter.ref ? PorterActor.ListRealms).mapTo[Iterable[Realm]]) yield {
+        s"Realm list (${iter.size})\n" + iter.map(r => s"${r.id}: ${r.name}").mkString(" ", "\n", "")
+      })
   }
 
   def updateRealm(implicit ec: ExecutionContext, to: Timeout): Command = new Form {
@@ -46,9 +43,9 @@ object RealmCommands extends Commands {
       val realm = Realm(
         in.session[Ident]("realm id"),
         in.session[String]("realm name"))
-      for (_ <- in.porter.ref ? UpdateRealm(realm)) {
-        in << ("Realm updated: "+ realm)
-      }
+      in << (for (_ <- in.porter.ref ? UpdateRealm(realm)) yield {
+        "Realm updated: "+ realm
+      })
     }
     def show = {
       case in @ Input(msg, conn, porter, _) if msg.startsWith("update realm") =>

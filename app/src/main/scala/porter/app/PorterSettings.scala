@@ -6,7 +6,7 @@ import scala.reflect.ClassTag
 import scala.util.Try
 import porter.auth.Authenticator
 import porter.store.{MutableStore, Store}
-import porter.model.Ident
+import porter.model.{PermissionFactory, Permission, Ident}
 
 /**
  * Example configuration:
@@ -32,7 +32,9 @@ import porter.model.Ident
  *         params = { file: "/var/accounts.properties" }
  *       }
  *     ]
- *
+ *     permissionFactories: [
+ *       { class: "com.package.SomePermissionFactory", params: {} }
+ *     ]
  *     samplestore {
  *       // see ConfigStore api doc
  *     }
@@ -61,6 +63,12 @@ class PorterSettings(cfg: Config, dynamicAccess: DynamicAccess = new ReflectiveD
   val mutableStores = storeObjects.collect {
     case (c, s: MutableStore) => optGet(c, "realms").map(Ident.apply) -> s
   }
+
+  val permissionFactories = {
+    val maker = makeInstance[PermissionFactory](dynamicAccess)_
+    val list = cfg.getConfigList("permissionFactories").asScala
+    for (c <- list) yield maker(c).get
+  }.toList
 
   def findMutableStore(realm: Ident): Option[MutableStore] =
     mutableStores.collect({

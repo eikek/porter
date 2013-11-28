@@ -40,7 +40,6 @@ class TelnetConnection(conn: ActorRef, server: ActorRef) extends Actor {
       context.stop(self)
 
     case Tcp.Received(data) =>
-      println(s"\n\n ($data) [${data.map(c => Integer.toHexString(c.toInt))}]")
       cmds(Input(data.utf8String.trim, conn, porter, session))
 
     case x: Tcp.ConnectionClosed =>

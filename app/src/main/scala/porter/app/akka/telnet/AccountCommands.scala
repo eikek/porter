@@ -20,7 +20,8 @@ object AccountCommands extends Commands {
   import porter.util._
 
   def make(implicit executor: ExecutionContext, to: Timeout) =
-    List(update, listall, delete, changePassword)
+    List(update, listall, delete, changePassword,
+      manageGroups("add", (a, b) => a++b), manageGroups("remove", (a, b) => a -- b))
 
   def update(implicit executor: ExecutionContext, to: Timeout): Command = new Form {
     def fields = AccountDetails.all
@@ -99,6 +100,32 @@ object AccountCommands extends Commands {
         first <- Future.immediate(resp.accounts.headOption, "Account not found")
         _ <- in.porter.ref ? UpdateAccount(r.id, first.changeSecret(Secret.bcryptPassword(passw)))
       } yield "Password changed."
+      in << result
+    }
+  }
+
+  def manageGroups(verb: String, alter: (Set[Ident], Set[Ident]) => Set[Ident])(implicit ec: ExecutionContext, to: Timeout) = new Form {
+    def fields = List("login", "groups")
+    def show = {
+      case in@Input(msg, conn, _, sess) if msg == (verb+" groups") =>
+        in.withRealm { _ =>
+          conn ! tcp("Please enter login and groups (separated by space) to add.\n")
+        }
+        sess.realm.isDefined
+    }
+    def validateConvert = {
+      case ("login", value) => Try(Ident(value))
+      case ("groups", value) => Try(Commands.makeList(' ')(value).map(_.trim).toSet.map(Ident.apply))
+    }
+    def onComplete(in: Input) = {
+      val login = in.session[Ident]("login")
+      val toadd = in.session[Set[Ident]]("groups")
+      val result = for {
+        r <- in.realmFuture
+        resp <- (in.porter.ref ? FindAccount(r.id, Set(login))).mapTo[AccountResponse]
+        first <- Future.immediate(resp.accounts.headOption, "Account not found")
+        _ <- in.porter.ref ? UpdateAccount(r.id, first.updateGroups(g => alter(g, toadd)))
+      } yield "Successful."
       in << result
     }
   }

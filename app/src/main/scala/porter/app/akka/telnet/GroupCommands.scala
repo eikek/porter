@@ -22,7 +22,8 @@ object GroupCommands extends Commands {
   import porter.util._
 
   def make(implicit executor: ExecutionContext, to: Timeout) =
-    List(listall, update, delete, addRules, removeRules)
+    List(listall, update, delete, manageRules("add",
+      Permission.union, Revocation.union), manageRules("remove", Permission.diff, Revocation.diff))
 
   def listall(implicit executor: ExecutionContext, to: Timeout): Command = {
     case in@Input(msg, conn, porter, _) if msg == "lg" =>
@@ -81,22 +82,23 @@ object GroupCommands extends Commands {
       in << f
   }
 
-  def addRules(implicit executor: ExecutionContext, to: Timeout) = new Form {
+  def manageRules(verb: String,
+                  pf: (Set[Permission], Set[Permission]) => Set[Permission],
+                  rf: (Set[Revocation], Set[Revocation]) => Set[Revocation])
+                 (implicit executor: ExecutionContext, to: Timeout) = new Form {
     def fields = List("group", "rules")
-
     def show = {
-      case in@Input(msg, _, _, _) if msg == "add rules" =>
+      case in@Input(msg, _, _, _) if msg == (verb +" rules") =>
         in.withRealm { r =>
-          in.conn ! tcp("Enter group name and list of rules (separated by space) to add.\n")
+          in.conn ! tcp(s"Enter group name and list of rules (separated by space) to $verb.\n" +
+            s"Note that this applies to all rules implied by the given ones!\n")
         }
         in.session.realm.isDefined
     }
-
     def validateConvert = {
       case ("group", value) => Try(Ident(value))
       case ("rules", value) => Try(Commands.makeList(' ')(value).map(_.trim).toSet)
     }
-
     def onComplete(in: Input) = {
       val group = in.session[Ident]("group")
       val perms = in.session[Set[String]]("rules")
@@ -107,52 +109,15 @@ object GroupCommands extends Commands {
         current <- (in.porter.ref ? MakeRules(g.rules)).mapTo[MakeRulesResponse]
         remove <- (in.porter.ref ? MakeRules(perms)).mapTo[MakeRulesResponse]
       } yield {
-        val perms = Permission.union(current.permissions, remove.permissions)
-        val revocs = Revocation.union(current.revocations, remove.revocations)
+        val perms = pf(current.permissions, remove.permissions)
+        val revocs = rf(current.revocations, remove.revocations)
         (g, perms.map(_.toString) ++ revocs.map(_.toString))
       }
       val result = for {
         r <- in.realmFuture
         (g, next) <- rules
         _ <- in.porter.ref ? UpdateGroup(r.id, g.copy(rules = next))
-      } yield "Rules added."
-      in << result
-    }
-  }
-
-  def removeRules(implicit executor: ExecutionContext, to: Timeout) = new Form {
-    def fields = List("group", "rules")
-    def show = {
-      case in@Input(msg, _, _, _) if msg == "remove rules" =>
-        in.withRealm { r =>
-          in.conn ! tcp("Enter group name and list of rules (separated by space) to remove.\n" +
-            "Note that all rules are removed that are implied by the given ones!\n")
-        }
-        in.session.realm.isDefined
-    }
-    def validateConvert = {
-      case ("group", value) => Try(Ident(value))
-      case ("rules", value) => Try(Commands.makeList(' ')(value).map(_.trim).toSet)
-    }
-    def onComplete(in: Input) {
-      val group = in.session[Ident]("group")
-      val perms = in.session[Set[String]]("rules")
-      val rules = for {
-        r <- in.realmFuture
-        resp <- (in.porter.ref ? FindGroup(r.id, Set(group))).mapTo[GroupResponse]
-        g <- Future.immediate(resp.groups.toList.headOption, "Group not found")
-        current <- (in.porter.ref ? MakeRules(g.rules)).mapTo[MakeRulesResponse]
-        remove <- (in.porter.ref ? MakeRules(perms)).mapTo[MakeRulesResponse]
-      } yield {
-        val perms = Permission.diff(current.permissions, remove.permissions)
-        val revocs = Revocation.diff(current.revocations, remove.revocations)
-        (g, perms.map(_.toString) ++ revocs.map(_.toString))
-      }
-      val result = for {
-        r <- in.realmFuture
-        (g, next) <- rules
-        _ <- in.porter.ref ? UpdateGroup(r.id, g.copy(rules = next))
-      } yield "Rules removed."
+      } yield "Successful."
       in << result
     }
   }

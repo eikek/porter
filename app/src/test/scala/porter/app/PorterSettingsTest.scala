@@ -25,6 +25,9 @@ class PorterSettingsTest extends FunSuite with ShouldMatchers {
         |  { class: "porter.app.ConfigStore", params: ${storeconfig}, realms: [] },
         |  { class: "porter.app.TestMStore", params: {}, realms: [ "realm1" ] }
         |]
+        |permissionFactories: [
+        |  { class: "porter.app.TestFactory", params: {} }
+        |]
         |storeconfig: {
         |
         |}
@@ -39,9 +42,16 @@ class PorterSettingsTest extends FunSuite with ShouldMatchers {
     settings.mutableStores(0)._1 should be (List(Ident("realm1")))
     val Some(s) = settings.findMutableStore(Ident("realm1"))
     s.getClass should be (classOf[TestMStore])
+
+    settings.permissionFactories should have size 1
+    settings.permissionFactories(0).getClass should be (classOf[TestFactory])
   }
 }
 
+class TestFactory extends PermissionFactory {
+  def apply(v1: String) = Permission.allPermission
+  def isDefinedAt(x: String) = false
+}
 class TestMStore extends Store with MutableStore {
   def findRealms(names: Set[Ident])(implicit ec: ExecutionContext) = ???
   def findAccounts(realm: Ident, names: Set[Ident])(implicit ec: ExecutionContext) = ???
