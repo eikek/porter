@@ -36,7 +36,7 @@ object Deps {
   )
 
   val spray = Seq(
-    "io.spray" % "spray-can" % "1.2-RC4"
+    "io.spray" % "spray-can" % "1.2.0"
   )
 }
 

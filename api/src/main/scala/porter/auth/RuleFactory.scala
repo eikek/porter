@@ -11,7 +11,7 @@ import scala.util.Try
 trait RuleFactory {
   import porter.model._
 
-  def permissionFactory: PermissionFactory = RuleFactory.defaultFactory
+  def permissionFactory: PermissionFactory = customFactory.get() orElse RuleFactory.providedFactory
 
   def createRule(rstr: String): Try[Rule] = createRuleWith(permissionFactory)(rstr)
 
@@ -19,41 +19,41 @@ trait RuleFactory {
     if (rstr.charAt(0) != '!') fac(rstr)
     else Revocation(fac(rstr.substring(1)))
   }
-}
 
-object RuleFactory {
-  import porter.model._
-
-  private val emptyFactory: PermissionFactory = PartialFunction.empty
   private val factories = new AtomicReference[Vector[PermissionFactory]](Vector())
-
-  private[this] def createCustomFactory = factories.get().foldRight(emptyFactory){ _ orElse _ }
-
-  private val customFactory = new AtomicReference[PermissionFactory](createCustomFactory)
-  private val providedFactory: PermissionFactory = ResourcePermission.factory orElse
-    Permission.allPermissionFactory orElse DefaultPermission.factory
-
-  def defaultFactory: PermissionFactory = customFactory.get() orElse providedFactory
+  private val customFactory = new AtomicReference[PermissionFactory](RuleFactory.createFactory(factories.get()))
 
   @tailrec
-  def register(fac: PermissionFactory) {
+  final def register(fac: PermissionFactory) {
     val facs = factories.get()
     val next = fac +: facs
     if (!factories.compareAndSet(facs, next)) {
       register(fac)
     } else {
-      customFactory.set(createCustomFactory)
+      customFactory.set(RuleFactory.createFactory(next))
     }
   }
 
   @tailrec
-  def unregister(fac: PermissionFactory) {
+  final def unregister(fac: PermissionFactory) {
     val facs = factories.get()
     val next = facs filterNot (_ == fac)
     if (!factories.compareAndSet(facs, next)) {
       unregister(fac)
     } else {
-      customFactory.set(createCustomFactory)
+      customFactory.set(RuleFactory.createFactory(next))
     }
   }
+
+}
+
+object RuleFactory {
+  import porter.model._
+
+  val providedFactory: PermissionFactory = ResourcePermission.factory orElse
+    Permission.allPermissionFactory orElse DefaultPermission.factory
+
+  private val emptyFactory: PermissionFactory = PartialFunction.empty
+  private def createFactory(factories: Vector[PermissionFactory]) =
+    factories.foldRight(emptyFactory){ _ orElse _ }
 }

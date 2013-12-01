@@ -14,7 +14,7 @@ import scala.concurrent.{Await, ExecutionContext}
  */
 class AuthzTest extends FunSuite with ShouldMatchers {
   val testPw = Secret.bcryptPassword("test")
-  val factory = RuleFactory.defaultFactory
+  val factory = RuleFactory.providedFactory
   val realmId = Ident.randomIdent
 
   implicit val ec = ExecutionContext.global

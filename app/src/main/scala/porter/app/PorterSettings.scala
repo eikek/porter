@@ -94,4 +94,28 @@ class PorterSettings(cfg: Config, dynamicAccess: DynamicAccess = new ReflectiveD
 
     configCtor orElse defctor orElse loadObject
   }
+
+  override def toString = {
+    val as = authenticators.mkString(" ", "\n ", "")
+    val ss = stores.mkString(" ", "\n ", "")
+    val ms = mutableStores.mkString(" ", "\n ", "")
+    val pfs = permissionFactories.mkString(" ", "\n ", "")
+    s"""
+      |Authenticators
+      |--------------
+      |$as
+      |
+      |Stores
+      |------
+      |$ss
+      |
+      |MutableStores
+      |-------------
+      |$ms
+      |
+      |PermissionFactories
+      |-------------------
+      |$pfs
+    """.stripMargin
+  }
 }

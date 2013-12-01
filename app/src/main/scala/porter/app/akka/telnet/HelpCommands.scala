@@ -6,6 +6,8 @@ import porter.model.Secret
 
 object HelpCommands extends Commands {
 
+  import akka.pattern.ask
+
   def make(implicit executor: ExecutionContext, to: Timeout) = Seq({
     case in@Input(help, conn, _, _) if help == "help" =>
       in << """
@@ -19,24 +21,9 @@ object HelpCommands extends Commands {
       in << Secret.bcryptPassword(plain).asString
 
     case in@Input(show, conn, porter, _) if show == "show settings" =>
-      val as = porter.settings.authenticators.mkString(" ", "\n", "")
-      val ss = porter.settings.stores.mkString(" ", "\n", "")
-      val ms = porter.settings.mutableStores.mkString(" ", "\n", "")
-      in << s"""
-          |Authenticators
-          |--------------
-          |$as
-          |
-          |Stores
-          |------
-          |$ss
-          |
-          |MutableStores
-          |-------------
-          |$ms
-          |
-          |Porter Actorpath: ${porter.porterPath}
-        """.stripMargin
+      val settings = (porter.ref ? "show settings").mapTo[String]
+      in << settings.map(s => s + s"\nPorter path: ${porter.porterPath}")
+
   })
 
 }

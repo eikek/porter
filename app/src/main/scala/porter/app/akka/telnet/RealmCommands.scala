@@ -1,11 +1,10 @@
 package porter.app.akka.telnet
 
 import scala.concurrent.{Future, ExecutionContext}
-import porter.app.akka.PorterActor.{UpdateRealm, DeleteRealm, FindRealm}
 import porter.model.{Ident, Realm}
-import scala.util.{Try, Failure, Success}
+import scala.util.Try
 import akka.util.Timeout
-import porter.app.akka.PorterActor
+import porter.app.akka.PorterActor._
 
 object RealmCommands extends Commands {
 
@@ -29,7 +28,7 @@ object RealmCommands extends Commands {
 
   def listRealms(implicit executor: ExecutionContext, to: Timeout): Command = {
     case in @ Input(msg, conn, porter, _) if msg == "lr" =>
-      in << (for (iter <- (porter.ref ? PorterActor.ListRealms).mapTo[Iterable[Realm]]) yield {
+      in << (for (iter <- (porter.ref ? ListRealms).mapTo[Iterable[Realm]]) yield {
         s"Realm list (${iter.size})\n" + iter.map(r => s"${r.id}: ${r.name}").mkString(" ", "\n", "")
       })
   }

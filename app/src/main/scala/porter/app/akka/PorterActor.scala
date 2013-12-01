@@ -9,15 +9,18 @@ import porter.model.Ident
 
 
 /**
- * @author Eike Kettner eike.kettner@gmail.com
  * @since 23.11.13 16:23
  */
-class PorterActor(porter: Porter) extends Actor {
+trait PorterActor {
+  self: Actor =>
+
   import PorterActor._
   import context.dispatcher
   import akka.pattern.pipe
 
-  def receive = {
+  def porter: Porter
+
+  def porterReceive: Receive = {
     case req @ GetPolicy(realm, acc) =>
       porter.getPolicy(realm, acc)
         .map(PolicyResponse(req, _)).pipeTo(sender)
