@@ -2,6 +2,7 @@ package porter.model
 
 import com.lambdaworks.crypto.SCryptUtil
 import org.mindrot.jbcrypt.BCrypt
+import porter.util.Hash
 
 @SerialVersionUID(20131121)
 case class Secret(name: Ident, data: Vector[Byte]) extends Serializable {
@@ -29,6 +30,7 @@ object Secret {
     val bcrypt = Ident("bcrypt-password")
     val scrypt = Ident("scrypt-password")
     val pbkdf = Ident("pbkdf2sha1-password")
+    val digestmd5 = Ident("digest-md5")
     val all = Set(bcrypt, scrypt, pbkdf)
   }
 
@@ -52,5 +54,17 @@ object Secret {
 
   def bcryptPassword(pw: String, salt: String = BCrypt.gensalt(10 + intBelow(5))): Secret =
     Secret(Types.bcrypt, BCrypt.hashpw(pw, salt))
+
+  /**
+   * Creates a secret that holds the HA1 value used for authentication
+   * with the http digest method.
+   *
+   * @param user the account
+   * @param realm
+   * @param password
+   * @return
+   */
+  def digestHA1(user: Ident, realm: Ident, password: String) =
+    Secret(Types.digestmd5, Hash.md5(user.name +":"+ realm.name +":"+ password))
 
 }

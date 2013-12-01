@@ -9,17 +9,17 @@ import scala.annotation.tailrec
 object Glob {
   type Path = List[String]
 
-  def fromString(s: String) = s.split('/').filterNot(_.isEmpty).toList
+  def fromString(s: String): Path = s.split('/').filterNot(_.isEmpty).toList
 
   def matches(path: String, in: String) = matchesPath(fromString(path), fromString(in))
 
   @tailrec
   def matchesPath(path: Path, in: Path): Boolean = {
     (path.headOption, in.headOption) match {
-      case (Some(a), None) if a == "**" => {
+      case (Some(a), None) if a == "**" =>
         if (in.isEmpty) path.tail.isEmpty else false
-      }
-      case (Some(a), Some(b)) if a == "**" => {
+
+      case (Some(a), Some(b)) if a == "**" =>
         if (path.tail.isEmpty) true
         else {
           val next = path.tail.head
@@ -27,7 +27,7 @@ object Glob {
           val nextin = in.dropWhile(s => !simpleMatch(Some(next), Some(s)))
           matchesPath(path.tail, nextin)
         }
-      }
+
       case (a, b) => simpleMatch(a, b) match {
         case true => (path, in) match {
           case (Nil, Nil) => true
@@ -44,9 +44,8 @@ object Glob {
     (x, y) match {
       case (None, None) => true
       case (Some(a), Some(b)) if a == b => true
-      case (Some(a), Some(b)) if a.contains("?") => {
+      case (Some(a), Some(b)) if a.contains("?") =>
         (true /: a.zip(b)) { (b, c) => b &&  c._1 == '?' || c._1 == c._2 }
-      }
       case (Some(a), _) if a == "*" => true
       case (Some(a), Some(b)) if a.startsWith("*") => b.endsWith(a.drop(1))
       case (Some(a), Some(b)) if a.endsWith("*") => b.startsWith(a.dropRight(1))

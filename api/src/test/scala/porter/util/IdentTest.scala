@@ -19,7 +19,7 @@ class IdentTest extends FunSuite with ShouldMatchers {
   }
 
   test("convert identifier from a string") {
-    Ident.convertString("90/ab.d/2++").get should be (Ident("90abd2"))
+    Ident.convertString("90/abÄd/2++").get should be (Ident("90abd2"))
     Ident.convertString("+&+") should be (None)
   }
 
