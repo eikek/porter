@@ -13,12 +13,7 @@ trait RuleFactory {
 
   def permissionFactory: PermissionFactory = customFactory.get() orElse RuleFactory.providedFactory
 
-  def createRule(rstr: String): Try[Rule] = createRuleWith(permissionFactory)(rstr)
-
-  def createRuleWith(fac: PermissionFactory)(rstr: String): Try[Rule] = Try {
-    if (rstr.charAt(0) != '!') fac(rstr)
-    else Revocation(fac(rstr.substring(1)))
-  }
+  def createRule(rstr: String): Try[Rule] = RuleFactory.createRuleWith(permissionFactory)(rstr)
 
   private val factories = new AtomicReference[Vector[PermissionFactory]](Vector())
   private val customFactory = new AtomicReference[PermissionFactory](RuleFactory.createFactory(factories.get()))
@@ -56,4 +51,9 @@ object RuleFactory {
   private val emptyFactory: PermissionFactory = PartialFunction.empty
   private def createFactory(factories: Vector[PermissionFactory]) =
     factories.foldRight(emptyFactory){ _ orElse _ }
+
+  def createRuleWith(fac: PermissionFactory)(rstr: String): Try[Rule] = Try {
+    if (rstr.charAt(0) != '!') fac(rstr)
+    else Revocation(fac(rstr.substring(1)))
+  }
 }

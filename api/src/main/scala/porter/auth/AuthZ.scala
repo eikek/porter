@@ -22,7 +22,7 @@ trait AuthZ {
     val f = rules.transform(identity, ex =>
       new IllegalStateException("Error getting policy!", ex))
     f map { rstr =>
-      val toRule = createRuleWith(permissionFactory)_
+      val toRule = RuleFactory.createRuleWith(permissionFactory)_
       new Policy(rstr.map(s => toRule(s).get).toSet)
     }
   }
