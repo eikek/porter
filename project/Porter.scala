@@ -20,8 +20,10 @@ object Deps {
 
   val akka = Seq(
     "com.typesafe.akka" %% "akka-actor" % "2.2.3",
-    "com.typesafe.akka" %% "akka-remote" % "2.2.3",
     "com.typesafe.akka" %% "akka-testkit" % "2.2.3" % "test"
+  )
+  val akkaRemote = Seq(
+    "com.typesafe.akka" %% "akka-remote" % "2.2.3"
   )
 
   val casbah = Seq(
@@ -53,7 +55,7 @@ object Porter extends sbt.Build {
       unmanagedSourceDirectories in Test := Seq(),
       unmanagedResourceDirectories := Seq()
     )
-  ) aggregate (Api.module, App.module)
+  ) aggregate (Api.module, App.module, Dist.module)
 
   override lazy val settings = super.settings ++ Seq(
     version := "0.1.0",
@@ -95,7 +97,19 @@ object App extends sbt.Build {
     base = file("app"),
     settings = Project.defaultSettings ++ Seq(
       name := "porter-app",
-      libraryDependencies ++= Deps.akka ++ Deps.testBasics ++ Deps.casbah ++ Deps.spray ++ Deps.logback
+      libraryDependencies ++= Deps.akka ++ Deps.testBasics ++ Deps.casbah ++ Deps.spray
     )
   ) dependsOn Api.module
+}
+
+object Dist extends Build {
+
+  lazy val module = Project(
+    id = "dist",
+    base = file("dist"),
+    settings = Project.defaultSettings ++ Seq(
+      name := "porter-dist",
+      libraryDependencies ++= Deps.logback ++ Deps.akkaRemote
+    )
+  ) dependsOn App.module
 }

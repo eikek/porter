@@ -137,7 +137,7 @@ package object util {
         "success" -> res.successCount,
         "oneSuccess" -> res.oneSuccess,
         "realm" -> Map("id" -> res.realm.id.name, "name" -> res.realm.name),
-        "account" -> (res.props + ("login" -> res.accountId))
+        "account" -> (res.props + ("login" -> res.accountId.name))
       )
     }
   }

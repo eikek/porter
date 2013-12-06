@@ -1,13 +1,8 @@
 package porter.app.akka
 
 import spray.http._
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 import akka.actor.ActorRef
-import spray.http.HttpResponse
-import akka.util.Timeout
-import porter.model.Ident
-import porter.auth.Vote
-import porter.app.akka.api.Porter
 
 /**
  *

@@ -1,6 +1,6 @@
 package porter.app.akka.api
 
-import akka.actor.Actor
+import akka.actor.{ActorRefFactory, Props, Actor}
 import porter.auth.RuleFactory
 import porter.app.akka.api.StoreActor.StoreMessage
 import porter.app.akka.api.MutableStoreActor.MutableStoreMessage
@@ -12,10 +12,10 @@ import porter.app.akka.api.PorterMain.ShowSettings
 
 class PorterMain(settings: PorterSettings) extends Actor {
 
-  val store = context.actorOf(StoreActor.props(settings.stores), name ="porter-store")
+  val store = context.actorOf(StoreActor.props(settings.stores), name = "porter-store")
   val mstore = context.actorOf(MutableStoreActor.props(settings.mutableStores), name = "porter-mutablestore")
-  val ruleFactory = context.actorOf(RuleFactoryActor.props(settings.permissionFactories :+ RuleFactory.providedFactory),
-    name = "porter-rulefactory")
+  val ruleFactory = context.actorOf(RuleFactoryActor.props(
+    settings.permissionFactories :+ RuleFactory.providedFactory), name = "porter-rulefactory")
   val policy = context.actorOf(PolicyActor.props(store, ruleFactory), name = "porter-policy")
 
   def receive = {
@@ -34,4 +34,6 @@ class PorterMain(settings: PorterSettings) extends Actor {
 object PorterMain {
 
   case class ShowSettings(id: Int = 0) extends PorterMessage
+
+  def props(settings: PorterSettings) = Props(classOf[PorterMain], settings)
 }

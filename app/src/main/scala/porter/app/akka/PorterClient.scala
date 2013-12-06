@@ -4,10 +4,6 @@ import akka.actor._
 import scala.concurrent.Future
 import akka.util.Timeout
 
-/**
- * @author Eike Kettner eike.kettner@gmail.com
- * @since 28.11.13 02:02
- */
 class PorterClient(refFactory: ActorRefFactory) extends Extension {
 
   def remotePath(host: String, port: Int) =

@@ -1,18 +1,19 @@
-package porter.app
+package porter.dist
 
-import _root_.akka.actor.{Props, ActorSystem}
-import _root_.akka.io.{IO, Tcp}
+import _root_.akka.io.Tcp
 import _root_.akka.util.Timeout
-import java.net.InetSocketAddress
 import porter.app.akka.telnet.TelnetServer
 import porter.app.akka.http.HttpHandler
 import spray.can.Http
+import porter.app.PorterSettings
+import porter.app.akka.api.PorterMain
+import akka.actor.ActorSystem
 
 /**
  * @author Eike Kettner eike.kettner@gmail.com
  * @since 24.11.13 14:40
  */
-object PorterMain extends App {
+object Main extends App {
 
   // there are only two options: --help or -h, or starting porter
   if (args.contains("-h") || args.contains("--help") || args.length > 0) {
@@ -38,23 +39,25 @@ object PorterMain extends App {
 
     // start porter actor and two interfaces: http and telnet
     import scala.concurrent.duration._
-    import _root_.akka.pattern.ask
     implicit val bindTimeout = Timeout(2.seconds)
 
     val config = system.settings.config.getConfig("porter")
+    val settings = PorterSettings.fromConfig(config)
+    val porter = system.actorOf(PorterMain.props(settings), name = "porter-api")
+    val path = Porter(system).porterPath(porter)
+    println(s"\n---\n-- Porter remote actor listening on $path \n---\n")
+
     if (config.getBoolean("telnet.enabled")) {
-      val telnetEndpoint = new InetSocketAddress(config.getString("telnet.host"), config.getInt("telnet.port"))
-      val telnetServer = system.actorOf(Props(classOf[TelnetServer]), name = "porter-telnet")
-      val telnetF = IO(Tcp) ? Tcp.Bind(telnetServer, telnetEndpoint)
+      val telnetF = TelnetServer.bind(porter, config.getString("telnet.host"), config.getInt("telnet.port"))
       telnetF.onSuccess { case Tcp.Bound(addr) =>
         println("Bound telnet to " + addr)
       }
     }
     if (config.getBoolean("http.enabled")) {
-      val httpHandler = system.actorOf(Props(classOf[HttpHandler]), name = "porter-http")
-      val host = config.getString("http.host")
-      val port = config.getInt("http.port")
-      IO(Http) ! Http.Bind(httpHandler, interface = host, port = port)
+      val httpF = HttpHandler.bind(porter, config.getString("http.host"), config.getInt("http.port"))
+      httpF onSuccess { case Http.Bound(addr) =>
+        println("Bound http to " + addr)
+      }
     }
   }
 
