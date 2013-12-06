@@ -39,7 +39,7 @@ class PorterSettingsTest extends FunSuite with ShouldMatchers {
     settings.stores should have size 2
     settings.stores(0).getClass should be (classOf[ConfigStore])
     settings.mutableStores should have size 1
-    settings.mutableStores(0)._1 should be (List(Ident("realm1")))
+    settings.mutableStores(0)._1 should be (Set(Ident("realm1")))
     val Some(s) = settings.findMutableStore(Ident("realm1"))
     s.getClass should be (classOf[TestMStore])
 

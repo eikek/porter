@@ -1,7 +1,6 @@
 package porter.store
 
 
-import scala.util.{Success, Try}
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
@@ -48,4 +47,16 @@ trait SimpleStore extends Store {
 
   def allGroups(realm: Ident)(implicit ec: ExecutionContext) =
     Future.immediate(for ((r,g) <- groups; if r.id == realm) yield g)
+}
+
+object SimpleStore {
+  import porter.model._
+  import porter.util._
+
+  def apply(r: Iterable[Realm], g: Iterable[(Realm, Group)], a: Iterable[(Realm, Account)]): SimpleStore =
+    new SimpleStore {
+      val accounts = a
+      val realms = r
+      val groups = g
+    }
 }

@@ -5,13 +5,8 @@ import akka.util.Timeout
 import porter.model._
 import scala.util.Try
 import porter.model.Group
-import porter.app.akka.PorterActor.FindGroup
-import porter.app.akka.PorterActor.MakeRules
-import porter.app.akka.PorterActor.GroupResponse
-import porter.app.akka.PorterActor.DeleteGroup
-import porter.app.akka.PorterActor.UpdateGroup
-import porter.app.akka.PorterActor.MakeRulesResponse
-import porter.app.akka.PorterActor.ListGroups
+import porter.app.akka.api.StoreActor._
+import porter.app.akka.api.MutableStoreActor._
 
 /**
  * @author Eike Kettner eike.kettner@gmail.com
@@ -19,6 +14,7 @@ import porter.app.akka.PorterActor.ListGroups
  */
 object GroupCommands extends Commands {
   import akka.pattern.ask
+  import porter.app.akka.api.RuleFactoryActor._
   import porter.util._
 
   def make(implicit executor: ExecutionContext, to: Timeout) =
@@ -29,7 +25,7 @@ object GroupCommands extends Commands {
     case in@Input(msg, conn, porter, _) if msg == "lg" =>
       val result = for {
         r <- in.realmFuture
-        groups <- (porter.ref ? ListGroups(r.id)).mapTo[Iterable[Group]]
+        groups <- (porter ? GetAllGroups(r.id)).mapTo[FindGroupsResp].map(_.groups)
       } yield {
         groups map { g =>
           val gname = g.name.name
@@ -66,7 +62,7 @@ object GroupCommands extends Commands {
       )
       val result = for {
         r <- in.realmFuture
-        _ <- in.porter.ref ? UpdateGroup(r.id, g)
+        _ <- in.porter ? UpdateGroup(r.id, g)
       } yield "Group updated."
       in << result
     }
@@ -77,7 +73,7 @@ object GroupCommands extends Commands {
       val f = for {
         r <- in.realmFuture
         gid <- Future.immediate(Ident(msg.substring("delete group".length).trim))
-        _ <- porter.ref ? DeleteGroup(r.id, gid)
+        _ <- porter ? DeleteGroup(r.id, gid)
       } yield "Group deleted."
       in << f
   }
@@ -104,10 +100,10 @@ object GroupCommands extends Commands {
       val perms = in.session[Set[String]]("rules")
       val rules = for {
         r <- in.realmFuture
-        resp <- (in.porter.ref ? FindGroup(r.id, Set(group))).mapTo[GroupResponse]
+        resp <- (in.porter ? FindGroups(r.id, Set(group))).mapTo[FindGroupsResp]
         g <- Future.immediate(resp.groups.toList.headOption, "Group not found")
-        current <- (in.porter.ref ? MakeRules(g.rules)).mapTo[MakeRulesResponse]
-        remove <- (in.porter.ref ? MakeRules(perms)).mapTo[MakeRulesResponse]
+        current <- (in.porter ? MakeRules(g.rules)).mapTo[MakeRulesResponse]
+        remove <- (in.porter ? MakeRules(perms)).mapTo[MakeRulesResponse]
       } yield {
         val perms = pf(current.permissions, remove.permissions)
         val revocs = rf(current.revocations, remove.revocations)
@@ -116,7 +112,7 @@ object GroupCommands extends Commands {
       val result = for {
         r <- in.realmFuture
         (g, next) <- rules
-        _ <- in.porter.ref ? UpdateGroup(r.id, g.copy(rules = next))
+        _ <- in.porter ? UpdateGroup(r.id, g.copy(rules = next))
       } yield "Successful."
       in << result
     }

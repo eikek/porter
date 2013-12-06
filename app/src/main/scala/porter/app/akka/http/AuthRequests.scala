@@ -2,10 +2,11 @@ package porter.app.akka.http
 
 import spray.http._
 import scala.concurrent.{ExecutionContext, Future}
-import porter.app.akka.PorterActor.{AuthResponse, Authenticate, AuthzResponse, Authorized}
 import porter.model.{PasswordCredentials, Ident}
 import akka.util.Timeout
 import scala.util.parsing.json.{JSONArray, JSON, JSONObject}
+import porter.app.akka.api.PolicyActor.{AuthorizeResp, Authorize}
+import porter.app.akka.api.AuthcWorker.{AuthenticateResp, Authenticate}
 
 /**
  * @author Eike Kettner eike.kettner@gmail.com
@@ -19,8 +20,8 @@ object AuthRequests {
   def authz(implicit ec: ExecutionContext, timeout: Timeout) = onPath("/api/authz") { token =>
     token.req.entity.asString match {
       case JsonPerm(realm, login, perms) =>
-        val f = (token.porter.ref ? Authorized(realm, login, perms)).mapTo[AuthzResponse]
-        f.map(resp => Map("result" -> resp.result))
+        val f = (token.porter ? Authorize(realm, login, perms)).mapTo[AuthorizeResp]
+        f.map(resp => Map("result" -> resp.authorized))
       case _ => Future.failed(new IllegalArgumentException("Bad authorization request: "+ token.req.entity.asString))
     }
   }
@@ -29,8 +30,10 @@ object AuthRequests {
     import porter.util.JsonHelper._
     token.req.entity.asString match {
       case JsonAuth(realm, login, creds) =>
-        val f = token.porter.ref ? Authenticate(realm, Set(PasswordCredentials(login, creds)))
-        f.mapTo[AuthResponse].map { resp => resp.token.toJson }
+        val f = token.porter ? Authenticate(realm, Set(PasswordCredentials(login, creds)))
+        f.mapTo[AuthenticateResp].map { resp =>
+          resp.result.map(_.toJson).getOrElse(toJsonString(Map("result" -> "Invalid credentials")))
+        }
       case _ => Future.failed(new IllegalArgumentException("Invalid request"))
     }
   }

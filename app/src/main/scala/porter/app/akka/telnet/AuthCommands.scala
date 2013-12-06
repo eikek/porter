@@ -3,13 +3,11 @@ package porter.app.akka.telnet
 import scala.concurrent.{Future, ExecutionContext}
 import akka.util.Timeout
 import scala.util.Try
-import porter.model.{Group, Ident, PasswordCredentials}
-import porter.app.akka.PorterActor._
-import porter.app.akka.PorterActor.AuthzResponse
-import porter.app.akka.PorterActor.AuthResponse
+import porter.model.{Ident, PasswordCredentials}
 import scala.util.Failure
-import porter.app.akka.PorterActor.Authenticate
-import porter.app.akka.PorterActor.Authorized
+import porter.app.akka.api.StoreActor._
+import porter.app.akka.api.AuthcWorker.{AuthenticateResp, Authenticate}
+import porter.app.akka.api.PolicyActor.{GetPolicyResp, GetPolicy, AuthorizeResp, Authorize}
 
 object AuthCommands extends Commands {
   import akka.pattern.ask
@@ -28,22 +26,22 @@ object AuthCommands extends Commands {
       val result = for {
         realm <- in.realmFuture
         up <- Future.immediate(creds)
-        res <- (porter.ref ? Authenticate(realm.id, Set(up))).mapTo[AuthResponse]
-      } yield res.token.votes.map({ case(n, v) => s"${n.name} -> $v" })
+        res <- (porter ? Authenticate(realm.id, Set(up))).mapTo[AuthenticateResp]
+      } yield res.result.map(_.votes.map({ case(n, v) => s"${n.name} -> $v" })).getOrElse(List("Invalid credentials"))
       in <<< result
   }
 
   def authorize(implicit executor: ExecutionContext, to: Timeout): Command = {
     case in@Input(msg, conn, porter, _) if msg.startsWith("authz") =>
-      val perms = msg.substring("authc".length).trim.split("\\s+", 2).toList match {
+      val perms = msg.substring("authz".length).trim.split("\\s+", 2).toList match {
         case a::b::Nil => Try(Ident(a.trim) -> Commands.makeList(' ')(b.trim).map(_.trim).toSet)
         case _ => Failure(new IllegalArgumentException(s"Cannot get permissions from: '$msg'"))
       }
       val result = for {
         realm <- in.realmFuture
         (login, plist) <- Future.immediate(perms)
-        resp <- (porter.ref ? Authorized(realm.id, login, plist)).mapTo[AuthzResponse]
-      } yield s"Result: ${resp.result}"
+        resp <- (porter ? Authorize(realm.id, login, plist)).mapTo[AuthorizeResp]
+      } yield s"Result: ${resp.authorized}"
       in << result
   }
 
@@ -52,8 +50,8 @@ object AuthCommands extends Commands {
       val result = for {
         r <- in.realmFuture
         login <- Future.immediate(Ident(msg.substring("show policy".length).trim))
-        fp <- (porter.ref ? GetPolicy(r.id, login)).mapTo[PolicyResponse]
-        fg <- (porter.ref ? ListGroups(r.id)).mapTo[Iterable[Group]]
+        fp <- (porter ? GetPolicy(r.id, login)).mapTo[GetPolicyResp]
+        fg <- (porter ? GetAllGroups(r.id)).mapTo[FindGroupsResp].map(_.groups)
       } yield {
         for (rule <- fp.policy.rules.toList.sortBy(_.isLeft)) yield {
           val perms = rule.fold(_.toString, _.toString)

@@ -61,7 +61,7 @@ class PorterSettings(cfg: Config, dynamicAccess: DynamicAccess = new ReflectiveD
   val stores = storeObjects.collect({ case (_, s: Store) => s }).toList
 
   val mutableStores = storeObjects.collect {
-    case (c, s: MutableStore) => optGet(c, "realms").map(Ident.apply) -> s
+    case (c, s: MutableStore) => optGet(c, "realms").map(Ident.apply).toSet -> s
   }
 
   val permissionFactories = {

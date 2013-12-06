@@ -41,7 +41,7 @@ package object telnet {
     }
   }
 
-  case class Input(msg: String, conn: ActorRef, porter: PorterExt, session: Session = new Session(None)) {
+  case class Input(msg: String, conn: ActorRef, porter: ActorRef, session: Session = new Session(None)) {
 
     def sendError: PartialFunction[Throwable, Unit] = {
       case x => this << ("Error: "+ x.getMessage)

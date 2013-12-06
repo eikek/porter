@@ -1,19 +1,19 @@
 package porter.app.akka.telnet
 
 import akka.actor.{Terminated, ActorRef, Actor}
-import porter.app.akka.PorterExt
 import akka.io.Tcp
 import akka.util.{Timeout, ByteString}
 import porter.BuildInfo
+import porter.app.akka.api.Porter
 
 /**
  * @author Eike Kettner eike.kettner@gmail.com
  * @since 24.11.13 23:16
  */
 class TelnetConnection(conn: ActorRef, server: ActorRef) extends Actor {
-  val porter = PorterExt(context.system)
+  val porter = Porter(context.system)
   context.watch(conn)
-  context.watch(porter.ref)
+  context.watch(porter.singlePorter)
 
   implicit val executor = context.dispatcher
   implicit val timeout = Timeout(5000)
@@ -40,7 +40,7 @@ class TelnetConnection(conn: ActorRef, server: ActorRef) extends Actor {
       context.stop(self)
 
     case Tcp.Received(data) =>
-      cmds(Input(data.utf8String.trim, conn, porter, session))
+      cmds(Input(data.utf8String.trim, conn, porter.singlePorter, session))
 
     case x: Tcp.ConnectionClosed =>
       context.stop(self)

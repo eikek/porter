@@ -3,11 +3,8 @@ package porter.app
 import _root_.akka.actor.{Props, ActorSystem}
 import _root_.akka.io.{IO, Tcp}
 import _root_.akka.util.Timeout
-import com.typesafe.config.ConfigFactory
-import porter.app.akka.PorterExt
 import java.net.InetSocketAddress
 import porter.app.akka.telnet.TelnetServer
-import porter.app.akka.PorterActor.ListRealms
 import porter.app.akka.http.HttpHandler
 import spray.can.Http
 

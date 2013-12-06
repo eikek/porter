@@ -2,14 +2,11 @@ package porter.app.akka.telnet
 
 import scala.concurrent.{Future, ExecutionContext}
 import akka.util.Timeout
-import porter.app.akka.PorterActor._
 import porter.model.{Properties, Secret, Ident}
 import scala.util.Try
-import porter.app.akka.PorterActor.DeleteAccount
-import porter.app.akka.PorterActor.UpdateAccount
-import porter.app.akka.PorterActor.FindAccount
 import porter.model.Account
-import porter.app.akka.PorterActor.ListAccounts
+import porter.app.akka.api.StoreActor._
+import porter.app.akka.api.MutableStoreActor._
 
 /**
  * @author Eike Kettner eike.kettner@gmail.com
@@ -47,8 +44,8 @@ object AccountCommands extends Commands {
       val ad = AccountDetails.toAccount(in.session)
       val result = for {
         r <- in.realmFuture
-        _ <- in.porter.ref ? UpdateAccount(r.id, ad.get)
-      } yield "Account updated."
+        op <- (in.porter ? UpdateAccount(r.id, ad.get)).mapTo[OperationFinished]
+      } yield "Account updated: " + op.result
       in << result
     }
   }
@@ -57,7 +54,7 @@ object AccountCommands extends Commands {
     case in @Input(msg, conn, porter, _) if msg == "la" =>
       val result = for {
         r <- in.realmFuture
-        list <- (porter.ref ? ListAccounts(r.id)).mapTo[Iterable[Account]]
+        list <- (porter ? GetAllAccounts(r.id)).mapTo[FindAccountsResp].map(_.accounts)
       } yield {
         val groups = (a: Account) => a.groups.map(_.name).mkString("(", ",", ")")
         val props = (a: Account) => a.props.map({case (k,v) => k +"="+v}).mkString("[", ",", "]")
@@ -71,8 +68,8 @@ object AccountCommands extends Commands {
       val result = for {
         realm <- in.realmFuture
         id <- Future.immediate(Ident(msg.substring("delete account".length).trim))
-        _ <- porter.ref ? DeleteAccount(realm.id, id)
-      } yield "Account deleted."
+        op <- (porter ? DeleteAccount(realm.id, id)).mapTo[OperationFinished]
+      } yield "Account deleted: "+ op.result
       in << result
   }
 
@@ -96,10 +93,10 @@ object AccountCommands extends Commands {
       val passw = in.session[String]("password")
       val result = for {
         r <- in.realmFuture
-        resp <- (in.porter.ref ? FindAccount(r.id, Set(login))).mapTo[AccountResponse]
+        resp <- (in.porter ? FindAccounts(r.id, Set(login))).mapTo[FindAccountsResp]
         first <- Future.immediate(resp.accounts.headOption, "Account not found")
-        _ <- in.porter.ref ? UpdateAccount(r.id, first.changeSecret(Secret.bcryptPassword(passw)))
-      } yield "Password changed."
+        op <- (in.porter ? UpdateAccount(r.id, first.changeSecret(Secret.bcryptPassword(passw)))).mapTo[OperationFinished]
+      } yield "Password changed: "+ op.result
       in << result
     }
   }
@@ -122,10 +119,10 @@ object AccountCommands extends Commands {
       val toadd = in.session[Set[Ident]]("groups")
       val result = for {
         r <- in.realmFuture
-        resp <- (in.porter.ref ? FindAccount(r.id, Set(login))).mapTo[AccountResponse]
+        resp <- (in.porter ? FindAccounts(r.id, Set(login))).mapTo[FindAccountsResp]
         first <- Future.immediate(resp.accounts.headOption, "Account not found")
-        _ <- in.porter.ref ? UpdateAccount(r.id, first.updateGroups(g => alter(g, toadd)))
-      } yield "Successful."
+        op <- (in.porter ? UpdateAccount(r.id, first.updateGroups(g => alter(g, toadd)))).mapTo[OperationFinished]
+      } yield if (op.result) "Successful" else "Failed."
       in << result
     }
   }

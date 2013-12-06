@@ -7,6 +7,7 @@ import spray.http.HttpResponse
 import akka.util.Timeout
 import porter.model.Ident
 import porter.auth.Vote
+import porter.app.akka.api.Porter
 
 /**
  *
@@ -37,6 +38,6 @@ package object http {
     HttpHeaders.`Cache-Control`(CacheDirectives.`no-cache`)
   )
 
-  case class ReqToken(req: HttpRequest, porter: PorterExt, sender: ActorRef)
+  case class ReqToken(req: HttpRequest, porter: ActorRef, sender: ActorRef)
 
 }

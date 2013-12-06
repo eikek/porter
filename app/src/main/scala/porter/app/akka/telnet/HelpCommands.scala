@@ -3,6 +3,7 @@ package porter.app.akka.telnet
 import scala.concurrent.ExecutionContext
 import akka.util.Timeout
 import porter.model.Secret
+import porter.app.akka.api.PorterMain.ShowSettings
 
 object HelpCommands extends Commands {
 
@@ -21,8 +22,8 @@ object HelpCommands extends Commands {
       in << Secret.bcryptPassword(plain).asString
 
     case in@Input(show, conn, porter, _) if show == "show settings" =>
-      val settings = (porter.ref ? "show settings").mapTo[String]
-      in << settings.map(s => s + s"\nPorter path: ${porter.porterPath}")
+      val settings = (porter ? ShowSettings()).mapTo[String]
+      in << settings.map(s => s /* + s"\nPorter path: ${porter.porterPath}" */)
 
   })
 

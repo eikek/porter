@@ -13,6 +13,8 @@ trait AuthC {
 
   import porter.model._
 
+  private val auth = AuthC.authenticate(_: AuthToken, authenticators)
+
   def authenticate(realm: Ident, creds: Set[Credentials])(implicit ec: ExecutionContext): Future[AuthResult] = {
     for {
       r <- store.findRealms(Set(realm))
@@ -29,6 +31,11 @@ trait AuthC {
     } yield auth(AuthToken(r.toList(0), account, creds)).toResult
   }
 
-  private def auth(token: AuthToken): AuthToken =
+}
+
+object AuthC {
+
+  def authenticate(token: AuthToken, authenticators: Iterable[Authenticator]): AuthToken =
     (token /: authenticators) { (token, auther) => auther authenticate token }
+
 }

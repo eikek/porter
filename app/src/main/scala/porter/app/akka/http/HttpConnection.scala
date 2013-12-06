@@ -1,12 +1,12 @@
 package porter.app.akka.http
 
 import akka.actor.{ActorLogging, Actor, Terminated}
-import porter.app.akka.PorterExt
 import akka.util.Timeout
 import spray.can.Http
 import spray.http._
 import spray.http.HttpRequest
 import spray.http.HttpResponse
+import porter.app.akka.api.Porter
 
 /**
  * @author Eike Kettner eike.kettner@gmail.com
@@ -17,15 +17,15 @@ class HttpConnection extends Actor with ActorLogging {
   import context.dispatcher
   import porter.util.JsonHelper._
   implicit val timeout = Timeout(5000)
-  implicit val porterExt = PorterExt(context.system)
-  context.watch(porterExt.ref)
+  implicit val porterExt = Porter(context.system)
+  context.watch(porterExt.singlePorter)
 
   private val reqHandler = AuthRequests.all
 
   def receive = {
     case req: HttpRequest if reqHandler matches req.uri  =>
       val client = sender
-      val f = reqHandler(ReqToken(req, porterExt, client))
+      val f = reqHandler(ReqToken(req, porterExt.singlePorter, client))
       f.map(jsonResponse).recover(recoverResponse) pipeTo sender
 
     case Terminated(`porterExt`) =>

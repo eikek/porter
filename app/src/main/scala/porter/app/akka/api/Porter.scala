@@ -1,6 +1,6 @@
 package porter.app.akka.api
 
-import akka.actor.{ExtendedActorSystem, Extension, ExtensionIdProvider, ExtensionId}
+import akka.actor._
 import porter.app.PorterSettings
 
 /**
@@ -13,9 +13,17 @@ object Porter extends ExtensionId[Porter] with ExtensionIdProvider {
   def createExtension(system: ExtendedActorSystem) = {
     val config = system.settings.config
     val settings = new PorterSettings(config.getConfig("porter"), system.dynamicAccess)
-    Porter(settings)
+    Porter(settings, system.provider.getDefaultAddress, system)
   }
 
 }
 
-case class Porter(settings: PorterSettings) extends Extension
+case class Porter(settings: PorterSettings, address: Address, private val factory: ActorRefFactory) extends Extension {
+
+  lazy val singlePorter = factory.actorOf(porterProps)
+
+  val porterProps = Props(classOf[PorterMain], settings)
+
+  def porterPath(porter: ActorRef) = ActorPath.fromString(
+    address.toString + porter.path.elements.mkString("/", "/", ""))
+}
