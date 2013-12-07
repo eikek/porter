@@ -107,9 +107,12 @@ object Dist extends Build {
   lazy val module = Project(
     id = "dist",
     base = file("dist"),
-    settings = Project.defaultSettings ++ Seq(
+    settings = Project.defaultSettings ++ Distribution.distSettings ++ Seq(
       name := "porter-dist",
       libraryDependencies ++= Deps.logback ++ Deps.akkaRemote
+//      ,
+//      packageOptions in (Compile, packageBin) +=
+//        Package.ManifestAttributes( java.util.jar.Attributes.Name.CLASS_PATH -> "../lib/*" )
     )
   ) dependsOn App.module
 }

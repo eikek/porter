@@ -8,6 +8,8 @@ import spray.can.Http
 import porter.app.PorterSettings
 import porter.app.akka.api.PorterMain
 import akka.actor.ActorSystem
+import scala.concurrent.Future
+import akka.io.Tcp.CommandFailed
 
 /**
  * @author Eike Kettner eike.kettner@gmail.com
@@ -45,19 +47,26 @@ object Main extends App {
     val settings = PorterSettings.fromConfig(config)
     val porter = system.actorOf(PorterMain.props(settings), name = "porter-api")
     val path = Porter(system).porterPath(porter)
-    println(s"\n---\n-- Porter remote actor listening on $path \n---\n")
+    println(s"\n---\n--- Porter remote actor listening on $path \n---")
 
-    if (config.getBoolean("telnet.enabled")) {
-      val telnetF = TelnetServer.bind(porter, config.getString("telnet.host"), config.getInt("telnet.port"))
-      telnetF.onSuccess { case Tcp.Bound(addr) =>
-        println("Bound telnet to " + addr)
+    val telnetF = if (config.getBoolean("telnet.enabled")) {
+      TelnetServer.bind(porter, config.getString("telnet.host"), config.getInt("telnet.port"))
+    } else Future.failed(new Exception("telnet not active"))
+
+    val httpF = if (config.getBoolean("http.enabled")) {
+      HttpHandler.bind(porter, config.getString("http.host"), config.getInt("http.port"))
+    } else Future.failed(new Exception("http not active"))
+
+    for (telnetb <- telnetF; httpb <- httpF) {
+      httpb match {
+        case Http.Bound(a) => println("--- Bound http to " + a)
+        case CommandFailed(c) => println("---x Failed to bind http")
       }
-    }
-    if (config.getBoolean("http.enabled")) {
-      val httpF = HttpHandler.bind(porter, config.getString("http.host"), config.getInt("http.port"))
-      httpF onSuccess { case Http.Bound(addr) =>
-        println("Bound http to " + addr)
+      telnetb match {
+        case Tcp.Bound(a) => println("--- Bound telnet to " + a)
+        case CommandFailed(c) => println("---x Failed to bind telnet")
       }
+      println("---")
     }
   }
 

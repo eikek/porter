@@ -1,6 +1,6 @@
 package porter.app.akka.api
 
-import akka.actor.{Actor, ActorRef}
+import akka.actor.{Status, ActorLogging, Actor, ActorRef}
 
 /**
  * Sends the `req` to all `target` actors and collects the resulting replies. The replies
@@ -8,7 +8,7 @@ import akka.actor.{Actor, ActorRef}
  *
  * @since 05.12.13 20:13
  */
-private[api] abstract class CollectingActor(client: ActorRef, req: PorterMessage, targets: Iterable[ActorRef]) extends Actor {
+private[api] abstract class CollectingActor(client: ActorRef, req: PorterMessage, targets: Iterable[ActorRef]) extends Actor with ActorLogging {
 
   import scala.language.reflectiveCalls
   type Res
@@ -35,6 +35,12 @@ private[api] abstract class CollectingActor(client: ActorRef, req: PorterMessage
     case Extr(resp) if refs.size > 1 =>
       context.become(waitfor(refs - sender, merge(resp, res)))
 
-    case _ => client ! Unknown
+    case m@Status.Failure(x) =>
+      log.error(x, "Error in response")
+      client ! m
+
+    case m@_ =>
+      log.warning("Unknown message: "+ m)
+      client ! Unknown
   }
 }

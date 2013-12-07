@@ -30,7 +30,7 @@ object RealmCommands extends Commands {
   def listRealms(implicit executor: ExecutionContext, to: Timeout): Command = {
     case in @ Input(msg, conn, porter, _) if msg == "lr" =>
       in << (for (iter <- (porter ? GetAllRealms()).mapTo[FindRealmsResponse].map(_.realms)) yield {
-        s"Realm list (${iter.size})\n" + iter.map(r => s"${r.id}: ${r.name}").mkString(" ", "\n", "")
+        s"Realm list (${iter.size})\n" + iter.map(r => s"${r.id.name}: ${r.name}").mkString(" ", "\n ", "")
       })
   }
 

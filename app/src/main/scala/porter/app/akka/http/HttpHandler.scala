@@ -2,7 +2,6 @@ package porter.app.akka.http
 
 import akka.actor._
 import spray.can.Http
-import porter.app.akka.telnet.TelnetServer.GetConnCount
 import akka.actor.Terminated
 import scala.concurrent.ExecutionContext
 import akka.io.{Tcp, IO}
@@ -13,7 +12,8 @@ import akka.util.Timeout
  * @since 27.11.13 18:42
  */
 class HttpHandler(porter: ActorRef) extends Actor with ActorLogging {
-  
+  import HttpHandler._
+
   var connections = 0
 
   def receive = {
@@ -40,6 +40,9 @@ class HttpHandler(porter: ActorRef) extends Actor with ActorLogging {
 }
 
 object HttpHandler {
+
+  case object GetConnCount extends Serializable
+
   def props(porter: ActorRef) = Props(classOf[HttpHandler], porter)
 
   /**
