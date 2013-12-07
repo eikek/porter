@@ -110,9 +110,6 @@ object Dist extends Build {
     settings = Project.defaultSettings ++ Distribution.distSettings ++ Seq(
       name := "porter-dist",
       libraryDependencies ++= Deps.logback ++ Deps.akkaRemote
-//      ,
-//      packageOptions in (Compile, packageBin) +=
-//        Package.ManifestAttributes( java.util.jar.Attributes.Name.CLASS_PATH -> "../lib/*" )
     )
   ) dependsOn App.module
 }
