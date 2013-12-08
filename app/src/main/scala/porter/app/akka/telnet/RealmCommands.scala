@@ -13,6 +13,19 @@ object RealmCommands extends Commands {
   import Porter.Messages.store._
   import Porter.Messages.mutableStore._
 
+  def makeDoc =
+    """
+      |Realm commands
+      |--------------
+      |use realm <realmId>      sets the given realm. most commands need
+      |                         a realm to work. this realm can be set by
+      |                         this command.
+      |lr                       list all realms
+      |update realm             updates an existing realm or creates a new one
+      |                         if none exists with the given realm id
+      |delete realm <realmId>   deletes a realm with the given id
+    """.stripMargin
+
   def make(implicit executor: ExecutionContext, to: Timeout): Seq[Command] =
     List(changeRealm, listRealms, updateRealm, deleteRealm)
 

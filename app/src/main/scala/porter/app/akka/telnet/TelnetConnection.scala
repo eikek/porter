@@ -4,6 +4,7 @@ import akka.actor.{Props, Terminated, ActorRef, Actor}
 import akka.io.Tcp
 import akka.util.{Timeout, ByteString}
 import porter.BuildInfo
+import scala.concurrent.ExecutionContext
 
 /**
  * @author Eike Kettner eike.kettner@gmail.com
@@ -18,7 +19,7 @@ private[telnet] class TelnetConnection(porter: ActorRef, conn: ActorRef) extends
   private val ctrl_d = 4.toByte
   private val quit_requested = "quit requested"
   private val session = new Session(None)
-  private val cmds = (HelpCommands ++ RealmCommands ++ AccountCommands ++ GroupCommands ++ AuthCommands).reduce
+  private val cmds = TelnetConnection.allCommands.reduce
 
   def receive = {
     case Tcp.Received(data) if data.utf8String.trim == "\\q" =>
@@ -62,4 +63,7 @@ private[telnet] class TelnetConnection(porter: ActorRef, conn: ActorRef) extends
 
 object TelnetConnection {
   private[telnet] def props(porter:ActorRef, conn: ActorRef) = Props(classOf[TelnetConnection], porter, conn)
+
+  private val allCommands = HelpCommands ++ RealmCommands ++ AccountCommands ++ GroupCommands ++ AuthCommands
+  val documentation = allCommands.makeDoc
 }

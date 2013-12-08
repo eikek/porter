@@ -1,6 +1,6 @@
 package porter.app.akka.api
 
-import akka.actor.{ActorRef, Props, Actor}
+import akka.actor.{Status, ActorRef, Props, Actor}
 import porter.store.Store
 import akka.util.Timeout
 
@@ -13,7 +13,15 @@ class StoreActor(stores: List[Store]) extends Actor {
 
   val readonly = stores.map(s => context.actorOf(readOnlyProps(s)))
 
-  def receive = {
+  if (readonly.isEmpty) context.become(empty)
+
+  def receive = normal
+
+  def empty: Receive = {
+    case sm: StoreMessage => sender ! Status.Failure(new Exception("No stores provided."))
+  }
+
+  def normal: Receive = {
     case req: FindRealms => receiveRealms(sender, req)
     case req: FindAccounts => receiveAccounts(sender, req)
     case req: FindAccountsFor => receiveAccounts(sender, req)

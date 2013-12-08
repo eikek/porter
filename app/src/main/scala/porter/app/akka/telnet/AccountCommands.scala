@@ -17,6 +17,18 @@ object AccountCommands extends Commands {
   import Porter.Messages.mutableStore._
   import Porter.Messages.store._
 
+  def makeDoc =
+    """
+      |Account commands
+      |----------------
+      |update account           update an existing account or creates a new one
+      |                         if no account with the given name exists
+      |delete account <name>    delete an account with the given name
+      |la                       list all accounts
+      |change pass              set a new password for an account
+      |add groups               add new groups to an account
+      |remove groups            remove groups from an account
+    """.stripMargin
 
   def make(implicit executor: ExecutionContext, to: Timeout) =
     List(update, listall, delete, changePassword,
@@ -29,9 +41,9 @@ object AccountCommands extends Commands {
       case (key, value) if key == AccountDetails.name =>
         Try(Ident(value))
       case (key, value) if key == AccountDetails.groups =>
-        Try { Commands.makeList(',')(value).map(s => Ident(s.trim)).toSet }
+        Try { makeList(' ')(value).map(s => Ident(s.trim)).toSet }
       case (key, value) if key == AccountDetails.props =>
-        Commands.makePairs(value)
+        makePairs(value)
     }
 
     def show = {
@@ -114,7 +126,7 @@ object AccountCommands extends Commands {
     }
     def validateConvert = {
       case ("login", value) => Try(Ident(value))
-      case ("groups", value) => Try(Commands.makeList(' ')(value).map(_.trim).toSet.map(Ident.apply))
+      case ("groups", value) => Try(makeList(' ')(value).map(_.trim).toSet.map(Ident.apply))
     }
     def onComplete(in: Input) = {
       val login = in.session[Ident]("login")

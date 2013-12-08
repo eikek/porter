@@ -9,17 +9,30 @@ object HelpCommands extends Commands {
 
   import akka.pattern.ask
 
+  def makeDoc =
+    """
+      |Helper commands
+      |---------------
+      |crypt pw <plainpassw>    encrypt a given plaintext password which can be used
+      |                         with ConfigStore or PropertyFileStore
+      |show settings            shows the PorterSettings object that was used to create
+      |                         this porter instance
+    """.stripMargin
+
   def make(implicit executor: ExecutionContext, to: Timeout) = Seq({
     case in@Input(help, conn, _, _) if help == "help" =>
-      in << """
+      in << s"""
           |This is a simple interface for managing accounts.
           |
-          |TODO
+          |${TelnetConnection.documentation}
         """.stripMargin
 
     case in@Input(pwreq, conn, _, _) if pwreq.startsWith("crypt pw") =>
       val plain = pwreq.substring("crypt pw".length).trim
-      in << Secret.bcryptPassword(plain).asString
+      if (plain.isEmpty)
+        in << "Error: Empty password."
+      else
+        in << Secret.bcryptPassword(plain).asString
 
     case in@Input(show, conn, porter, _) if show == "show settings" =>
       val settings = (porter ? ShowSettings()).mapTo[String]

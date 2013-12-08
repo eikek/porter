@@ -18,6 +18,17 @@ object GroupCommands extends Commands {
   import Porter.Messages.rules._
   import porter.util._
 
+  def makeDoc =
+    """
+      |Group commands
+      |--------------
+      |lg                  list all groups
+      |update group        update an existing group or adds a new one
+      |delete group <name> deletes a group with the given name
+      |add rules           add rules to an existing group
+      |remove rules        remove rules from a group
+    """.stripMargin
+
   def make(implicit executor: ExecutionContext, to: Timeout) =
     List(listall, update, delete, manageRules("add",
       Permission.union, Revocation.union), manageRules("remove", Permission.diff, Revocation.diff))
@@ -51,8 +62,8 @@ object GroupCommands extends Commands {
 
     def validateConvert = {
       case ("name", value) => Try(Ident(value))
-      case ("rules", value) => Try(Commands.makeList(',')(value).map(_.trim).toSet)
-      case ("props", value) => Commands.makePairs(value)
+      case ("rules", value) => Try(makeList(' ')(value).map(_.trim).toSet)
+      case ("props", value) => makePairs(value)
     }
 
     def onComplete(in: Input) = {
@@ -94,7 +105,7 @@ object GroupCommands extends Commands {
     }
     def validateConvert = {
       case ("group", value) => Try(Ident(value))
-      case ("rules", value) => Try(Commands.makeList(' ')(value).map(_.trim).toSet)
+      case ("rules", value) => Try(makeList(' ')(value).map(_.trim).toSet)
     }
     def onComplete(in: Input) = {
       val group = in.session[Ident]("group")

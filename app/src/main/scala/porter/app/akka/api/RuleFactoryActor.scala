@@ -12,16 +12,25 @@ import scala.Some
 class RuleFactoryActor(list: Iterable[PermissionFactory]) extends Actor {
   import RuleFactoryActor.messages._
 
-  val factory = RuleFactory.createRuleWith(list.head)_
+  lazy val factory = RuleFactory.createRuleWith(list.head)_
   val next =
     if (list.tail.nonEmpty) Some(context.actorOf(Props(classOf[RuleFactoryActor], list.tail)))
     else None
 
   val isLast = next.isEmpty
 
+  if (list.isEmpty) context.become(empty)
+  
   def makeRules(str: Set[String]) = Try(str.map(factory andThen (_.get)))
 
-  def receive = {
+  def receive = normal
+
+  def empty: Receive = {
+    case MakeRules(_, _) =>
+      sender ! Status.Failure(new Exception("No permission factories provided."))
+  }
+
+  def normal: Receive = {
     case req@MakeRules(rules, id) =>
       makeRules(rules) match {
         case Success(s) if s.nonEmpty || isLast =>
@@ -40,7 +49,6 @@ class RuleFactoryActor(list: Iterable[PermissionFactory]) extends Actor {
 object RuleFactoryActor {
 
   def apply(list: Iterable[PermissionFactory]) = {
-    require(list.nonEmpty, "empty permission factory list not allowed")
     Props(classOf[RuleFactoryActor], list)
   }
 

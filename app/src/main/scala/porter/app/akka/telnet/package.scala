@@ -84,4 +84,17 @@ package object telnet {
   def tcp(s: String) = Tcp.Write(ByteString(s))
 
   def illegalArg(m: String) = new IllegalArgumentException(m)
+
+  def makePairs(str: String): Try[Map[String, String]] = Try {
+    str.split(',').withFilter(s => s.trim.nonEmpty).map { s =>
+      s.split('=').toList match {
+        case k::v::Nil => k.trim -> v.trim
+        case _ => throw new IllegalArgumentException("Cannot create pair from: "+ s)
+      }
+    }.toMap
+  }
+
+  def makeList(sep: Char)(str: String) =
+    str.split(sep).filter(s => s.trim.nonEmpty).toList
+
 }

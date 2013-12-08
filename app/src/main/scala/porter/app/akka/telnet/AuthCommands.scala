@@ -14,6 +14,17 @@ object AuthCommands extends Commands {
   import Porter.Messages.authz._
   import Porter.Messages.store._
 
+  def makeDoc =
+    """
+      |Authc and Authz commands
+      |------------------------
+      |authc <login> <pass>      authenticate with username password pair
+      |authz <login> <perm list> check if <login> has the permissions given
+      |                          in <permission list>. the permissions are
+      |                          separated by spaces.
+      |show policy <login>       show the policy of an account
+    """.stripMargin
+
   def make(implicit executor: ExecutionContext, to: Timeout) =
     List(authenticate, authorize, showPolicy)
 
@@ -35,7 +46,7 @@ object AuthCommands extends Commands {
   def authorize(implicit executor: ExecutionContext, to: Timeout): Command = {
     case in@Input(msg, conn, porter, _) if msg.startsWith("authz") =>
       val perms = msg.substring("authz".length).trim.split("\\s+", 2).toList match {
-        case a::b::Nil => Try(Ident(a.trim) -> Commands.makeList(' ')(b.trim).map(_.trim).toSet)
+        case a::b::Nil => Try(Ident(a.trim) -> makeList(' ')(b.trim).map(_.trim).toSet)
         case _ => Failure(new IllegalArgumentException(s"Cannot get permissions from: '$msg'"))
       }
       val result = for {
