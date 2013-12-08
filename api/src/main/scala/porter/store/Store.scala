@@ -25,6 +25,8 @@ trait Store {
   def allAccounts(realm: Ident)(implicit ec: ExecutionContext): Future[Iterable[Account]]
 
   def allGroups(realm: Ident)(implicit ec: ExecutionContext): Future[Iterable[Group]]
+
+  def close()
 }
 
 trait MutableStore {
@@ -41,6 +43,8 @@ trait MutableStore {
   def updateGroup(realm: Ident, group: Group)(implicit ec: ExecutionContext): Future[Boolean]
 
   def deleteGroup(realm: Ident, groupId: Ident)(implicit ec: ExecutionContext): Future[Boolean]
+
+  def close()
 }
 
 trait StoreProvider {

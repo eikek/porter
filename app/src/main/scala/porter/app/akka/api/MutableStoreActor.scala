@@ -6,7 +6,6 @@ import akka.actor.{ActorLogging, ActorRef, Props, Actor}
 import akka.util.Timeout
 
 /**
- * @author Eike Kettner eike.kettner@gmail.com
  * @since 05.12.13 23:00
  */
 class MutableStoreActor(stores: List[(Set[Ident], MutableStore)]) extends Actor {
@@ -67,6 +66,16 @@ object MutableStoreActor {
         store.updateGroup(realm, group).map(finish(id)).recover(fail(id)) pipeTo sender
       case DeleteGroup(realm, group, id) =>
         store.deleteGroup(realm, group).map(finish(id)).recover(fail(id)) pipeTo sender
+    }
+
+    override def preRestart(reason: Throwable, message: Option[Any]) = {
+      super.preRestart(reason, message)
+      store.close()
+    }
+
+    override def postStop() = {
+      super.postStop()
+      store.close()
     }
   }
 

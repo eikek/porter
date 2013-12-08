@@ -108,8 +108,16 @@ object StoreActor {
         store.allAccounts(realm).map(a => FindAccountsResp(a.toSet, id)) pipeTo sender
       case GetAllGroups(realm, id) =>
         store.allGroups(realm).map(g => FindGroupsResp(g.toSet, id)) pipeTo sender
+    }
 
-      case _ => sender ! Unknown
+    override def preRestart(reason: Throwable, message: Option[Any]) = {
+      super.preRestart(reason, message)
+      store.close()
+    }
+
+    override def postStop() = {
+      super.postStop()
+      store.close()
     }
   }
 

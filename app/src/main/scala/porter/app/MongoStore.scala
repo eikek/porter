@@ -24,6 +24,9 @@ class MongoStore(cfg: Config) extends Store with MutableStore {
 
   import MongoStore._
 
+  def close() {
+    mongoClient.close()
+  }
 
   def findRealms(names: Set[Ident])(implicit ec: ExecutionContext) = {
     allRealms.map(s => s.filter(r => names.contains(r.id)))

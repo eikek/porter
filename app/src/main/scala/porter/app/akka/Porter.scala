@@ -50,7 +50,7 @@ class Porter(system: ExtendedActorSystem) extends Extension {
    * @param actorName the name of the new actor
    * @return
    */
-  def createPorter(configName: String, actorName: String = "porter"): ActorRef = {
+  def createPorter(configName: String, actorName: String = "porter-api"): ActorRef = {
     val cfg = system.settings.config.getConfig(configName)
     val settings = PorterSettings.fromConfig(cfg, system.dynamicAccess)
     createPorter(settings, actorName)
@@ -58,7 +58,7 @@ class Porter(system: ExtendedActorSystem) extends Extension {
 
   /**
    * For convenience, this creates a new porter actor within this actor system by
-   * looking up a configuration of name "porter" and the actor name "porter".
+   * looking up a configuration of name "porter" and the actor name "porter-api".
    */
   lazy val main = createPorter("porter")
 }

@@ -47,6 +47,8 @@ trait SimpleStore extends Store {
 
   def allGroups(realm: Ident)(implicit ec: ExecutionContext) =
     Future.immediate(for ((r,g) <- groups; if r.id == realm) yield g)
+
+  def close() {}
 }
 
 object SimpleStore {
