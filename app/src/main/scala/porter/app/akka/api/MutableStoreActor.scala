@@ -36,7 +36,7 @@ class MutableStoreActor(stores: List[(Set[Ident], MutableStore)]) extends Actor 
 object MutableStoreActor {
   import porter.model._
 
-  def props(stores: List[(Set[Ident], MutableStore)]) = Props(classOf[MutableStoreActor], stores)
+  def apply(stores: List[(Set[Ident], MutableStore)]) = Props(classOf[MutableStoreActor], stores)
 
   private def workerProps(store: MutableStore) = Props(classOf[WorkerActor], store)
 

@@ -74,7 +74,7 @@ class StoreActor(stores: List[Store]) extends Actor {
 object StoreActor {
   import porter.model._
 
-  def props(stores: List[Store]) = Props(classOf[StoreActor], stores)
+  def apply(stores: List[Store]) = Props(classOf[StoreActor], stores)
 
   private def readOnlyProps(store: Store) = Props(classOf[ReadonlyStore], store)
 

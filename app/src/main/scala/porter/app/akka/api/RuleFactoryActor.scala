@@ -39,7 +39,7 @@ class RuleFactoryActor(list: Iterable[PermissionFactory]) extends Actor {
 
 object RuleFactoryActor {
 
-  def props(list: Iterable[PermissionFactory]) = {
+  def apply(list: Iterable[PermissionFactory]) = {
     require(list.nonEmpty, "empty permission factory list not allowed")
     Props(classOf[RuleFactoryActor], list)
   }

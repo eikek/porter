@@ -9,6 +9,8 @@ class PolicyActor(store: ActorRef, ruleFactory: ActorRef) extends Actor {
   import porter.model._
   import akka.actor.ActorDSL._
 
+  private case object Done
+
   def receive = {
     case req: GetPolicy=> findPolicy(sender, req)
     case req: Authorize => authorize(sender, req)
@@ -50,11 +52,11 @@ class PolicyActor(store: ActorRef, ruleFactory: ActorRef) extends Actor {
     become {
       case GetPolicyResp(_, p, _) =>
         this.policy = Some(p)
-        if (rules.nonEmpty) self ! "DONE"
+        if (rules.nonEmpty) self ! Done
       case MakeRulesResponse(r, _) =>
         this.rules = Some(r)
-        if (policy.nonEmpty) self ! "DONE"
-      case "DONE" =>
+        if (policy.nonEmpty) self ! Done
+      case Done =>
         val (perms, rev) = partitionRules(rules.get)
         if (rev.nonEmpty) {
           client ! Status.Failure(new Exception("Cannot authorize revocations: "+rev))
@@ -76,6 +78,6 @@ object PolicyActor {
   case class Authorize(realm: Ident, account: Ident, perms: Iterable[String], id: Int = 0) extends PorterMessage
   case class AuthorizeResp(realm: Ident, account: Ident, authorized: Boolean, id: Int) extends PorterMessage
 
-  def props(store: ActorRef, ruleFactory: ActorRef) =
+  def apply(store: ActorRef, ruleFactory: ActorRef) =
     Props(classOf[PolicyActor], store, ruleFactory)
 }

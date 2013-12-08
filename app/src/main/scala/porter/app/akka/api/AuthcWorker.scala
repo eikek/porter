@@ -1,6 +1,6 @@
 package porter.app.akka.api
 
-import akka.actor.{Props, ActorRef, Actor}
+import akka.actor.{Status, Props, ActorRef, Actor}
 import porter.auth._
 import porter.auth.AuthResult
 import porter.app.akka.api.StoreActor.FindRealmsResponse
@@ -28,29 +28,32 @@ class AuthcWorker(store: ActorRef, authenticators: List[Authenticator]) extends 
       context.become(waiting(sender, None, None, req))
   }
 
+  private case object Done
+
   def waiting(client: ActorRef, r: Option[FindRealmsResponse], a: Option[FindAccountsResp], req: Authenticate): Receive = {
-    case m: FindRealmsResponse if r.isEmpty && a.isEmpty =>
+    case m: FindRealmsResponse =>
       context.become(waiting(client, Some(m), a, req))
-    case m: FindAccountsResp if r.isEmpty && a.isEmpty =>
+      if (a.nonEmpty) self ! Done
+
+    case m: FindAccountsResp =>
       context.become(waiting(client, r, Some(m), req))
+      if (r.nonEmpty) self ! Done
 
-    case m: FindRealmsResponse if a.nonEmpty =>
-      createToken(client, m.realms.headOption, a.get.accounts.headOption, req)
-
-    case m: FindAccountsResp if r.nonEmpty =>
-      createToken(client, r.get.realms.headOption, m.accounts.headOption, req)
-  }
-
-  private def createToken(client: ActorRef, realm: Option[Realm], acc: Option[Account], req: Authenticate) {
-    (realm, acc) match {
-      case (Some(r), Some(a)) =>
-        val token = AuthToken(r, a, req.creds)
-        handlers.foreach(_ ! token)
-        context.become(authenticating(client, token, req, handlers.toSet))
-      case _ =>
-        client ! AuthenticateResp(None, req.id)
+    case Done =>
+      if (r.isEmpty || a.isEmpty) {
+        client ! Status.Failure(new Exception("internal error: responses not ready"))
         context.stop(self)
-    }
+      } else {
+        (r.get.realms.headOption, a.get.accounts.headOption) match {
+          case (Some(realm), Some(acc)) =>
+            val token = AuthToken(realm, acc, req.creds)
+            handlers.foreach(_ ! token)
+            context.become(authenticating(client, token, req, handlers.toSet))
+          case _ =>
+            client ! AuthenticateResp(None, req.id)
+            context.stop(self)
+        }
+      }
   }
 
   def authenticating(client: ActorRef, token: AuthToken, req: Authenticate, refs: Set[ActorRef]): Receive = {
@@ -68,7 +71,7 @@ object AuthcWorker {
   import porter.model._
 
   def handlerProps(auth: Authenticator) = Props(classOf[HandlerActor], auth)
-  def workerProps(store: ActorRef, handlers: Iterable[Authenticator]) =
+  def apply(store: ActorRef, handlers: Iterable[Authenticator]) =
     Props(classOf[AuthcWorker], store, handlers)
 
   class HandlerActor(auth: Authenticator) extends Actor {

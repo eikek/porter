@@ -12,11 +12,11 @@ import porter.app.akka.api.PorterMain.ShowSettings
 
 class PorterMain(settings: PorterSettings) extends Actor {
 
-  val store = context.actorOf(StoreActor.props(settings.stores), name = "porter-store")
-  val mstore = context.actorOf(MutableStoreActor.props(settings.mutableStores), name = "porter-mutablestore")
-  val ruleFactory = context.actorOf(RuleFactoryActor.props(
+  val store = context.actorOf(StoreActor(settings.stores), name = "porter-store")
+  val mstore = context.actorOf(MutableStoreActor(settings.mutableStores), name = "porter-mutablestore")
+  val ruleFactory = context.actorOf(RuleFactoryActor(
     settings.permissionFactories :+ RuleFactory.providedFactory), name = "porter-rulefactory")
-  val policy = context.actorOf(PolicyActor.props(store, ruleFactory), name = "porter-policy")
+  val policy = context.actorOf(PolicyActor(store, ruleFactory), name = "porter-policy")
 
   def receive = {
     case sm: StoreMessage => store forward sm
@@ -26,7 +26,7 @@ class PorterMain(settings: PorterSettings) extends Actor {
     case s: ShowSettings => sender ! settings.toString
     case authz: Authorize => policy forward authz
     case authc: Authenticate =>
-      val w = context.actorOf(AuthcWorker.workerProps(store, settings.authenticators))
+      val w = context.actorOf(AuthcWorker(store, settings.authenticators))
       w forward authc
   }
 }
@@ -35,5 +35,5 @@ object PorterMain {
 
   case class ShowSettings(id: Int = 0) extends PorterMessage
 
-  def props(settings: PorterSettings) = Props(classOf[PorterMain], settings)
+  def apply(settings: PorterSettings) = Props(classOf[PorterMain], settings)
 }

@@ -45,8 +45,8 @@ object Main extends App {
 
     val config = system.settings.config.getConfig("porter")
     val settings = PorterSettings.fromConfig(config)
-    val porter = system.actorOf(PorterMain.props(settings), name = "porter-api")
-    val path = Porter(system).porterPath(porter)
+    val porter = system.actorOf(PorterMain(settings), name = "porter-api")
+    val path = RemotePath(system).pathFor(porter)
     println(s"\n---\n--- Porter remote actor listening on $path \n---")
 
     val telnetF = if (config.getBoolean("telnet.enabled")) {
