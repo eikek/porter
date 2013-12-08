@@ -33,15 +33,13 @@ class PorterSettingsTest extends FunSuite with ShouldMatchers {
         |}
       """.stripMargin)
 
-    val settings = new PorterSettings(cfg.resolve())
+    val settings = PorterSettings.fromConfig(cfg.resolve())
     settings.authenticators should have size 1
     settings.authenticators(0) should be (PasswordAuthenticator)
     settings.stores should have size 2
     settings.stores(0).getClass should be (classOf[ConfigStore])
     settings.mutableStores should have size 1
     settings.mutableStores(0)._1 should be (Set(Ident("realm1")))
-    val Some(s) = settings.findMutableStore(Ident("realm1"))
-    s.getClass should be (classOf[TestMStore])
 
     settings.permissionFactories should have size 1
     settings.permissionFactories(0).getClass should be (classOf[TestFactory])
@@ -66,4 +64,5 @@ class TestMStore extends Store with MutableStore {
   def deleteAccount(realm: Ident, accId: Ident)(implicit ec: ExecutionContext) = ???
   def updateGroup(realm: Ident, group: Group)(implicit ec: ExecutionContext) = ???
   def deleteGroup(realm: Ident, groupId: Ident)(implicit ec: ExecutionContext) = ???
+  def close() = ???
 }

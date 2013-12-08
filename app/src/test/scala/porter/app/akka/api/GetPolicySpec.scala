@@ -5,12 +5,13 @@ import akka.actor.{Props, ActorSystem}
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{BeforeAndAfterAll, WordSpec}
 import porter.auth.RuleFactory
-import porter.app.akka.api.PolicyActor.{GetPolicyResp, GetPolicy}
 import porter.model.Policy
+import porter.app.akka.Porter
 
 class GetPolicySpec extends TestKit(ActorSystem("GetPolicySpec", ConfigFactory.load("reference")))
   with WordSpec with BeforeAndAfterAll with ImplicitSender {
 
+  import Porter.Messages.authz._
   override def afterAll() {
     system.shutdown()
   }
@@ -18,8 +19,8 @@ class GetPolicySpec extends TestKit(ActorSystem("GetPolicySpec", ConfigFactory.l
   import TestData._
 
   def createActor() = {
-    val factory = system.actorOf(Props[RuleFactoryActor](new RuleFactoryActor(Vector(RuleFactory.providedFactory))))
-    val store = system.actorOf(StoreActor.props(List(store1, store2)))
+    val factory = system.actorOf(RuleFactoryActor(Vector(RuleFactory.providedFactory)))
+    val store = system.actorOf(StoreActor(List(store1, store2)))
     system.actorOf(Props(classOf[PolicyActor], store, factory))
   }
 

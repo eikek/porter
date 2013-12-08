@@ -37,6 +37,10 @@ class PolicyActor(store: ActorRef, ruleFactory: ActorRef) extends Actor {
         val policy = Policy(rules)
         client ! GetPolicyResp(req.account, policy, id)
         context.stop(self)
+
+      case err: Status.Failure =>
+        client ! err
+        context.stop(self)
     }
   })
 
@@ -63,6 +67,9 @@ class PolicyActor(store: ActorRef, ruleFactory: ActorRef) extends Actor {
         } else {
           client ! AuthorizeResp(req.realm, req.account, policy.get.grantsAll(perms), req.id)
         }
+        context.stop(self)
+      case err: Status.Failure =>
+        client ! err
         context.stop(self)
     }
   })

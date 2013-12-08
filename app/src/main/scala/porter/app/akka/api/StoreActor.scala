@@ -3,6 +3,8 @@ package porter.app.akka.api
 import akka.actor.{Status, ActorRef, Props, Actor}
 import porter.store.Store
 import akka.util.Timeout
+import scala.util.{Failure, Success, Try}
+import scala.concurrent.Future
 
 /**
  * @since 05.12.13 15:24
@@ -93,21 +95,28 @@ object StoreActor {
     import context.dispatcher
     implicit val timeout = Timeout(3000)
 
+    private def exec(result: Try[Future[_]]) {
+      result match {
+        case Success(f) => f.recover({case ex => Status.Failure(ex) }) pipeTo sender
+        case Failure(ex) => sender ! Status.Failure(ex)
+      }
+    }
+
     def receive = {
       case FindRealms(names, id) =>
-        store.findRealms(names).map(r => FindRealmsResp(r.toSet, id)) pipeTo sender
+        exec(Try(store.findRealms(names).map(r => FindRealmsResp(r.toSet, id))))
       case FindAccounts(realm, names, id) =>
-        store.findAccounts(realm, names).map(s => FindAccountsResp(s.toSet, id)) pipeTo sender
+        exec(Try(store.findAccounts(realm, names).map(s => FindAccountsResp(s.toSet, id))))
       case FindAccountsFor(realm, creds, id) =>
-        store.findAccountsFor(realm, creds).map(s => FindAccountsResp(s.toSet, id)) pipeTo sender
+        exec(Try(store.findAccountsFor(realm, creds).map(s => FindAccountsResp(s.toSet, id))))
       case FindGroups(realm, names, id) =>
-        store.findGroups(realm, names).map(s => FindGroupsResp(s.toSet, id)) pipeTo sender
+        exec(Try(store.findGroups(realm, names).map(s => FindGroupsResp(s.toSet, id))))
       case GetAllRealms(id) =>
-        store.allRealms.map(r => FindRealmsResp(r.toSet, id)) pipeTo sender
+        exec(Try(store.allRealms.map(r => FindRealmsResp(r.toSet, id))))
       case GetAllAccounts(realm, id) =>
-        store.allAccounts(realm).map(a => FindAccountsResp(a.toSet, id)) pipeTo sender
+        exec(Try(store.allAccounts(realm).map(a => FindAccountsResp(a.toSet, id))))
       case GetAllGroups(realm, id) =>
-        store.allGroups(realm).map(g => FindGroupsResp(g.toSet, id)) pipeTo sender
+        exec(Try(store.allGroups(realm).map(g => FindGroupsResp(g.toSet, id))))
     }
 
     override def preRestart(reason: Throwable, message: Option[Any]) = {

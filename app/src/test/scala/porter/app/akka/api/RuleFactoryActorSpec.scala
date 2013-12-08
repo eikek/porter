@@ -5,8 +5,8 @@ import akka.actor.{Status, Props, ActorSystem}
 import akka.testkit.{ImplicitSender, TestKit}
 import porter.auth.RuleFactory
 import porter.model.{ResourcePermission, DefaultPermission}
-import porter.app.akka.api.RuleFactoryActor.{MakeRulesResponse, MakeRules}
 import com.typesafe.config.ConfigFactory
+import porter.app.akka.Porter
 
 /**
  * @since 05.12.13 13:59
@@ -14,6 +14,7 @@ import com.typesafe.config.ConfigFactory
 class RuleFactoryActorSpec extends TestKit(ActorSystem("RuleFactoryActorSpec", ConfigFactory.load("reference")))
   with WordSpec with BeforeAndAfterAll with ImplicitSender {
 
+  import Porter.Messages.rules._
   override def afterAll() {
     system.shutdown()
   }
@@ -21,9 +22,9 @@ class RuleFactoryActorSpec extends TestKit(ActorSystem("RuleFactoryActorSpec", C
   "A RuleFactory" must {
 
     "return the correct permissions" in {
-      val factory = system.actorOf(RuleFactoryActor.props(Vector(RuleFactory.providedFactory)))
+      val factory = system.actorOf(RuleFactoryActor(Vector(RuleFactory.providedFactory)))
       factory ! MakeRules(Set("git:push:*", "resource:read:/main/**", "resource:read:/index"))
-      expectMsg(MakeRulesResponse(Set(
+      expectMsg(MakeRulesResp(Set(
         DefaultPermission("git:push:*"),
         ResourcePermission("resource:read:/main/**"),
         ResourcePermission("resource:read:/index")
@@ -31,13 +32,13 @@ class RuleFactoryActorSpec extends TestKit(ActorSystem("RuleFactoryActorSpec", C
     }
 
     "return failure status in case of error" in {
-      val factory = system.actorOf(Props[RuleFactoryActor](new RuleFactoryActor(Vector(RuleFactory.providedFactory))))
+      val factory = system.actorOf(RuleFactoryActor(Vector(RuleFactory.providedFactory)))
       factory ! MakeRules(Set(""))
       expectMsgType[Status.Failure]
     }
 
     "return Unknown message for other requests" in {
-      val factory = system.actorOf(Props[RuleFactoryActor](new RuleFactoryActor(Vector(RuleFactory.providedFactory))))
+      val factory = system.actorOf(RuleFactoryActor(Vector(RuleFactory.providedFactory)))
       factory ! "bla"
       expectMsg(Unknown)
     }

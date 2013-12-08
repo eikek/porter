@@ -46,8 +46,13 @@ class AuthcWorker(store: ActorRef, authenticators: List[Authenticator]) extends 
         (r.get.realms.headOption, a.get.accounts.headOption) match {
           case (Some(realm), Some(acc)) =>
             val token = AuthToken(realm, acc, req.creds)
-            handlers.foreach(_ ! token)
-            context.become(authenticating(client, token, req, handlers.toSet))
+            if (handlers.isEmpty) {
+              client ! AuthenticateResp(Some(token.toResult), req.id)
+              context.stop(self)
+            } else {
+              handlers.foreach(_ ! token)
+              context.become(authenticating(client, token, req, handlers.toSet))
+            }
           case _ =>
             client ! AuthenticateResp(None, req.id)
             context.stop(self)
@@ -56,7 +61,7 @@ class AuthcWorker(store: ActorRef, authenticators: List[Authenticator]) extends 
   }
 
   def authenticating(client: ActorRef, token: AuthToken, req: Authenticate, refs: Set[ActorRef]): Receive = {
-    case t:AuthToken if refs.size == 1 =>
+    case t:AuthToken if refs.size <= 1 =>
       val merged = merge(token, t)
       client ! AuthenticateResp(Some(merged.toResult), req.id)
       context.stop(self)

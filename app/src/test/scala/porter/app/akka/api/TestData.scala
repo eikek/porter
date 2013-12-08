@@ -1,6 +1,7 @@
 package porter.app.akka.api
 
-import porter.store.SimpleStore
+import porter.store.{MutableStore, SimpleStore}
+import scala.concurrent.{Future, ExecutionContext}
 
 object TestData {
   import porter.model._
@@ -44,5 +45,15 @@ object TestData {
   def createStore(realms: Iterable[Realm] = Set(),
                   accounts: Iterable[(Realm, Account)] = Set(),
                   groups: Iterable[(Realm, Group)] = Set()) = SimpleStore(realms, groups, accounts)
-  
+
+
+  class EmptyMutableStore extends MutableStore {
+    def updateRealm(realm: Realm)(implicit ec: ExecutionContext) = Future.successful(true)
+    def deleteRealm(realm: Ident)(implicit ec: ExecutionContext) = Future.successful(true)
+    def updateAccount(realm: Ident, account: Account)(implicit ec: ExecutionContext) = Future.successful(true)
+    def deleteAccount(realm: Ident, accId: Ident)(implicit ec: ExecutionContext) = Future.successful(true)
+    def updateGroup(realm: Ident, group: Group)(implicit ec: ExecutionContext) = Future.successful(true)
+    def deleteGroup(realm: Ident, groupId: Ident)(implicit ec: ExecutionContext) = Future.successful(true)
+    def close() = {}
+  }
 }

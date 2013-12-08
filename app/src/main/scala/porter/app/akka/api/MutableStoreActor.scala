@@ -2,8 +2,11 @@ package porter.app.akka.api
 
 import porter.store.MutableStore
 import porter.model.Ident
-import akka.actor.{ActorLogging, ActorRef, Props, Actor}
+import akka.actor._
 import akka.util.Timeout
+import scala.Some
+import scala.util.{Failure, Success, Try}
+import scala.concurrent.Future
 
 /**
  * @since 05.12.13 23:00
@@ -11,17 +14,16 @@ import akka.util.Timeout
 class MutableStoreActor(stores: List[(Set[Ident], MutableStore)]) extends Actor {
   import MutableStoreActor._
 
-  val mutableStores =
-    for ((list, s) <- stores)
-    yield list -> context.actorOf(workerProps(s))
-
   private def findStore(realm: Ident) =
-    mutableStores.find({ case (id, a) => id.contains(realm) }).map(_._2)
-      .orElse(mutableStores.headOption.map(_._2))
+    stores.find({ case (id, a) => id.contains(realm) }).map(_._2)
+      .orElse(stores.headOption.map(_._2))
 
   private def withStore(realm: Ident, f: ActorRef => Unit, g: => Unit) {
     findStore(realm) match {
-      case Some(s) => f(s)
+      case Some(s) =>
+        val a = context.actorOf(workerProps(s))
+        f(a)
+        a ! PoisonPill
       case None => g
     }
   }
@@ -53,19 +55,27 @@ object MutableStoreActor {
         log.error(x, "Mutable store operation failed")
         failed(id)
     }
+
+    private def exec(result: Try[Future[Boolean]], id: Int) {
+      result match {
+        case Success(f) => f.map(finish(id)).recover(fail(id)) pipeTo sender
+        case Failure(ex) => sender ! fail(id)(ex)
+      }
+    }
+
     def receive = {
       case UpdateRealm(realm, id) =>
-        store.updateRealm(realm).map(finish(id)).recover(fail(id)) pipeTo sender
+        exec(Try(store.updateRealm(realm)), id)
       case DeleteRealm(realm, id) =>
-        store.deleteRealm(realm).map(finish(id)).recover(fail(id)) pipeTo sender
+        exec(Try(store.deleteRealm(realm)), id)
       case UpdateAccount(realm, account, id) =>
-        store.updateAccount(realm, account).map(finish(id)).recover(fail(id)) pipeTo sender
+        exec(Try(store.updateAccount(realm, account)), id)
       case DeleteAccount(realm, account, id) =>
-        store.deleteAccount(realm, account).map(finish(id)).recover(fail(id)) pipeTo sender
+        exec(Try(store.deleteAccount(realm, account)), id)
       case UpdateGroup(realm, group, id) =>
-        store.updateGroup(realm, group).map(finish(id)).recover(fail(id)) pipeTo sender
+        exec(Try(store.updateGroup(realm, group)), id)
       case DeleteGroup(realm, group, id) =>
-        store.deleteGroup(realm, group).map(finish(id)).recover(fail(id)) pipeTo sender
+        exec(Try(store.deleteGroup(realm, group)), id)
     }
 
     override def preRestart(reason: Throwable, message: Option[Any]) = {
