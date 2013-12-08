@@ -20,7 +20,7 @@ class RuleFactoryActor(list: Iterable[PermissionFactory]) extends Actor {
   val isLast = next.isEmpty
 
   if (list.isEmpty) context.become(empty)
-  
+
   def makeRules(str: Set[String]) = Try(str.map(factory andThen (_.get)))
 
   def receive = normal

@@ -2,7 +2,7 @@ package porter.app.akka.api
 
 import porter.store.MutableStore
 import porter.model.Ident
-import akka.actor.{ActorRef, Props, Actor}
+import akka.actor.{ActorLogging, ActorRef, Props, Actor}
 import akka.util.Timeout
 
 /**
@@ -44,24 +44,29 @@ object MutableStoreActor {
   private def failed(id: Int) = OperationFinished(result = false, id)
   private def finish(id: Int)(result: Boolean) = OperationFinished(result, id)
 
-  private class WorkerActor(store: MutableStore) extends Actor {
+  private class WorkerActor(store: MutableStore) extends Actor with ActorLogging {
     import akka.pattern.pipe
     import context.dispatcher
     implicit val timeout = Timeout(3000)
 
+    private def fail(id: Int): PartialFunction[Throwable, OperationFinished] = {
+      case x =>
+        log.error(x, "Mutable store operation failed")
+        failed(id)
+    }
     def receive = {
       case UpdateRealm(realm, id) =>
-        store.updateRealm(realm).map(finish(id)) pipeTo sender
+        store.updateRealm(realm).map(finish(id)).recover(fail(id)) pipeTo sender
       case DeleteRealm(realm, id) =>
-        store.deleteRealm(realm).map(finish(id)) pipeTo sender
+        store.deleteRealm(realm).map(finish(id)).recover(fail(id)) pipeTo sender
       case UpdateAccount(realm, account, id) =>
-        store.updateAccount(realm, account).map(finish(id)) pipeTo sender
+        store.updateAccount(realm, account).map(finish(id)).recover(fail(id)) pipeTo sender
       case DeleteAccount(realm, account, id) =>
-        store.deleteAccount(realm, account).map(finish(id)) pipeTo sender
+        store.deleteAccount(realm, account).map(finish(id)).recover(fail(id)) pipeTo sender
       case UpdateGroup(realm, group, id) =>
-        store.updateGroup(realm, group).map(finish(id)) pipeTo sender
+        store.updateGroup(realm, group).map(finish(id)).recover(fail(id)) pipeTo sender
       case DeleteGroup(realm, group, id) =>
-        store.deleteGroup(realm, group).map(finish(id)) pipeTo sender
+        store.deleteGroup(realm, group).map(finish(id)).recover(fail(id)) pipeTo sender
     }
   }
 
