@@ -1,12 +1,11 @@
 package porter.app.akka.telnet
 
-import scala.concurrent.{Future, Promise, ExecutionContext}
+import scala.concurrent.{Future, ExecutionContext}
 import akka.util.Timeout
 import porter.model._
 import scala.util.Try
 import porter.model.Group
-import porter.app.akka.api.StoreActor._
-import porter.app.akka.api.MutableStoreActor._
+import porter.app.akka.Porter
 
 /**
  * @author Eike Kettner eike.kettner@gmail.com
@@ -14,7 +13,9 @@ import porter.app.akka.api.MutableStoreActor._
  */
 object GroupCommands extends Commands {
   import akka.pattern.ask
-  import porter.app.akka.api.RuleFactoryActor._
+  import Porter.Messages.store._
+  import Porter.Messages.mutableStore._
+  import Porter.Messages.rules._
   import porter.util._
 
   def make(implicit executor: ExecutionContext, to: Timeout) =
@@ -102,8 +103,8 @@ object GroupCommands extends Commands {
         r <- in.realmFuture
         resp <- (in.porter ? FindGroups(r.id, Set(group))).mapTo[FindGroupsResp]
         g <- Future.immediate(resp.groups.toList.headOption, "Group not found")
-        current <- (in.porter ? MakeRules(g.rules)).mapTo[MakeRulesResponse]
-        remove <- (in.porter ? MakeRules(perms)).mapTo[MakeRulesResponse]
+        current <- (in.porter ? MakeRules(g.rules)).mapTo[MakeRulesResp]
+        remove <- (in.porter ? MakeRules(perms)).mapTo[MakeRulesResp]
       } yield {
         val perms = pf(current.permissions, remove.permissions)
         val revocs = rf(current.revocations, remove.revocations)

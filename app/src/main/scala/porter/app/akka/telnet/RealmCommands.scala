@@ -4,13 +4,14 @@ import scala.concurrent.{Future, ExecutionContext}
 import porter.model.{Ident, Realm}
 import scala.util.Try
 import akka.util.Timeout
-import porter.app.akka.api.StoreActor._
-import porter.app.akka.api.MutableStoreActor._
+import porter.app.akka.Porter
 
 object RealmCommands extends Commands {
 
   import akka.pattern.ask
   import porter.util._
+  import Porter.Messages.store._
+  import Porter.Messages.mutableStore._
 
   def make(implicit executor: ExecutionContext, to: Timeout): Seq[Command] =
     List(changeRealm, listRealms, updateRealm, deleteRealm)
@@ -19,7 +20,7 @@ object RealmCommands extends Commands {
     case in @ Input(msg, conn, porter, sess) if msg.startsWith("use realm") =>
       in << (for {
         realm <- Future.immediate(Ident(msg.substring("use realm".length).trim))
-        iter <- (porter ? FindRealms(Set(realm))).mapTo[FindRealmsResponse].map(_.realms)
+        iter <- (porter ? FindRealms(Set(realm))).mapTo[FindRealmsResp].map(_.realms)
       } yield {
         sess.realm = iter.headOption
         if (iter.headOption.isDefined) s"Using realm ${sess.realm.get.id.name}: ${sess.realm.get.name}"
@@ -29,7 +30,7 @@ object RealmCommands extends Commands {
 
   def listRealms(implicit executor: ExecutionContext, to: Timeout): Command = {
     case in @ Input(msg, conn, porter, _) if msg == "lr" =>
-      in << (for (iter <- (porter ? GetAllRealms()).mapTo[FindRealmsResponse].map(_.realms)) yield {
+      in << (for (iter <- (porter ? GetAllRealms()).mapTo[FindRealmsResp].map(_.realms)) yield {
         s"Realm list (${iter.size})\n" + iter.map(r => s"${r.id.name}: ${r.name}").mkString(" ", "\n ", "")
       })
   }

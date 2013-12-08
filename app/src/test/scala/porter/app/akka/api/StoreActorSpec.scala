@@ -6,7 +6,7 @@ import org.scalatest.{BeforeAndAfterAll, WordSpec}
 import porter.app.akka.api.StoreActor._
 import com.typesafe.config.ConfigFactory
 import porter.model.Account
-import porter.app.akka.api.StoreActor.FindRealmsResponse
+import porter.app.akka.api.StoreActor.FindRealmsResp
 import porter.model.Realm
 import porter.app.akka.api.StoreActor.FindRealms
 import porter.app.akka.api.StoreActor.FindAccountsResp
@@ -30,10 +30,10 @@ class StoreActorSpec extends TestKit(ActorSystem("StoreActorSpec", ConfigFactory
     "return realms from all stores" in {
       val store = system.actorOf(StoreActor.props(List(store1, store2)))
       store ! FindRealms(Set("r1", "r4"))
-      expectMsg(FindRealmsResponse(Set(realm, Realm("r4", "")), 0))
+      expectMsg(FindRealmsResp(Set(realm, Realm("r4", "")), 0))
 
       store ! GetAllRealms(2)
-      expectMsg(FindRealmsResponse(Set(realm, Realm("r4", "")), 2))
+      expectMsg(FindRealmsResp(Set(realm, Realm("r4", "")), 2))
     }
 
     "return accounts from all stores" in {

@@ -5,13 +5,14 @@ import akka.util.Timeout
 import scala.util.Try
 import porter.model.{Ident, PasswordCredentials}
 import scala.util.Failure
-import porter.app.akka.api.StoreActor._
-import porter.app.akka.api.AuthcWorker.{AuthenticateResp, Authenticate}
-import porter.app.akka.api.PolicyActor.{GetPolicyResp, GetPolicy, AuthorizeResp, Authorize}
+import porter.app.akka.Porter
 
 object AuthCommands extends Commands {
   import akka.pattern.ask
   import porter.util._
+  import Porter.Messages.authc._
+  import Porter.Messages.authz._
+  import Porter.Messages.store._
 
   def make(implicit executor: ExecutionContext, to: Timeout) =
     List(authenticate, authorize, showPolicy)

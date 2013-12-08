@@ -10,7 +10,7 @@ import scala.Some
  * @since 05.12.13 00:55
  */
 class RuleFactoryActor(list: Iterable[PermissionFactory]) extends Actor {
-  import RuleFactoryActor._
+  import RuleFactoryActor.messages._
 
   val factory = RuleFactory.createRuleWith(list.head)_
   val next =
@@ -25,7 +25,7 @@ class RuleFactoryActor(list: Iterable[PermissionFactory]) extends Actor {
     case req@MakeRules(rules, id) =>
       makeRules(rules) match {
         case Success(s) if s.nonEmpty || isLast =>
-          sender ! MakeRulesResponse(s, id)
+          sender ! MakeRulesResp(s, id)
         case Success(s) if s.isEmpty =>
           next map (_ forward req)
         case Failure(ex) =>
@@ -44,9 +44,11 @@ object RuleFactoryActor {
     Props(classOf[RuleFactoryActor], list)
   }
 
-  case class MakeRules(rules: Set[String], id: Int = 0) extends PorterMessage
-
-  case class MakeRulesResponse(rules: Set[Rule], id: Int) extends PorterMessage {
-    lazy val (permissions, revocations) = partitionRules(rules)
+  object messages {
+    case class MakeRules(rules: Set[String], id: Int = 0) extends PorterMessage
+    case class MakeRulesResp(rules: Set[Rule], id: Int) extends PorterMessage {
+      lazy val (permissions, revocations) = partitionRules(rules)
+    }
   }
+
 }

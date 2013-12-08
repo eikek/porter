@@ -3,8 +3,6 @@ package porter.app.akka.api
 import akka.actor.{Status, Props, ActorRef, Actor}
 import porter.auth._
 import porter.auth.AuthResult
-import porter.app.akka.api.StoreActor.FindRealmsResponse
-import porter.app.akka.api.StoreActor.FindAccountsResp
 import porter.auth.AuthToken
 import scala.Some
 
@@ -15,7 +13,8 @@ import scala.Some
  */
 class AuthcWorker(store: ActorRef, authenticators: List[Authenticator]) extends Actor {
   import AuthcWorker._
-  import porter.model._
+  import AuthcWorker.messages._
+  import StoreActor.messages._
 
   val handlers = authenticators.map(a => context.actorOf(handlerProps(a)))
 
@@ -23,15 +22,15 @@ class AuthcWorker(store: ActorRef, authenticators: List[Authenticator]) extends 
 
   def normal: Receive = {
     case req@Authenticate(realm, creds, id) =>
-      store ! StoreActor.FindRealms(Set(realm), 1)
-      store ! StoreActor.FindAccountsFor(realm, creds, 2)
+      store ! FindRealms(Set(realm), 1)
+      store ! FindAccountsFor(realm, creds, 2)
       context.become(waiting(sender, None, None, req))
   }
 
   private case object Done
 
-  def waiting(client: ActorRef, r: Option[FindRealmsResponse], a: Option[FindAccountsResp], req: Authenticate): Receive = {
-    case m: FindRealmsResponse =>
+  def waiting(client: ActorRef, r: Option[FindRealmsResp], a: Option[FindAccountsResp], req: Authenticate): Receive = {
+    case m: FindRealmsResp =>
       context.become(waiting(client, Some(m), a, req))
       if (a.nonEmpty) self ! Done
 
@@ -70,9 +69,10 @@ class AuthcWorker(store: ActorRef, authenticators: List[Authenticator]) extends 
 object AuthcWorker {
   import porter.model._
 
-  def handlerProps(auth: Authenticator) = Props(classOf[HandlerActor], auth)
   def apply(store: ActorRef, handlers: Iterable[Authenticator]) =
     Props(classOf[AuthcWorker], store, handlers)
+
+  def handlerProps(auth: Authenticator) = Props(classOf[HandlerActor], auth)
 
   class HandlerActor(auth: Authenticator) extends Actor {
     def receive = {
@@ -92,6 +92,8 @@ object AuthcWorker {
     t1.copy(votes = newmap)
   }
 
-  case class Authenticate(realmId: Ident, creds: Set[Credentials], id: Int = 0) extends RealmMessage
-  case class AuthenticateResp(result: Option[AuthResult], id: Int) extends PorterMessage
+  object messages {
+    case class Authenticate(realmId: Ident, creds: Set[Credentials], id: Int = 0) extends RealmMessage
+    case class AuthenticateResp(result: Option[AuthResult], id: Int) extends PorterMessage
+  }
 }

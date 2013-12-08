@@ -5,8 +5,7 @@ import akka.util.Timeout
 import porter.model.{Properties, Secret, Ident}
 import scala.util.Try
 import porter.model.Account
-import porter.app.akka.api.StoreActor._
-import porter.app.akka.api.MutableStoreActor._
+import porter.app.akka.Porter
 
 /**
  * @author Eike Kettner eike.kettner@gmail.com
@@ -15,6 +14,9 @@ import porter.app.akka.api.MutableStoreActor._
 object AccountCommands extends Commands {
   import akka.pattern.ask
   import porter.util._
+  import Porter.Messages.mutableStore._
+  import Porter.Messages.store._
+
 
   def make(implicit executor: ExecutionContext, to: Timeout) =
     List(update, listall, delete, changePassword,

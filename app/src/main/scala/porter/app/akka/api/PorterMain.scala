@@ -1,14 +1,14 @@
 package porter.app.akka.api
 
-import akka.actor.{ActorRefFactory, Props, Actor}
+import akka.actor.{Props, Actor}
 import porter.auth.RuleFactory
-import porter.app.akka.api.StoreActor.StoreMessage
-import porter.app.akka.api.MutableStoreActor.MutableStoreMessage
-import porter.app.akka.api.RuleFactoryActor.MakeRules
-import porter.app.akka.api.PolicyActor.{Authorize, GetPolicy}
-import porter.app.akka.api.AuthcWorker.Authenticate
 import porter.app.PorterSettings
 import porter.app.akka.api.PorterMain.ShowSettings
+import porter.app.akka.api.StoreActor.messages.StoreMessage
+import porter.app.akka.api.RuleFactoryActor.messages.MakeRules
+import porter.app.akka.api.MutableStoreActor.messages.MutableStoreMessage
+import porter.app.akka.api.PolicyActor.messages.{Authorize, GetPolicy}
+import porter.app.akka.api.AuthcWorker.messages.Authenticate
 
 class PorterMain(settings: PorterSettings) extends Actor {
 
@@ -19,11 +19,11 @@ class PorterMain(settings: PorterSettings) extends Actor {
   val policy = context.actorOf(PolicyActor(store, ruleFactory), name = "porter-policy")
 
   def receive = {
+    case s: ShowSettings => sender ! settings.toString
     case sm: StoreMessage => store forward sm
     case mm: MutableStoreMessage => mstore forward mm
     case mr: MakeRules => ruleFactory forward mr
     case gp: GetPolicy => policy forward gp
-    case s: ShowSettings => sender ! settings.toString
     case authz: Authorize => policy forward authz
     case authc: Authenticate =>
       val w = context.actorOf(AuthcWorker(store, settings.authenticators))

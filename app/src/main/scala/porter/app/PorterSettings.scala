@@ -13,6 +13,30 @@ trait PorterSettings {
   def stores: List[Store]
   def mutableStores: List[(Set[Ident], MutableStore)]
   def permissionFactories: List[PermissionFactory]
+
+  override def toString = {
+    val as = authenticators.mkString(" ", "\n ", "")
+    val ss = stores.mkString(" ", "\n ", "")
+    val ms = mutableStores.mkString(" ", "\n ", "")
+    val pfs = permissionFactories.mkString(" ", "\n ", "")
+    s"""
+      |Authenticators
+      |--------------
+      |$as
+      |
+      |Stores
+      |------
+      |$ss
+      |
+      |MutableStores
+      |-------------
+      |$ms
+      |
+      |PermissionFactories
+      |-------------------
+      |$pfs
+    """.stripMargin
+  }
 }
 
 object PorterSettings {
@@ -98,30 +122,6 @@ object PorterSettings {
       val defctor = dynAccess.createInstanceFor(fqcn, args)
 
       configCtor orElse defctor orElse loadObject
-    }
-
-    override def toString = {
-      val as = authenticators.mkString(" ", "\n ", "")
-      val ss = stores.mkString(" ", "\n ", "")
-      val ms = mutableStores.mkString(" ", "\n ", "")
-      val pfs = permissionFactories.mkString(" ", "\n ", "")
-      s"""
-      |Authenticators
-      |--------------
-      |$as
-      |
-      |Stores
-      |------
-      |$ss
-      |
-      |MutableStores
-      |-------------
-      |$ms
-      |
-      |PermissionFactories
-      |-------------------
-      |$pfs
-    """.stripMargin
     }
   }
 

@@ -1,11 +1,11 @@
 package porter.app.akka.api
 
 import akka.actor.{Status, Props, ActorRef, Actor}
-import porter.app.akka.api.StoreActor.{FindGroupsResp, FindAccountsResp}
-import porter.app.akka.api.RuleFactoryActor.{MakeRulesResponse, MakeRules}
 
 class PolicyActor(store: ActorRef, ruleFactory: ActorRef) extends Actor {
-  import PolicyActor._
+  import PolicyActor.messages._
+  import StoreActor.messages._
+  import RuleFactoryActor.messages._
   import porter.model._
   import akka.actor.ActorDSL._
 
@@ -17,14 +17,14 @@ class PolicyActor(store: ActorRef, ruleFactory: ActorRef) extends Actor {
   }
 
   def findPolicy(client: ActorRef, req: GetPolicy) = actor(new Act {
-    whenStarting { store ! StoreActor.FindAccounts(req.realmId, Set(req.account), req.id) }
+    whenStarting { store ! FindAccounts(req.realmId, Set(req.account), req.id) }
     become {
       case FindAccountsResp(accounts, id) =>
         if (accounts.isEmpty || accounts.size > 1) {
           client ! GetPolicyResp(req.account, Policy.empty, id)
           context.stop(self)
         } else {
-          store ! StoreActor.FindGroups(req.realmId, accounts.flatMap(_.groups), id)
+          store ! FindGroups(req.realmId, accounts.flatMap(_.groups), id)
         }
       case FindGroupsResp(groups, id) =>
         if (groups.isEmpty) {
@@ -33,7 +33,7 @@ class PolicyActor(store: ActorRef, ruleFactory: ActorRef) extends Actor {
         } else {
           ruleFactory ! MakeRules(groups.flatMap(_.rules), id)
         }
-      case MakeRulesResponse(rules, id) =>
+      case MakeRulesResp(rules, id) =>
         val policy = Policy(rules)
         client ! GetPolicyResp(req.account, policy, id)
         context.stop(self)
@@ -53,7 +53,7 @@ class PolicyActor(store: ActorRef, ruleFactory: ActorRef) extends Actor {
       case GetPolicyResp(_, p, _) =>
         this.policy = Some(p)
         if (rules.nonEmpty) self ! Done
-      case MakeRulesResponse(r, _) =>
+      case MakeRulesResp(r, _) =>
         this.rules = Some(r)
         if (policy.nonEmpty) self ! Done
       case Done =>
@@ -72,11 +72,13 @@ class PolicyActor(store: ActorRef, ruleFactory: ActorRef) extends Actor {
 object PolicyActor {
   import porter.model._
 
-  case class GetPolicy(realmId: Ident, account: Ident, id: Int = 0) extends RealmMessage
-  case class GetPolicyResp(account: Ident, policy: Policy, id: Int) extends PorterMessage
+  object messages {
+    case class GetPolicy(realmId: Ident, account: Ident, id: Int = 0) extends RealmMessage
+    case class GetPolicyResp(account: Ident, policy: Policy, id: Int) extends PorterMessage
 
-  case class Authorize(realm: Ident, account: Ident, perms: Iterable[String], id: Int = 0) extends PorterMessage
-  case class AuthorizeResp(realm: Ident, account: Ident, authorized: Boolean, id: Int) extends PorterMessage
+    case class Authorize(realm: Ident, account: Ident, perms: Iterable[String], id: Int = 0) extends PorterMessage
+    case class AuthorizeResp(realm: Ident, account: Ident, authorized: Boolean, id: Int) extends PorterMessage
+  }
 
   def apply(store: ActorRef, ruleFactory: ActorRef) =
     Props(classOf[PolicyActor], store, ruleFactory)

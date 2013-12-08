@@ -8,7 +8,8 @@ import akka.util.Timeout
  * @since 05.12.13 15:24
  */
 class StoreActor(stores: List[Store]) extends Actor {
-  import StoreActor._
+  import StoreActor.messages._
+  import StoreActor.readOnlyProps
 
   val readonly = stores.map(s => context.actorOf(readOnlyProps(s)))
 
@@ -24,12 +25,12 @@ class StoreActor(stores: List[Store]) extends Actor {
 
   private def receiveRealms(client: ActorRef, req: PorterMessage) {
     context.actorOf(Props[CollectingActor](new CollectingActor(client, req, readonly) {
-      type Res = FindRealmsResponse
-      def empty = FindRealmsResponse(Set(), req.id)
-      def merge(r1: Res, r2: Res) = FindRealmsResponse(r1.realms ++ r2.realms, r1.id)
+      type Res = FindRealmsResp
+      def empty = FindRealmsResp(Set(), req.id)
+      def merge(r1: Res, r2: Res) = FindRealmsResp(r1.realms ++ r2.realms, r1.id)
       object Extr {
         def unapply(a: Any) = a match {
-          case r: FindRealmsResponse => Some(r)
+          case r: FindRealmsResp => Some(r)
           case _ => None
         }
       }
@@ -73,6 +74,7 @@ class StoreActor(stores: List[Store]) extends Actor {
 
 object StoreActor {
   import porter.model._
+  import messages._
 
   def apply(stores: List[Store]) = Props(classOf[StoreActor], stores)
 
@@ -85,7 +87,7 @@ object StoreActor {
 
     def receive = {
       case FindRealms(names, id) =>
-        store.findRealms(names).map(r => FindRealmsResponse(r.toSet, id)) pipeTo sender
+        store.findRealms(names).map(r => FindRealmsResp(r.toSet, id)) pipeTo sender
       case FindAccounts(realm, names, id) =>
         store.findAccounts(realm, names).map(s => FindAccountsResp(s.toSet, id)) pipeTo sender
       case FindAccountsFor(realm, creds, id) =>
@@ -93,7 +95,7 @@ object StoreActor {
       case FindGroups(realm, names, id) =>
         store.findGroups(realm, names).map(s => FindGroupsResp(s.toSet, id)) pipeTo sender
       case GetAllRealms(id) =>
-        store.allRealms.map(r => FindRealmsResponse(r.toSet, id)) pipeTo sender
+        store.allRealms.map(r => FindRealmsResp(r.toSet, id)) pipeTo sender
       case GetAllAccounts(realm, id) =>
         store.allAccounts(realm).map(a => FindAccountsResp(a.toSet, id)) pipeTo sender
       case GetAllGroups(realm, id) =>
@@ -103,18 +105,20 @@ object StoreActor {
     }
   }
 
-  trait StoreMessage extends PorterMessage
-  case class FindRealms(names: Set[Ident], id: Int = 0) extends StoreMessage
-  case class GetAllRealms(id: Int = 0) extends StoreMessage
-  case class FindRealmsResponse(realms: Set[Realm], id: Int) extends StoreMessage
+  object messages {
+    trait StoreMessage extends PorterMessage
+    case class FindRealms(names: Set[Ident], id: Int = 0) extends StoreMessage
+    case class GetAllRealms(id: Int = 0) extends StoreMessage
+    case class FindRealmsResp(realms: Set[Realm], id: Int) extends StoreMessage
 
-  case class FindAccounts(realm: Ident, names: Set[Ident], id: Int = 0) extends StoreMessage
-  case class FindAccountsFor(realm: Ident, creds: Set[Credentials], id: Int = 0) extends StoreMessage
-  case class GetAllAccounts(realm: Ident, id: Int = 0) extends StoreMessage
-  case class FindAccountsResp(accounts: Set[Account], id: Int) extends StoreMessage
+    case class FindAccounts(realm: Ident, names: Set[Ident], id: Int = 0) extends StoreMessage
+    case class FindAccountsFor(realm: Ident, creds: Set[Credentials], id: Int = 0) extends StoreMessage
+    case class GetAllAccounts(realm: Ident, id: Int = 0) extends StoreMessage
+    case class FindAccountsResp(accounts: Set[Account], id: Int) extends StoreMessage
 
-  case class FindGroups(realm: Ident, names: Set[Ident], id: Int = 0) extends StoreMessage
-  case class GetAllGroups(realm: Ident, id: Int = 0) extends StoreMessage
-  case class FindGroupsResp(groups: Set[Group], id: Int) extends StoreMessage
+    case class FindGroups(realm: Ident, names: Set[Ident], id: Int = 0) extends StoreMessage
+    case class GetAllGroups(realm: Ident, id: Int = 0) extends StoreMessage
+    case class FindGroupsResp(groups: Set[Group], id: Int) extends StoreMessage
+  }
 
 }

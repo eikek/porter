@@ -5,8 +5,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import porter.model.{PasswordCredentials, Ident}
 import akka.util.Timeout
 import scala.util.parsing.json.{JSONArray, JSON, JSONObject}
-import porter.app.akka.api.PolicyActor.{AuthorizeResp, Authorize}
-import porter.app.akka.api.AuthcWorker.{AuthenticateResp, Authenticate}
+import porter.app.akka.Porter
 
 /**
  * @author Eike Kettner eike.kettner@gmail.com
@@ -14,6 +13,8 @@ import porter.app.akka.api.AuthcWorker.{AuthenticateResp, Authenticate}
  */
 object AuthRequests {
   import akka.pattern.ask
+  import Porter.Messages.authc._
+  import Porter.Messages.authz._
 
   def all(implicit ec: ExecutionContext, timeout: Timeout) = List(authz, authc).reduce(_ orElse _)
 

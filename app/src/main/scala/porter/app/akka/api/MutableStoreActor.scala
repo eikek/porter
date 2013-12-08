@@ -35,6 +35,7 @@ class MutableStoreActor(stores: List[(Set[Ident], MutableStore)]) extends Actor 
 
 object MutableStoreActor {
   import porter.model._
+  import messages._
 
   def apply(stores: List[(Set[Ident], MutableStore)]) = Props(classOf[MutableStoreActor], stores)
 
@@ -64,14 +65,16 @@ object MutableStoreActor {
     }
   }
 
-  trait MutableStoreMessage extends PorterMessage
-  case class UpdateRealm(realm: Realm, id: Int = 0) extends RealmMessage with MutableStoreMessage {
-    val realmId = realm.id
+  object messages {
+    trait MutableStoreMessage extends PorterMessage
+    case class UpdateRealm(realm: Realm, id: Int = 0) extends RealmMessage with MutableStoreMessage {
+      val realmId = realm.id
+    }
+    case class DeleteRealm(realmId: Ident, id: Int = 0) extends RealmMessage with MutableStoreMessage
+    case class UpdateAccount(realmId: Ident, account: Account, id: Int = 0) extends RealmMessage with MutableStoreMessage
+    case class DeleteAccount(realmId: Ident, account: Ident, id: Int = 0) extends RealmMessage with MutableStoreMessage
+    case class UpdateGroup(realmId: Ident, group: Group, id: Int = 0) extends RealmMessage with MutableStoreMessage
+    case class DeleteGroup(realmId: Ident, group: Ident, id: Int = 0) extends RealmMessage with MutableStoreMessage
+    case class OperationFinished(result: Boolean, id: Int) extends PorterMessage with MutableStoreMessage
   }
-  case class DeleteRealm(realmId: Ident, id: Int = 0) extends RealmMessage with MutableStoreMessage
-  case class UpdateAccount(realmId: Ident, account: Account, id: Int = 0) extends RealmMessage with MutableStoreMessage
-  case class DeleteAccount(realmId: Ident, account: Ident, id: Int = 0) extends RealmMessage with MutableStoreMessage
-  case class UpdateGroup(realmId: Ident, group: Group, id: Int = 0) extends RealmMessage with MutableStoreMessage
-  case class DeleteGroup(realmId: Ident, group: Ident, id: Int = 0) extends RealmMessage with MutableStoreMessage
-  case class OperationFinished(result: Boolean, id: Int) extends PorterMessage with MutableStoreMessage
 }
