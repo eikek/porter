@@ -26,7 +26,7 @@ class PorterMain(settings: PorterSettings) extends Actor {
     case gp: GetPolicy => policy forward gp
     case authz: Authorize => policy forward authz
     case authc: Authenticate =>
-      val w = context.actorOf(AuthcWorker(store, settings.authenticators))
+      val w = context.actorOf(AuthcWorker(store, settings.validators))
       w forward authc
   }
 }

@@ -1,6 +1,6 @@
 package porter.app
 
-import porter.auth.PasswordAuthenticator
+import porter.auth.PasswordValidator
 import org.scalatest.FunSuite
 import org.scalatest.matchers.ShouldMatchers
 import com.typesafe.config.ConfigFactory
@@ -20,7 +20,7 @@ class PorterSettingsTest extends FunSuite with ShouldMatchers {
   test("read config") {
     val cfg = ConfigFactory.parseString(
       """
-        |authenticators: [ { class: "porter.auth.PasswordAuthenticator", params: {} } ]
+        |validators: [ { class: "porter.auth.PasswordValidator", params: {} } ]
         |stores: [
         |  { class: "porter.app.ConfigStore", params: ${storeconfig}, realms: [] },
         |  { class: "porter.app.TestMStore", params: {}, realms: [ "realm1" ] }
@@ -34,8 +34,8 @@ class PorterSettingsTest extends FunSuite with ShouldMatchers {
       """.stripMargin)
 
     val settings = PorterSettings.fromConfig(cfg.resolve())
-    settings.authenticators should have size 1
-    settings.authenticators(0) should be (PasswordAuthenticator)
+    settings.validators should have size 1
+    settings.validators(0) should be (PasswordValidator)
     settings.stores should have size 2
     settings.stores(0).getClass should be (classOf[ConfigStore])
     settings.mutableStores should have size 1

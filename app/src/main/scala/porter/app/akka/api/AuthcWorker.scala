@@ -11,12 +11,12 @@ import scala.Some
  *
  * @since 05.12.13 23:24
  */
-class AuthcWorker(store: ActorRef, authenticators: List[Authenticator]) extends Actor {
+class AuthcWorker(store: ActorRef, validators: List[Validator]) extends Actor {
   import AuthcWorker._
   import AuthcWorker.messages._
   import StoreActor.messages._
 
-  val handlers = authenticators.map(a => context.actorOf(handlerProps(a)))
+  val handlers = validators.map(a => context.actorOf(handlerProps(a)))
 
   def receive = normal
 
@@ -74,12 +74,12 @@ class AuthcWorker(store: ActorRef, authenticators: List[Authenticator]) extends 
 object AuthcWorker {
   import porter.model._
 
-  def apply(store: ActorRef, handlers: Iterable[Authenticator]) =
+  def apply(store: ActorRef, handlers: Iterable[Validator]) =
     Props(classOf[AuthcWorker], store, handlers)
 
-  def handlerProps(auth: Authenticator) = Props(classOf[HandlerActor], auth)
+  def handlerProps(auth: Validator) = Props(classOf[HandlerActor], auth)
 
-  class HandlerActor(auth: Authenticator) extends Actor {
+  class HandlerActor(auth: Validator) extends Actor {
     def receive = {
       case token: AuthToken => sender ! auth.authenticate(token)
     }

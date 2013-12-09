@@ -4,14 +4,14 @@ package porter.auth
  * @author Eike Kettner eike.kettner@gmail.com
  * @since 22.11.13 19:27
  */
-trait Authenticator {
+trait Validator {
 
   def authenticate(token: AuthToken): AuthToken
 
 }
 
-trait AuthenticatorProvider {
+trait ValidatorProvider {
 
-  def authenticators: Iterable[Authenticator]
+  def validators: Iterable[Validator]
 
 }

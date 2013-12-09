@@ -8,7 +8,7 @@ import org.mindrot.jbcrypt.BCrypt
  * @author Eike Kettner eike.kettner@gmail.com
  * @since 22.11.13 22:53
  */
-class PasswordAuthenticatorTest extends FunSuite with ShouldMatchers {
+class PasswordValidatorTest extends FunSuite with ShouldMatchers {
 
   import porter.model._
   import Secret._
@@ -28,15 +28,15 @@ class PasswordAuthenticatorTest extends FunSuite with ShouldMatchers {
 
   private def checkpasswords(t: Ident, f: String => Secret) {
     var token = createToken(f("helpme"), "helpme")
-    var out = PasswordAuthenticator.authenticate(token)
+    var out = PasswordValidator.authenticate(token)
     out.votes(t) should be (Vote.Success)
 
     token = createToken(f("nono"), "nono2")
-    out = PasswordAuthenticator.authenticate(token)
+    out = PasswordValidator.authenticate(token)
     out.votes(t) should be (Vote.Failed())
 
     token = createToken(Secret("unknown", ""), "test")
-    out = PasswordAuthenticator.authenticate(token)
+    out = PasswordValidator.authenticate(token)
     out.votes should have size 0
   }
 }

@@ -9,11 +9,11 @@ import scala.concurrent.{ExecutionContext, Future}
  * @since 22.11.13 23:26
  */
 trait AuthC {
-  self: StoreProvider with AuthenticatorProvider =>
+  self: StoreProvider with ValidatorProvider =>
 
   import porter.model._
 
-  private val auth = AuthC.authenticate(_: AuthToken, authenticators)
+  private val auth = AuthC.authenticate(_: AuthToken, validators)
 
   def authenticate(realm: Ident, creds: Set[Credentials])(implicit ec: ExecutionContext): Future[AuthResult] = {
     for {
@@ -35,7 +35,7 @@ trait AuthC {
 
 object AuthC {
 
-  def authenticate(token: AuthToken, authenticators: Iterable[Authenticator]): AuthToken =
+  def authenticate(token: AuthToken, authenticators: Iterable[Validator]): AuthToken =
     (token /: authenticators) { (token, auther) => auther authenticate token }
 
 }

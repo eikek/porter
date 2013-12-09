@@ -9,7 +9,7 @@ import java.util.UUID
  * @author Eike Kettner eike.kettner@gmail.com
  * @since 30.11.13 13:34
  */
-class DigestAuthenticatorTest extends FunSuite with ShouldMatchers {
+class DigestValidatorTest extends FunSuite with ShouldMatchers {
 
   import porter.model._
   import Secret._
@@ -39,24 +39,24 @@ class DigestAuthenticatorTest extends FunSuite with ShouldMatchers {
   }
 
   test("simple digest") {
-    val nonce = DigestAuthenticator.generateNonce(realm.id)
+    val nonce = DigestValidator.generateNonce(realm.id)
     val response = clientResponse(ha1("john", "test"), nonce, None)
     val creds = DigestCredentials("john", method, uri, nonce, response)
 
     val token = AuthToken(realm, acc, Set(creds))
-    val result = DigestAuthenticator.authenticate(token)
+    val result = DigestValidator.authenticate(token)
     result.votes should have size 1
     result.votes(Types.digestmd5) should be (Vote.Success)
   }
 
   test("digest with qop=auth") {
-    val nonce = DigestAuthenticator.generateNonce(realm.id)
+    val nonce = DigestValidator.generateNonce(realm.id)
     val qop = DigestAuth(UUID.randomUUID().toString, "42")
     val response = clientResponse(ha1("john", "test"), nonce, Some(qop))
     val creds = DigestCredentials("john", method, uri, nonce, response, Some(qop))
 
     val token = AuthToken(realm, acc, Set(creds))
-    val result = DigestAuthenticator.authenticate(token)
+    val result = DigestValidator.authenticate(token)
     result.votes should have size 1
     result.votes(Types.digestmd5) should be (Vote.Success)
   }
@@ -67,8 +67,8 @@ class DigestAuthenticatorTest extends FunSuite with ShouldMatchers {
     val creds = DigestCredentials("john", method, uri, nonce, response)
 
     val token = AuthToken(Realm("testrealm", ""), acc, Set(creds))
-    val result = DigestAuthenticator.authenticate(token)
+    val result = DigestValidator.authenticate(token)
     result.votes should have size 1
-    result.votes.get(Types.digestmd5) should be (Some(DigestAuthenticator.Reasons.nonceExpired))
+    result.votes.get(Types.digestmd5) should be (Some(DigestValidator.Reasons.nonceExpired))
   }
 }

@@ -4,7 +4,7 @@ import org.scalatest.{BeforeAndAfterAll, FunSuite}
 import org.scalatest.matchers.ShouldMatchers
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.Await
-import porter.auth.{AuthToken, PasswordAuthenticator}
+import porter.auth.{AuthToken, PasswordValidator}
 
 class MongoStoreTest extends FunSuite with ShouldMatchers with BeforeAndAfterAll {
   import scala.concurrent.ExecutionContext.Implicits.global
@@ -86,7 +86,7 @@ class MongoStoreTest extends FunSuite with ShouldMatchers with BeforeAndAfterAll
     val l2u = Await.result(store.findAccounts(r.id, Set(acc2.name)), 5 seconds)
     l2u should not be List(acc2)
     l2u(0).groups should have size 0
-    val to = PasswordAuthenticator.authenticate(AuthToken(r, acc2, Set(PasswordCredentials("mary", "test"))))
+    val to = PasswordValidator.authenticate(AuthToken(r, acc2, Set(PasswordCredentials("mary", "test"))))
     to.toResult.successCount should be (1)
   }
 

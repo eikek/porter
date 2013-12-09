@@ -5,10 +5,9 @@ import scala.util.{Failure, Success, Try}
 import org.mindrot.jbcrypt.BCrypt
 
 /**
- * @author Eike Kettner eike.kettner@gmail.com
  * @since 30.11.13 13:21
  */
-object DigestAuthenticator extends Authenticator {
+object DigestValidator extends Validator {
 
   import porter.model._
   import scala.concurrent.duration._

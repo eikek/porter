@@ -3,10 +3,9 @@ package porter.auth
 import porter.model.DerivedCredentials
 
 /**
- * @author Eike Kettner eike.kettner@gmail.com
  * @since 01.12.13 17:05
  */
-object DerivedAuthenticator extends Authenticator {
+object DerivedValidator extends Validator {
 
   def authenticate(token: AuthToken) = {
     val derived = token.credentials.collect { case dc: DerivedCredentials => dc }

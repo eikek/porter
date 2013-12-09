@@ -5,7 +5,6 @@ import porter.model.Account
 import porter.model.Realm
 
 /**
- * @author Eike Kettner eike.kettner@gmail.com
  * @since 22.11.13 19:16
  */
 @SerialVersionUID(20131122)

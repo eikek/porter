@@ -4,24 +4,24 @@ import _root_.akka.actor.{ReflectiveDynamicAccess, DynamicAccess}
 import com.typesafe.config.Config
 import scala.reflect.ClassTag
 import scala.util.Try
-import porter.auth.Authenticator
+import porter.auth.Validator
 import porter.store.{MutableStore, Store}
 import porter.model.{PermissionFactory, Permission, Ident}
 
 trait PorterSettings {
-  def authenticators: List[Authenticator]
+  def validators: List[Validator]
   def stores: List[Store]
   def mutableStores: List[(Set[Ident], MutableStore)]
   def permissionFactories: List[PermissionFactory]
 
   override def toString = {
-    val as = authenticators.mkString(" ", "\n ", "")
+    val as = validators.mkString(" ", "\n ", "")
     val ss = stores.mkString(" ", "\n ", "")
     val ms = mutableStores.mkString(" ", "\n ", "")
     val pfs = permissionFactories.mkString(" ", "\n ", "")
     s"""
-      |Authenticators
-      |--------------
+      |Validators
+      |----------
       |$as
       |
       |Stores
@@ -46,7 +46,7 @@ object PorterSettings {
    * Example configuration:
    * {{{
    *   myporter {
-   *     authenticators: [
+   *     validators: [
    *        { class = "com.package.MyAuthenticator1", params = {} }
    *     ]
    *     //read-only and mutable stores are specified
@@ -83,9 +83,9 @@ object PorterSettings {
   private class ConfigPorterSettings(cfg: Config, dynamicAccess: DynamicAccess = new ReflectiveDynamicAccess(classOf[PorterSettings].getClassLoader)) extends PorterSettings {
     import scala.collection.JavaConverters._
 
-    val authenticators = {
-      val authMaker = makeInstance[Authenticator](dynamicAccess)_
-      val list = cfg.getConfigList("authenticators").asScala
+    val validators = {
+      val authMaker = makeInstance[Validator](dynamicAccess)_
+      val list = cfg.getConfigList("validators").asScala
       for (c <- list) yield authMaker(c).get
     }.toList
 

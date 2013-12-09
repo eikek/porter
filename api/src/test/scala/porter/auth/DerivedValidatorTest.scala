@@ -12,7 +12,7 @@ import porter.model.Secret.Types
  * @author Eike Kettner eike.kettner@gmail.com
  * @since 01.12.13 17:36
  */
-class DerivedAuthenticatorTest extends FunSuite with ShouldMatchers {
+class DerivedValidatorTest extends FunSuite with ShouldMatchers {
 
   val realm = Realm(Ident.randomIdent, "")
   val aeskey = AES.deriveKey("superword", Vector(81.toByte))
@@ -22,7 +22,7 @@ class DerivedAuthenticatorTest extends FunSuite with ShouldMatchers {
     val derived = DerivedCredentials("john", secret)(aeskey)
     val account = Account(name = "john", secrets = Seq(secret))
     val token = AuthToken(realm, account, Set(derived))
-    val result = DerivedAuthenticator.authenticate(token)
+    val result = DerivedValidator.authenticate(token)
     result.votes should have size 1
     result.votes.get(Secret.Types.bcrypt).get should be (Vote.Success)
   }
@@ -38,7 +38,7 @@ class DerivedAuthenticatorTest extends FunSuite with ShouldMatchers {
 
     val account = Account(name = "john", secrets = Seq(secret))
     val token = AuthToken(realm, account, Set(derived))
-    val result = DerivedAuthenticator.authenticate(token)
+    val result = DerivedValidator.authenticate(token)
     result.votes should have size 1
     result.votes.get(Secret.Types.bcrypt).get should be (Vote.Success)
   }

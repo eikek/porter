@@ -1,15 +1,13 @@
 package porter.auth
 
-
 import org.mindrot.jbcrypt.BCrypt
 import com.lambdaworks.crypto.SCryptUtil
 import porter.util.Base64
 
 /**
- * @author Eike Kettner eike.kettner@gmail.com
  * @since 22.11.13 22:07
  */
-object PasswordAuthenticator extends Authenticator {
+object PasswordValidator extends Validator {
   import porter.model._
   import Secret._
 
