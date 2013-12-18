@@ -45,11 +45,9 @@ object Password {
 
   object Scrypt {
     val name = "scrypt"
-    def apply(n: Int, r: Int, p: Int): Crypt = new Crypt {
+    def apply(n: Int = math.pow(2, 11 + intBelow(7)).toInt, r: Int = 16, p: Int = 2): Crypt = new Crypt {
       def apply(plain: String) = name+"$"+SCryptUtil.scrypt(plain, n, r, p)
     }
-    def apply(): Crypt = apply(math.pow(2, 11 + intBelow(7)).toInt, 16, 2)
-
     def unapply(enc: String): Option[String] =
       if (enc startsWith (name+"$")) Some(enc.substring(name.length+1))
       else None
@@ -57,12 +55,8 @@ object Password {
 
   object Pbkdf2 {
     val name = "pbkdf2-sha1"
-    def apply(): Crypt = {
-      val iterations = 44000 + intBelow(10000)
-      apply(randomSalt.toVector, iterations)
-    }
 
-    def apply(salt: Vector[Byte], n: Int): Crypt = new Crypt {
+    def apply(salt: Vector[Byte] = randomSalt, n: Int = 44000 + intBelow(10000)): Crypt = new Crypt {
       def apply(plain: String) = {
         val len = 160
         val enc = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1")
@@ -86,7 +80,7 @@ object Password {
     def sha256(n: Int = 200000, salt: Vector[Byte] = randomSalt): Crypt = apply("SHA-256", n, salt)
     def sha512(n: Int = 200000, salt: Vector[Byte] = randomSalt): Crypt = apply("SHA-512", n, salt)
 
-    def apply(algorithm: String, n: Int, salt: Vector[Byte]): Crypt = new Crypt {
+    def apply(algorithm: String, n: Int = 200000, salt: Vector[Byte] = randomSalt): Crypt = new Crypt {
       def apply(plain: String) = {
         val bytes = plain.getBytes(Codec.UTF8.charSet)
         val md = MessageDigest.getInstance(algorithm)

@@ -1,8 +1,5 @@
 package porter.model
 
-import com.lambdaworks.crypto.SCryptUtil
-import org.mindrot.jbcrypt.BCrypt
-import porter.util.Hash
 import scala.io.Codec
 
 @SerialVersionUID(20131121)
