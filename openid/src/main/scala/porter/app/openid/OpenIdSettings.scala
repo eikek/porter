@@ -3,16 +3,18 @@ package porter.app.openid
 import com.typesafe.config.Config
 import scala.util.Try
 import java.nio.file.{Files, Paths}
-import akka.actor.{ExtendedActorSystem, ExtensionIdProvider, ExtensionId, Extension}
+import akka.actor._
 import porter.util.{AES, Base64}
 import spray.http.Uri
 import porter.model.Ident
 
-class OpenIdSettings(cfg: Config) extends Extension with OpenIdServiceSettings {
+class OpenIdSettings(cfg: Config, da: DynamicAccess) extends Extension with OpenIdServiceSettings {
   import collection.JavaConverters._
 
   val bindingHost = Try(cfg.getString("host")).getOrElse("localhost")
   val bindinPort = Try(cfg.getInt("port")).getOrElse(8888)
+
+  val decider = da.getObjectFor[porter.auth.Decider](cfg.getString("decider")).get
 
   val staticResourceDir = Paths.get(cfg.getString("static-resource-dir"))
   val templateDir = Paths.get(cfg.getString("template-dir"))
@@ -32,5 +34,5 @@ object OpenIdSettings extends ExtensionId[OpenIdSettings] with ExtensionIdProvid
   def lookup() = OpenIdSettings
 
   def createExtension(system: ExtendedActorSystem) =
-    new OpenIdSettings(system.settings.config.getConfig("porter.openid"))
+    new OpenIdSettings(system.settings.config.getConfig("porter.openid"), system.dynamicAccess)
 }

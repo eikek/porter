@@ -49,9 +49,8 @@ trait AuthDirectives extends AssociationDirectives {
   }
 
   def authFuture(creds: Set[Credentials], realm: Ident)(implicit timeout: Timeout) = {
-    def decider(result: AuthResult) = result.oneSuccess
     (porter ? Authenticate(realm, creds)).mapTo[AuthenticateResp].map {
-      case AuthenticateResp(Some(r), _) if decider(r) => r
+      case AuthenticateResp(Some(r), _) if settings.decider(r) => r
       case _ => sys.error("Invalid Credentials")
     }
   }

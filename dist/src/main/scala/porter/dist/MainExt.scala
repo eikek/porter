@@ -19,7 +19,7 @@ case class MainExt(address: Address, private val system: ExtendedActorSystem) ex
     address.toString + porter.path.elements.mkString("/", "/", ""))
 
   private val config = system.settings.config.getConfig("porter")
-  val openidSettings = new OpenIdSettings(config.getConfig("openid"))
+  val openidSettings = new OpenIdSettings(config.getConfig("openid"), system.dynamicAccess)
 
   val telnet = InterfaceSettings(
     config.getString("telnet.host"),

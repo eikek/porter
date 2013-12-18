@@ -8,6 +8,8 @@ import porter.app.openid.common.Supplier
 
 trait OpenIdServiceSettings {
 
+  def decider: porter.auth.Decider
+
   def staticResourceDir: java.nio.file.Path
   def templateDir: java.nio.file.Path
 
