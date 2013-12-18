@@ -11,21 +11,25 @@ import porter.model.Account
 import scala.concurrent.{ExecutionContext, Future}
 import porter.util.Base64
 
-/**
- * @author Eike Kettner eike.kettner@gmail.com
- * @since 25.11.13 19:53
- */
 class MongoStore(cfg: Config) extends Store with MutableStore {
 
-  private val mongoClient = MongoStore.createClient(cfg)
+  private def mongoClient = MongoStore.createClient(cfg)
   private val dbname = Try(cfg.getString("dbname")).getOrElse("porterdb")
-
-  private def db(coll: String) = mongoClient(dbname)(coll)
 
   import MongoStore._
 
+  private def withDb[A](body: MongoDB => A): A = {
+    val client = mongoClient
+    val db = client(dbname)
+    try { body(db) } finally { client.close() }
+  }
+
+  private def withColl[A](coll: Ident)(body: MongoCollection => A): A = withDb { client =>
+    val collection = client(coll.name)
+    body(collection)
+  }
+
   def close() {
-    mongoClient.close()
   }
 
   def findRealms(names: Set[Ident])(implicit ec: ExecutionContext) = {
@@ -34,9 +38,9 @@ class MongoStore(cfg: Config) extends Store with MutableStore {
 
   def findAccounts(realm: Ident, names: Set[Ident])(implicit ec: ExecutionContext) = Future {
     val q = "_id" $in names.map(n => "a:"+ n.name).toSeq
-    (for {
-      dbo <- db(realm.name).find(q)
-    } yield dbo.toAccount).toList
+    withColl(realm) { coll =>
+      (for (dbo <- coll.find(q)) yield dbo.toAccount).toList
+    }
   }
 
   def findAccountsFor(realm: Ident, creds: Set[Credentials])(implicit ec: ExecutionContext) = {
@@ -46,63 +50,82 @@ class MongoStore(cfg: Config) extends Store with MutableStore {
 
   def findGroups(realm: Ident, names: Set[Ident])(implicit ec: ExecutionContext) = Future {
     val q = "_id" $in names.map(n => "g:"+n.name).toSeq
-    (for (dbo <- db(realm.name).find(q)) yield dbo.toGroup).toList
+    withColl(realm.name) { coll =>
+      (for (dbo <- coll.find(q)) yield dbo.toGroup).toList
+    }
   }
 
   def allRealms(implicit ec: ExecutionContext) = Future {
-    for {
-      coll <- mongoClient(dbname).collectionNames
-      dbo <- db(coll).findOne(MongoDBObject("_id" -> ("r:"+coll)))
-    } yield dbo.toRealm
+    withDb { client =>
+      for {
+        coll <- client.collectionNames
+        dbo <- client(coll).findOne(MongoDBObject("_id" -> ("r:"+coll)))
+      } yield dbo.toRealm
+    }
   }
 
   def allAccounts(realm: Ident)(implicit ec: ExecutionContext) = Future {
-    (for {
-      dbo <- db(realm.name).find(MongoDBObject("type" -> "account"))
-    } yield dbo.toAccount).toList
+    withColl(realm) { coll =>
+      (for (dbo <- coll.find(MongoDBObject("type" -> "account")))
+       yield dbo.toAccount).toList
+    }
   }
 
   def allGroups(realm: Ident)(implicit ec: ExecutionContext) = Future {
-    (for {
-      dbo <- db(realm.name).find(MongoDBObject("type" -> "group"))
-    } yield dbo.toGroup).toList
+    withColl(realm) { coll =>
+      (for {
+        dbo <- coll.find(MongoDBObject("type" -> "group"))
+      } yield dbo.toGroup).toList
+    }
   }
 
   def updateRealm(realm: Realm)(implicit ec: ExecutionContext) = Future {
-    val result = db(realm.id.name).save(realm.toDBObject)
-    result.getN == 1
+    withColl(realm.id) { coll =>
+      val result = coll.save(realm.toDBObject)
+      result.getN == 1
+    }
   }
 
   def deleteRealm(realm: Ident)(implicit ec: ExecutionContext) = Future {
-    val set = mongoClient(dbname).collectionNames
-    if (set.contains(realm.name)) {
-      db(realm.name).dropCollection()
-      true
-    } else {
-      throw new IllegalStateException(s"Realm '${realm.name}' does not exist")
+    withDb { db =>
+      val set = db.collectionNames
+      if (set.contains(realm.name)) {
+        db(realm.name).dropCollection()
+        true
+      } else {
+        throw new IllegalStateException(s"Realm '${realm.name}' does not exist")
+      }
     }
   }
 
   def updateAccount(realm: Ident, account: Account)(implicit ec: ExecutionContext) = Future {
-    val result = db(realm.name).save(account.toDBObject)
-    result.getN == 1
+    withColl(realm) { coll =>
+      val result = coll.save(account.toDBObject)
+      result.getN == 1
+    }
   }
 
   def deleteAccount(realm: Ident, accId: Ident)(implicit ec: ExecutionContext) = Future {
     val q = MongoDBObject("_id" -> s"a:${accId.name}")
-    val result = db(realm.name).remove(q)
-    result.getN == 1
+    withColl(realm) { coll =>
+      val result = coll.remove(q)
+      result.getN == 1
+    }
   }
 
   def updateGroup(realm: Ident, group: Group)(implicit ec: ExecutionContext) = Future {
-    val result = db(realm.name).save(group.toDBObject)
-    result.getN == 1
+    withColl(realm) { coll =>
+      val result = coll.save(group.toDBObject)
+      result.getN == 1
+    }
   }
 
   def deleteGroup(realm: Ident, groupId: Ident)(implicit ec: ExecutionContext) = Future {
     val q = MongoDBObject("_id" -> s"g:${groupId.name}")
-    val result = db(realm.name).remove(q)
-    result.getN == 1
+    withColl(realm) { coll =>
+      val result = coll.remove(q)
+      result.getN == 1
+    }
   }
 }
 

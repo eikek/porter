@@ -3,7 +3,7 @@ package porter.model
 import org.scalatest.FunSuite
 import org.scalatest.matchers.ShouldMatchers
 import scala.util.Random
-import porter.util.AES
+import porter.util.{Hash, AES}
 
 /**
  * @author Eike Kettner eike.kettner@gmail.com
@@ -23,10 +23,12 @@ class DerivedCredentialsTest extends FunSuite with ShouldMatchers {
     val key = AES.deriveKey("superword", salt)
 
     val secret = Secret.scryptPassword("hello")
-    val derived = DerivedCredentials("john", secret)(key)
-    derived.account.get should be (Ident("john"))
-    derived.secret.get should be (secret)
-    derived.expires.get should be (-1L)
+    val data = DerivedCredentials("john", secret).encode(key)
+    val derived = DerivedCredentials.tryDecode(key, data).get
+    derived.accountName should be (Ident("john"))
+    derived.secret.data should be (Hash.sha512(secret.data))
+    derived.secret.name should be (secret.name)
+    derived.valid should be (-1L)
     derived.isExpired should be (false)
   }
 }

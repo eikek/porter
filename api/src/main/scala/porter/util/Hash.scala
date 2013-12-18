@@ -10,15 +10,26 @@ import javax.xml.bind.DatatypeConverter
  */
 object Hash {
 
-  val md5 = stringDigest("MD5")_
-  val sha1 = stringDigest("SHA1")_
-  val sha256 = stringDigest("SHA-256")_
-  val sha384 = stringDigest("SHA-384")_
-  val sha512 = stringDigest("SHA-512")_
+  val md5 = digest("MD5")_
+  val sha1 = digest("SHA1")_
+  val sha256 = digest("SHA-256")_
+  val sha384 = digest("SHA-384")_
+  val sha512 = digest("SHA-512")_
 
-  def stringDigest(algorithm: String)(str: String) = {
+  val md5String = stringDigest(md5)_
+  val sha1String = stringDigest(sha1)_
+  val sha256String = stringDigest(sha256)_
+  val sha384String = stringDigest(sha384)_
+  val sha512String = stringDigest(sha512)_
+
+  private def stringDigest(digest: Vector[Byte] => Vector[Byte])(str: String) = {
+    val bytes = digest(str.getBytes(Codec.UTF8.charSet).toVector)
+    DatatypeConverter.printHexBinary(bytes.toArray).toLowerCase
+  }
+  
+  def digest(algorithm: String)(message: Vector[Byte]) = {
     val md = MessageDigest.getInstance(algorithm)
-    md.update(str.getBytes(Codec.UTF8.charSet))
-    DatatypeConverter.printHexBinary(md.digest()).toLowerCase
+    md.update(message.toArray)
+    md.digest().toVector
   }
 }

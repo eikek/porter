@@ -57,12 +57,12 @@ object DigestValidator extends Validator {
 
   private def checkDigest(dc: DigestCredentials, ha1: String): Vote = {
     val ha2 = dc.qop match {
-      case Some(DigestAuthInt(_, _, body)) => Hash.md5(dc.method +":"+ dc.uri +":"+ body)
-      case _ => Hash.md5(dc.method +":"+ dc.uri)
+      case Some(DigestAuthInt(_, _, body)) => Hash.md5String(dc.method +":"+ dc.uri +":"+ body)
+      case _ => Hash.md5String(dc.method +":"+ dc.uri)
     }
     val serverResp = dc.qop match {
-      case Some(qop) => Hash.md5(ha1 +":"+ dc.serverNonce +":"+ qop.nonceCount +":"+ qop.cnonce +":"+ qop.name +":"+ ha2)
-      case _ => Hash.md5(ha1 +":"+ dc.serverNonce +":"+ ha2)
+      case Some(qop) => Hash.md5String(ha1 +":"+ dc.serverNonce +":"+ qop.nonceCount +":"+ qop.cnonce +":"+ qop.name +":"+ ha2)
+      case _ => Hash.md5String(ha1 +":"+ dc.serverNonce +":"+ ha2)
     }
     if (serverResp == dc.response) Vote.Success else Reasons.invalidCred
   }

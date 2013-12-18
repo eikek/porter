@@ -18,7 +18,14 @@ class AuthcWorker(store: ActorRef, validators: List[Validator]) extends Actor {
 
   val handlers = validators.map(a => context.actorOf(handlerProps(a)))
 
+  if (handlers.isEmpty) context.become(empty)
+
   def receive = normal
+
+  def empty: Receive = {
+    case req@Authenticate(realm, creds, id) =>
+      sender ! Status.Failure(new Exception("No validators defined."))
+  }
 
   def normal: Receive = {
     case req@Authenticate(realm, creds, id) =>
@@ -37,6 +44,9 @@ class AuthcWorker(store: ActorRef, validators: List[Validator]) extends Actor {
     case m: FindAccountsResp =>
       context.become(waiting(client, r, Some(m), req))
       if (r.nonEmpty) self ! Done
+
+    case err: Status.Failure =>
+      client ! err
 
     case Done =>
       if (r.isEmpty || a.isEmpty) {

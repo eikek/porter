@@ -11,6 +11,7 @@ import akka.actor.ActorSystem
 import scala.concurrent.Future
 import akka.io.Tcp.CommandFailed
 import porter.app.akka.Porter
+import porter.app.openid.{OpenIdSettings, OpenIdHandler, OpenIdService}
 
 /**
  * @author Eike Kettner eike.kettner@gmail.com
@@ -38,7 +39,11 @@ object Main extends App {
     HttpHandler.bind(porter, main.http.host, main.http.port)
   } else Future.failed(new Exception("http not active"))
 
-  for (telnetb <- telnetF; httpb <- httpF) {
+  val openidF = if (main.openid.enabled) {
+    OpenIdHandler.bind(porter, OpenIdSettings(system), main.openid.host, main.openid.port)
+  } else Future.failed(new Exception("openid not active"))
+
+  for (telnetb <- telnetF; httpb <- httpF; oid <- openidF) {
     httpb match {
       case Http.Bound(a) => println("--- Bound http to " + a)
       case CommandFailed(c) => println("---x Failed to bind http")
@@ -46,6 +51,10 @@ object Main extends App {
     telnetb match {
       case Tcp.Bound(a) => println("--- Bound telnet to " + a)
       case CommandFailed(c) => println("---x Failed to bind telnet")
+    }
+    oid match {
+      case Tcp.Bound(a) => println("--- Bound OpenId to " + a)
+      case CommandFailed(c) => println("---x Failed to bind OpenId")
     }
     println("---")
   }

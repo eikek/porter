@@ -1,8 +1,8 @@
 package porter.model
 
 import scala.concurrent.duration.Duration
-import porter.util.{AES, Base64}
-import scala.util.{Success, Failure, Try}
+import porter.util.{Hash, AES, Base64}
+import scala.util.Try
 
 /**
  * @author Eike Kettner eike.kettner@gmail.com
@@ -16,9 +16,20 @@ trait AccountCredentials extends Credentials {
   def accountName: Ident
 }
 
+@SerialVersionUID(20131216)
+trait PasswordCredentials extends AccountCredentials {
+  def password: String
+  override final def toString = s"${getClass.getSimpleName}(${accountName.name}, ***)"
+}
+
 @SerialVersionUID(20131122)
-case class PasswordCredentials(accountName: Ident, password: String) extends AccountCredentials {
-  override def toString = s"${getClass.getSimpleName}(${accountName.name}, ***)"
+object PasswordCredentials {
+
+  def apply(accountName: Ident, password: String): PasswordCredentials = UserPass(accountName, password)
+
+  @SerialVersionUID(20131216)
+  private case class UserPass(accountName: Ident, password: String) extends PasswordCredentials
+
 }
 
 @SerialVersionUID(20131130)
@@ -45,11 +56,38 @@ case class DigestAuth(cnonce: String, nonceCount: String) extends DigestQop {
 }
 
 @SerialVersionUID(20131201)
-case class DerivedCredentials(key: Vector[Byte], data: String) extends AccountCredentials {
+case class DerivedCredentials private (accountName: Ident, secret: Secret, valid: Long) extends AccountCredentials {
 
-  private val fields = decode
+  def isExpired = valid > 0 && valid < System.currentTimeMillis()
+  def encode(key: Vector[Byte]): String = {
+    // account$secret.name$until$duration$data
+    val b = StringBuilder.newBuilder
+    b append accountName.name
+    b append "$"
+    b append secret.name.name
+    b append "$"
+    b append valid
+    b append "$"
+    b append Base64.encode(secret.data)
+    val str = b.toString()
+    AES.encryptString(str, key)
+  }
+}
 
-  private[this] def decode = Try {
+object DerivedCredentials {
+
+  def apply(account: Ident, secret: Secret, validFor: Duration = Duration.Inf): DerivedCredentials = {
+    val valid =
+      if (validFor == Duration.Inf) -1
+      else validFor.toMillis + System.currentTimeMillis()
+    DerivedCredentials(account, Secret(secret.name, Hash.sha512(secret.data)), valid)
+  }
+
+  def tryDecode(key: Vector[Byte], data: String) = decode(key, data).map {
+    case (id, secret, valid) => DerivedCredentials(id, secret, valid)
+  }
+
+  private def decode(key: Vector[Byte], data: String) = Try {
     val decrypt = AES.decryptString(data, key)
     decrypt.split('$').toList match {
       case acc::secname::until::secdata::Nil =>
@@ -57,33 +95,4 @@ case class DerivedCredentials(key: Vector[Byte], data: String) extends AccountCr
       case _ => throw new IllegalArgumentException("Wrong credentials")
     }
   }
-
-  def account = fields map { case (a, _, _) => a }
-  def secret = fields map { case (_, s, _) => s }
-  def expires = fields map { case (_, _, ts) => ts }
-  def isExpired = expires match {
-    case Success(ts) => ts > 0 && ts <= System.currentTimeMillis()
-    case _ => true
-  }
-
-  def accountName = account.get
-}
-
-object DerivedCredentials {
-
-  def apply(account: Ident, secret: Secret, validFor: Duration = Duration.Inf)(key: Vector[Byte]): DerivedCredentials = {
-    import scala.concurrent.duration._
-    // account$secret.name$until$duration$data
-    val b = new StringBuilder(account.name)
-    b append "$"
-    b append secret.name.name
-    b append "$"
-    if (validFor == Duration.Inf) b append -1
-    else b append (validFor.toMillis + System.currentTimeMillis())
-    b append "$"
-    b append Base64.encode(secret.data)
-    DerivedCredentials(key, AES.encryptString(b.toString(), key))
-  }
-
-
 }

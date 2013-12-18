@@ -41,6 +41,9 @@ object Deps {
   val spray = Seq(
     "io.spray" % "spray-can" % "1.2.0"
   )
+  val sprayRouting = Seq(
+    "io.spray" % "spray-routing" % "1.2.0"
+  )
 }
 
 object Porter extends sbt.Build {
@@ -55,7 +58,7 @@ object Porter extends sbt.Build {
       unmanagedSourceDirectories in Test := Seq(),
       unmanagedResourceDirectories := Seq()
     )
-  ) aggregate (Api.module, App.module, Dist.module)
+  ) aggregate (Api.module, App.module, OpenId.module, Dist.module)
 
   override lazy val settings = super.settings ++ Seq(
     version := "0.1.0",
@@ -102,6 +105,17 @@ object App extends sbt.Build {
   ) dependsOn Api.module
 }
 
+object OpenId extends Build {
+  lazy val module = Project(
+    id = "openid",
+    base = file("openid"),
+    settings = Project.defaultSettings ++ Seq(
+      name := "porter-openid",
+      libraryDependencies ++= Deps.akka ++ Deps.spray ++ Deps.sprayRouting ++ Deps.testBasics
+    )
+  ) dependsOn App.module
+}
+
 object Dist extends Build {
 
   lazy val module = Project(
@@ -111,5 +125,5 @@ object Dist extends Build {
       name := "porter-dist",
       libraryDependencies ++= Deps.logback ++ Deps.akkaRemote
     )
-  ) dependsOn App.module
+  ) dependsOn (App.module, OpenId.module)
 }

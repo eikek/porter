@@ -16,10 +16,12 @@ class IdentTest extends FunSuite with ShouldMatchers {
     Ident("90-ab_d").name should be ("90-ab_d")
     Ident("---").name should be ("---")
     Ident("_-_-_-").name should be ("_-_-_-")
+    Ident("http://test.com").name should be ("http://test.com")
+    Ident("me@mail.com").name should be ("me@mail.com")
   }
 
   test("convert identifier from a string") {
-    Ident.convertString("90/abÄd/2++").get should be (Ident("90abd2"))
+    Ident.convertString("90öabÄdä2++").get should be (Ident("90abd2"))
     Ident.convertString("+&+") should be (None)
   }
 

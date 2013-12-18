@@ -3,7 +3,7 @@ package porter.util
 import java.io._
 import java.security.SecureRandom
 import javax.crypto.spec.{PBEKeySpec, SecretKeySpec, IvParameterSpec}
-import javax.crypto.{SecretKeyFactory, CipherInputStream, CipherOutputStream, Cipher}
+import javax.crypto._
 import scala.io.Codec
 
 /**
@@ -33,11 +33,21 @@ object AES {
     count
   }
 
+  def isLimitedStrength = Cipher.getMaxAllowedKeyLength("AES") == 128
+
   def deriveKey(password: String, salt: Vector[Byte]): Vector[Byte] = {
     val sfac = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1")
-    val ks = new PBEKeySpec(password.toCharArray, salt.toArray, math.pow(2, 16).toInt, 128)
+    val strength = if (isLimitedStrength) 128 else 256
+    val ks = new PBEKeySpec(password.toCharArray, salt.toArray, math.pow(2, 16).toInt, strength)
     val key = sfac.generateSecret(ks)
     key.getEncoded.toVector
+  }
+
+  def generateRandomKey: Vector[Byte] = {
+    val kf = KeyGenerator.getInstance("AES")
+    val strength = if (isLimitedStrength) 128 else 256
+    kf.init(strength)
+    kf.generateKey().getEncoded.toVector
   }
 
   /**
@@ -125,6 +135,7 @@ object AES {
   def createCipher(key: Vector[Byte], iv: IvParameterSpec, cipherMode: Int) = {
     require(key.length > 0, "A key must be provided.")
     val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
+
     val keyspec = new SecretKeySpec(key.toArray, "AES")
     cipher.init(cipherMode, keyspec, iv)
     cipher

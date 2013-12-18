@@ -121,12 +121,12 @@ object StoreActor {
 
     override def preRestart(reason: Throwable, message: Option[Any]) = {
       super.preRestart(reason, message)
-      store.close()
+//      store.close()
     }
 
     override def postStop() = {
       super.postStop()
-      store.close()
+//      store.close()
     }
   }
 

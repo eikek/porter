@@ -25,16 +25,16 @@ class DigestValidatorTest extends FunSuite with ShouldMatchers {
   // 4. client sends same request with "response".
   //    response = md5( ha1=md5(username:realm:password) : nonce : ha2=md5(method, uri) )
 
-  def ha1(username: String, password: String) = Hash.md5(username +":"+ realm.id.name +":"+ password)
+  def ha1(username: String, password: String) = Hash.md5String(username +":"+ realm.id.name +":"+ password)
 
   def clientResponse(ha1: String, nonce: String, qop: Option[DigestQop]) = {
     val ha2 = qop match {
-      case Some(DigestAuthInt(_, _, body)) => Hash.md5(method +":"+ uri +":"+ Hash.md5(body))
-      case _ => Hash.md5(method +":"+ uri)
+      case Some(DigestAuthInt(_, _, body)) => Hash.md5String(method +":"+ uri +":"+ Hash.md5String(body))
+      case _ => Hash.md5String(method +":"+ uri)
     }
     qop match {
-      case Some(dqop) => Hash.md5(ha1 +":"+ nonce +":"+ dqop.nonceCount +":"+ dqop.cnonce +":"+ dqop.name +":"+ ha2)
-      case _ => Hash.md5(ha1 +":"+ nonce +":"+ ha2)
+      case Some(dqop) => Hash.md5String(ha1 +":"+ nonce +":"+ dqop.nonceCount +":"+ dqop.cnonce +":"+ dqop.name +":"+ ha2)
+      case _ => Hash.md5String(ha1 +":"+ nonce +":"+ ha2)
     }
   }
 

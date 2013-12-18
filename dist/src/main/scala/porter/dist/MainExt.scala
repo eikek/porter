@@ -2,6 +2,7 @@ package porter.dist
 
 import akka.actor._
 import porter.dist.MainExt.InterfaceSettings
+import porter.app.openid.OpenIdSettings
 
 object MainExt extends ExtensionId[MainExt] with ExtensionIdProvider {
   def lookup() = MainExt
@@ -18,6 +19,7 @@ case class MainExt(address: Address, private val system: ExtendedActorSystem) ex
     address.toString + porter.path.elements.mkString("/", "/", ""))
 
   private val config = system.settings.config.getConfig("porter")
+  val openidSettings = new OpenIdSettings(config.getConfig("openid"))
 
   val telnet = InterfaceSettings(
     config.getString("telnet.host"),
@@ -29,5 +31,11 @@ case class MainExt(address: Address, private val system: ExtendedActorSystem) ex
     config.getString("http.host"),
     config.getInt("http.port"),
     config.getBoolean("http.enabled")
+  )
+
+  val openid = InterfaceSettings(
+    config.getString("openid.host"),
+    config.getInt("openid.port"),
+    config.getBoolean("openid.enabled")
   )
 }

@@ -15,7 +15,7 @@ sealed trait Ident extends Serializable {
 }
 
 object Ident {
-  private val chars = ('a' to 'z').toSet ++ ('A' to 'Z') ++ ('0' to '9') ++ Set('_', '-', '@', '.')
+  private val chars = ('a' to 'z').toSet ++ ('A' to 'Z') ++ ('0' to '9') ++ Set('_', '-', '@', '.', ':', '/')
 
   @SerialVersionUID(20131121)
   private case class Impl(name: String) extends Ident {

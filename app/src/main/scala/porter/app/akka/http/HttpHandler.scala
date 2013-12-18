@@ -3,7 +3,7 @@ package porter.app.akka.http
 import akka.actor._
 import spray.can.Http
 import akka.actor.Terminated
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{Future, ExecutionContext}
 import akka.io.{Tcp, IO}
 import akka.util.Timeout
 

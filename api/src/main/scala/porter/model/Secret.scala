@@ -65,6 +65,6 @@ object Secret {
    * @return
    */
   def digestHA1(user: Ident, realm: Ident, password: String) =
-    Secret(Types.digestmd5, Hash.md5(user.name +":"+ realm.name +":"+ password))
+    Secret(Types.digestmd5, Hash.md5String(user.name +":"+ realm.name +":"+ password))
 
 }

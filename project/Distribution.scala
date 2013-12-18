@@ -10,19 +10,20 @@ object Distribution extends Plugin {
   private val libraries = Keys.dependencyClasspath.in(Runtime)
   private val apiJar = Keys.packageBin.in(Api.module).in(Compile)
   private val appJar = Keys.packageBin.in(App.module).in(Compile)
+  private val openidJar = Keys.packageBin.in(OpenId.module).in(Compile)
   private val distJar = Keys.packageBin.in(Compile)
 
   val distSettings = super.projectSettings ++ Seq(
     DistributionKeys.dist <<=
-      (libraries, apiJar, appJar, distJar, Keys.target, Keys.sourceDirectory, Keys.version) map {
-      (libs, api, app, distr, target, srcdir, version) =>
+      (libraries, apiJar, appJar, openidJar, distJar, Keys.target, Keys.sourceDirectory, Keys.version) map {
+      (libs, api, app, openid, distr, target, srcdir, version) =>
 
       val (files, dirs) = libs.map(_.data).toVector.partition(ClasspathUtilities.isArchive)
       val outdir = target / s"porter-$version"
       val zipped = target / s"porter-$version.zip"
       IO.delete(outdir)
       val libdir = outdir / "lib"
-      (files :+ api :+ app).foreach(f => IO.copyFile(f, libdir / f.getName))
+      (files :+ api :+ app :+ openid).foreach(f => IO.copyFile(f, libdir / f.getName))
 
       IO.createDirectories(Seq(libdir, outdir / "bin", outdir / "etc"))
       IO.copyFile(distr, outdir / "bin" / "porter.jar")
