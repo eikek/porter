@@ -21,7 +21,7 @@ object DigestValidator extends Validator {
 
   /**
    * Generates a string to be used as the server side nonce value. It is comprised
-   * of the timestamp and a checksum of the realm id + timestamp. The realm id must
+   * of the timestamp and a checksum of the given string + timestamp. The string must
    * therefore be kept secret!
    *
    * If a digest authentication is requested from the client you must use a nonce value
@@ -29,27 +29,26 @@ object DigestValidator extends Validator {
    * will check the nonce value send by the client and rejects the authentication request,
    * if that fails.
    *
-   * @param realmId
+   * @param str
    * @return
    */
-  def generateNonce(realmId: Ident) = createNonce(realmId, System.currentTimeMillis())
+  def generateNonce(str: String) = createNonce(str, System.currentTimeMillis())
 
-  private def createNonce(realmId: Ident, timestamp: Long) =
-    timestamp + "$" + BCrypt.hashpw(timestamp + realmId.name, BCrypt.gensalt())
+  private def createNonce(str: String, timestamp: Long) =
+    timestamp + "$" + BCrypt.hashpw(timestamp + str, BCrypt.gensalt())
 
   def authenticate(token: AuthToken) = {
-    val digest = token.credentials.collect({ case c: DigestCredentials => c })
-    val secret = token.account.secrets.find(s => s.name == Secret.Types.digestmd5)
-    (secret, digest.headOption) match {
-      case (Some(sec), Some(dc)) =>
-        val vote = checkNonce(token.realm.id, dc) match {
-          case Success(ts) if !timedout(ts) => checkDigest(dc, sec.asString)
+    val credentials = token.credentials.collect({ case c: DigestCredentials => c })
+    val secrets = token.account.secrets.filter(s => s.name.name.startsWith("digestmd5."))
+    credentials.foldLeft(token) { (token, cred) =>
+      secrets.foldLeft(token) { (token, sec) =>
+        val vote = checkNonce(token.realm.id, cred) match {
+          case Success(ts) if !timedout(ts) => checkDigest(cred, sec.asString)
           case Success(ts) if timedout(ts) => Reasons.nonceExpired
           case Failure(ex) => Reasons.invalidCred
         }
         token.vote(sec -> vote)
-
-      case _ => token
+      }
     }
   }
 

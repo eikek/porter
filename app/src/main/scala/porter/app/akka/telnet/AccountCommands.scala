@@ -2,10 +2,10 @@ package porter.app.akka.telnet
 
 import scala.concurrent.{Future, ExecutionContext}
 import akka.util.Timeout
-import porter.model.{Properties, Secret, Ident}
+import porter.model._
 import scala.util.Try
-import porter.model.Account
 import porter.app.akka.Porter
+import porter.model.Account
 
 /**
  * @author Eike Kettner eike.kettner@gmail.com
@@ -109,7 +109,7 @@ object AccountCommands extends Commands {
         r <- in.realmFuture
         resp <- (in.porter ? FindAccounts(r.id, Set(login))).mapTo[FindAccountsResp]
         first <- Future.immediate(resp.accounts.headOption, "Account not found")
-        op <- (in.porter ? UpdateAccount(r.id, first.changeSecret(Secret.bcryptPassword(passw)))).mapTo[OperationFinished]
+        op <- (in.porter ? UpdateAccount(r.id, first.changeSecret(Password(passw)))).mapTo[OperationFinished]
       } yield "Password changed: "+ op.result
       in << result
     }
@@ -152,7 +152,7 @@ object AccountCommands extends Commands {
       sess[Ident](name),
       sess[Properties](props),
       sess[Set[Ident]](groups),
-      Seq(Secret.bcryptPassword(sess[String](password)))
+      Seq(Password(sess[String](password)))
     ))
   }
 }

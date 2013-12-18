@@ -6,7 +6,7 @@ import scala.concurrent.{Future, ExecutionContext}
 object TestData {
   import porter.model._
 
-  val testpassword = Secret.bcryptPassword("test")
+  val testpassword = Password("test")
 
   val john = Account(
     name = "john",

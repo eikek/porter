@@ -2,7 +2,7 @@ package porter.app.akka.telnet
 
 import scala.concurrent.ExecutionContext
 import akka.util.Timeout
-import porter.model.Secret
+import porter.model.{Password, Secret}
 import porter.app.akka.api.PorterMain.ShowSettings
 
 object HelpCommands extends Commands {
@@ -32,7 +32,7 @@ object HelpCommands extends Commands {
       if (plain.isEmpty)
         in << "Error: Empty password."
       else
-        in << Secret.bcryptPassword(plain).asString
+        in << Password(plain).asString
 
     case in@Input(show, conn, porter, _) if show == "show settings" =>
       val settings = (porter ? ShowSettings()).mapTo[String]

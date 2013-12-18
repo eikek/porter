@@ -2,7 +2,6 @@ package porter.app
 
 import porter.store.SimpleStore
 import com.typesafe.config.Config
-import porter.model.Secret.Types
 import scala.util.Try
 
 /**
@@ -59,7 +58,7 @@ class ConfigStore(cfg: Config) extends SimpleStore {
       a,
       Try(getProps(cfg.getConfig(s"${r.id.name}.accounts.$a.props"))).getOrElse(Map.empty),
       cfg.getStringList(s"${r.id.name}.accounts.$a.groups").asScala.map(Ident.apply).toSet,
-      Seq(Secret(Types.bcrypt, cfg.getString(s"${r.id.name}.accounts.$a.secret")))
+      Seq(Secret("password.0", cfg.getString(s"${r.id.name}.accounts.$a.secret")))
     )
 
   private def getProps(cfg: Config): Properties =

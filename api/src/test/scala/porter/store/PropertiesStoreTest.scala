@@ -15,7 +15,7 @@ class PropertiesStoreTest extends FunSuite with ShouldMatchers {
   import scala.concurrent.duration._
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  val testPw = Secret.bcryptPassword("test")
+  val testPw = Password("test")
   val acc = Account("john", Map("email" -> "john@mail.com", "enabled" -> "true"), Set("users", "admin"), Seq(testPw))
 
   private def createProps() = {

@@ -62,7 +62,7 @@ class MongoStoreTest extends FunSuite with ShouldMatchers with BeforeAndAfterAll
 
   test("create and list accounts") {
     val r = createRealm()
-    val passw = Secret.bcryptPassword("test")
+    val passw = Password("test")
     val acc1 = Account("john", Map("enabled" -> "true"), Set("g1", "g3"), Seq(passw))
     val acc2 = Account("mary", Map("enabled" -> "false"), Set("g1", "g2"), Seq(passw))
 

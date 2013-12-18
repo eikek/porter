@@ -8,12 +8,8 @@ import porter.model.Account
 import scala.util.{Failure, Success}
 import scala.concurrent.{Await, ExecutionContext}
 
-/**
- * @author Eike Kettner eike.kettner@gmail.com
- * @since 23.11.13 02:34
- */
 class AuthzTest extends FunSuite with ShouldMatchers {
-  val testPw = Secret.bcryptPassword("test")
+  val testPw = Password("test")
   val factory = RuleFactory.providedFactory
   val realmId = Ident.randomIdent
 

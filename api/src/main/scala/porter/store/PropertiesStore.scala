@@ -52,7 +52,7 @@ class PropertiesStore(props: Map[String, String]) extends SimpleStore {
       name,
       props.propMap(s"porter.${realm.id.name}.account.$name.props"),
       props.propList(s"porter.${realm.id.name}.account.$name.groups").toSet.map(Ident.apply),
-      Seq(Secret(Secret.Types.bcrypt, props.prop(s"porter.${realm.id.name}.account.$name.secret")))
+      Seq(Secret("password.0", props.prop(s"porter.${realm.id.name}.account.$name.secret")))
     )
 }
 

@@ -2,7 +2,7 @@ package porter.app
 
 import org.scalatest.FunSuite
 import org.scalatest.matchers.ShouldMatchers
-import porter.model.{Ident, Realm, Secret}
+import porter.model.{Password, Ident, Realm, Secret}
 import com.typesafe.config.ConfigFactory
 
 /**
@@ -12,7 +12,7 @@ import com.typesafe.config.ConfigFactory
  */
 class ConfigStoreTest extends FunSuite with ShouldMatchers {
 
-  val testpw = Secret.bcryptPassword("test")
+  val testpw = Password("test")
 
   test("read one realm with one account and two groups") {
     val cstr =

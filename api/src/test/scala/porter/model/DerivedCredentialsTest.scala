@@ -4,6 +4,7 @@ import org.scalatest.FunSuite
 import org.scalatest.matchers.ShouldMatchers
 import scala.util.Random
 import porter.util.{Hash, AES}
+import porter.model.Password.Scrypt
 
 /**
  * @author Eike Kettner eike.kettner@gmail.com
@@ -22,7 +23,7 @@ class DerivedCredentialsTest extends FunSuite with ShouldMatchers {
     val salt = genSalt
     val key = AES.deriveKey("superword", salt)
 
-    val secret = Secret.scryptPassword("hello")
+    val secret = Password(Scrypt())("hello")
     val data = DerivedCredentials("john", secret).encode(key)
     val derived = DerivedCredentials.tryDecode(key, data).get
     derived.accountName should be (Ident("john"))
