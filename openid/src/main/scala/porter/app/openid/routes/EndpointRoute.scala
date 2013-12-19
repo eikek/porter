@@ -30,7 +30,7 @@ trait EndpointRoute {
     path(openIdEndpoint) {
       isAssociate {
         createAssociation ~
-          complete(errorResponse(direct = true, "Invalid association request", None))
+          complete(errorResponse(direct = true, "Invalid association request"))
       } ~
       isCheckAuth {
         lookupAssociation(_.priv)(timeout) { assoc =>
@@ -39,7 +39,7 @@ trait EndpointRoute {
             complete(checkAssocResponse(valid, assoc.handle))
           }
         } ~
-        complete(errorResponse(direct = true, "Invalid check-auth request", None))
+        complete(errorResponse(direct = true, "Invalid check-auth request"))
       } ~
       isImmediate {
         noCredentials {
@@ -47,7 +47,7 @@ trait EndpointRoute {
         } ~
         credentials { creds =>
           authenticateRoute(creds) ~
-            complete(errorResponse(direct = true, "Invalid immediate checkid request", None))
+            complete(errorResponse(direct = true, "Invalid immediate checkid request"))
         }
       } ~
       isSetup {
@@ -59,7 +59,7 @@ trait EndpointRoute {
         } ~
         credentials { creds =>
           authenticateRoute(creds) ~
-            redirectToRelyingParty(errorResponse(direct = false, "Invalid checkid request", None))
+            redirectToRelyingParty(errorResponse(direct = false, "Invalid checkid request"))
         }
       } ~
       renderErrorPage

@@ -98,8 +98,8 @@ trait OpenIdDirectives extends Provides {
 
   def userCancelResponse = Map(Keys.ns.openid -> openid20, Keys.mode.openid -> Modes.cancel)
 
-  def errorResponse(direct: Boolean, msg: String, contact: Option[String]) = {
-    val c = contact.map(s => Map(Keys.contact -> s)).getOrElse(Map.empty)
+  def errorResponse(direct: Boolean, msg: String) = {
+    val c = settings.contact.map(s => Map(Keys.contact -> s)).getOrElse(Map.empty)
     val params: Map[String, String] = c ++ Map(
      Keys.ns -> openid20,
      Keys.mode -> Modes.error,
