@@ -17,7 +17,7 @@ import porter.app.openid.AssocActor.AssocToken
 import porter.app.akka.api.AuthcWorker.messages.AuthenticateResp
 import scala.util.Success
 import porter.app.akka.api.StoreActor.messages.FindAccounts
-import java.util.UUID
+import java.util.{TimeZone, Date, UUID}
 import porter.auth.AuthResult
 import scala.util.Failure
 import scala.Some
@@ -45,7 +45,8 @@ trait AuthDirectives extends AssociationDirectives {
 
   private def nextNonce = {
     val df = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
-    df.format(new java.util.Date) + UUID.randomUUID().toString.replace('-', 'z')
+    df.setTimeZone(TimeZone.getTimeZone("UTC"))
+    df.format(new java.util.Date()) + UUID.randomUUID().toString.replace('-', 'z')
   }
 
   def authFuture(creds: Set[Credentials], realm: Ident)(implicit timeout: Timeout) = {
