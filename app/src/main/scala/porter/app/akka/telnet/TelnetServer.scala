@@ -42,7 +42,7 @@ object TelnetServer {
 
   case object GetConnCount extends Serializable
 
-  def props(porter: ActorRef) = Props(classOf[TelnetServer], porter)
+  def apply(porter: ActorRef) = Props(classOf[TelnetServer], porter)
 
   /**
    * Binds the telnet service to the given address. The Future is completed
@@ -58,7 +58,7 @@ object TelnetServer {
           (implicit system: ActorSystem, ec: ExecutionContext, bindTimeout: Timeout) = {
     import akka.pattern.ask
     val telnetEndpoint = new InetSocketAddress(host, port)
-    val telnetServer = system.actorOf(props(porter), name = "porter-telnet")
+    val telnetServer = system.actorOf(apply(porter), name = "porter-telnet")
     (IO(Tcp) ? Tcp.Bind(telnetServer, telnetEndpoint)).mapTo[Event]
   }
 }

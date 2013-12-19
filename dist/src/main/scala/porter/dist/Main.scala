@@ -1,62 +1,35 @@
 package porter.dist
 
-import _root_.akka.io.Tcp
-import _root_.akka.util.Timeout
-import porter.app.akka.telnet.TelnetServer
-import porter.app.akka.http.HttpHandler
-import spray.can.Http
-import porter.app.PorterSettings
-import porter.app.akka.api.PorterMain
-import akka.actor.ActorSystem
-import scala.concurrent.Future
-import akka.io.Tcp.CommandFailed
-import porter.app.akka.Porter
-import porter.app.openid.{OpenIdSettings, OpenIdHandler, OpenIdService}
+import akka.actor._
+import scala.util.control.NonFatal
 
 /**
- * @author Eike Kettner eike.kettner@gmail.com
- * @since 24.11.13 14:40
+ * Starts the [[porter.dist.MainActor]]
  */
-object Main extends App {
+object Main {
 
-  // starts akka system
-  implicit val system = ActorSystem("porter")
-  import system.dispatcher
+  val name = "porter"
 
-  // start porter actor and two interfaces: http and telnet
-  import scala.concurrent.duration._
-  implicit val bindTimeout = Timeout(2.seconds)
-
-  val main = MainExt(system)
-  val porter = Porter(system).main
-  println(s"\n---\n--- Porter remote actor listening on ${main.pathFor(porter)} \n---")
-
-  val telnetF = if (main.telnet.enabled) {
-    TelnetServer.bind(porter, main.telnet.host, main.telnet.port)
-  } else Future.failed(new Exception("telnet not active"))
-
-  val httpF = if (main.http.enabled) {
-    HttpHandler.bind(porter, main.http.host, main.http.port)
-  } else Future.failed(new Exception("http not active"))
-
-  val openidF = if (main.openid.enabled) {
-    OpenIdHandler.bind(porter, OpenIdSettings(system), main.openid.host, main.openid.port)
-  } else Future.failed(new Exception("openid not active"))
-
-  for (telnetb <- telnetF; httpb <- httpF; oid <- openidF) {
-    httpb match {
-      case Http.Bound(a) => println("--- Bound http to " + a)
-      case CommandFailed(c) => println("---x Failed to bind http")
+  def main(args: Array[String]): Unit = {
+    if (args.length != 0) {
+      println("This app takes no arguments. They are ignored.")
     }
-    telnetb match {
-      case Tcp.Bound(a) => println("--- Bound telnet to " + a)
-      case CommandFailed(c) => println("---x Failed to bind telnet")
+    val system = ActorSystem(name)
+    try {
+      val app = system.actorOf(MainActor(), name)
+      system.actorOf(Props(classOf[Terminator], app), name+"-terminator")
+    } catch {
+      case NonFatal(e) ⇒ system.shutdown(); throw e
     }
-    oid match {
-      case Tcp.Bound(a) => println("--- Bound OpenId to " + a)
-      case CommandFailed(c) => println("---x Failed to bind OpenId")
+  }
+
+  class Terminator(app: ActorRef) extends Actor with ActorLogging {
+    context watch app
+    def receive = {
+      case Terminated(_) ⇒
+        log.info("application supervisor has terminated, shutting down")
+        context.system.shutdown()
     }
-    println("---")
   }
 
 }

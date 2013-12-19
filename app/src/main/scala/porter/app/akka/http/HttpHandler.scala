@@ -43,7 +43,7 @@ object HttpHandler {
 
   case object GetConnCount extends Serializable
 
-  def props(porter: ActorRef) = Props(classOf[HttpHandler], porter)
+  def apply(porter: ActorRef) = Props(classOf[HttpHandler], porter)
 
   /**
    * Binds the http service to the given address. The Future is completed
@@ -58,7 +58,7 @@ object HttpHandler {
   def bind(porter: ActorRef, host: String, port: Int)
           (implicit system: ActorSystem, ec: ExecutionContext, bindTimeout: Timeout) = {
     import akka.pattern.ask
-    val httpHandler = system.actorOf(props(porter), name = "porter-http")
+    val httpHandler = system.actorOf(apply(porter), name = "porter-http")
     (IO(Http) ? Http.Bind(httpHandler, interface = host, port = port)).mapTo[Tcp.Event]
   }
 }

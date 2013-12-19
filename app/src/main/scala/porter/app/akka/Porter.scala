@@ -14,7 +14,7 @@ class Porter(system: ExtendedActorSystem) extends Extension {
    * @return
    */
   def remotePath(host: String, port: Int): ActorPath =
-    ActorPath.fromString(s"akka.tcp://porter@$host:$port/user/porter-api")
+    ActorPath.fromString(s"akka.tcp://porter@$host:$port/user/porter/api")
 
   /**
    * Selects the remote porter actor at the given location. If an [[akka.actor.ActorRef]]
@@ -35,8 +35,8 @@ class Porter(system: ExtendedActorSystem) extends Extension {
    * @param name the name of the new actor
    * @return
    */
-  def createPorter(settings: PorterSettings, name: String): ActorRef =
-    system.actorOf(PorterMain(settings), name)
+  def createPorter(factory: ActorRefFactory, settings: PorterSettings, name: String): ActorRef =
+    factory.actorOf(PorterMain(settings), name)
 
   /**
    * Creates a new porter actor within this actor system and returns the ref. The
@@ -50,17 +50,17 @@ class Porter(system: ExtendedActorSystem) extends Extension {
    * @param actorName the name of the new actor
    * @return
    */
-  def createPorter(configName: String, actorName: String = "porter-api"): ActorRef = {
+  def createPorter(factory: ActorRefFactory, configName: String, actorName: String = "api"): ActorRef = {
     val cfg = system.settings.config.getConfig(configName)
     val settings = PorterSettings.fromConfig(cfg, system.dynamicAccess)
-    createPorter(settings, actorName)
+    createPorter(factory, settings, actorName)
   }
 
   /**
    * For convenience, this creates a new porter actor within this actor system by
    * looking up a configuration of name "porter" and the actor name "porter-api".
    */
-  lazy val main = createPorter("porter")
+  lazy val main = createPorter(system, "porter")
 }
 
 object Porter extends ExtensionId[Porter] with ExtensionIdProvider {
