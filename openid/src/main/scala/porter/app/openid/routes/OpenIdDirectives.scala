@@ -37,6 +37,7 @@ trait OpenIdDirectives extends Provides {
   }
 
   def param(name: String): Directive1[String] = anyParam(name)
+  def paramOpt(name: String): Directive1[Option[String]] = param(name).map(Some.apply) | provide(None)
 
   def paramIs(name: String, pred: String => Boolean): Directive0 = param(name).flatMap { v =>
     if (pred(v)) pass else reject()

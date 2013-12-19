@@ -33,7 +33,7 @@ trait EndpointRoute {
           complete(errorResponse(direct = true, "Invalid association request", None))
       } ~
       isCheckAuth {
-        associationToken(_.priv)(timeout) { assoc =>
+        lookupAssociation(_.priv)(timeout) { assoc =>
           allParams { params =>
             val valid = validateResponse(assoc.token, params)
             complete(checkAssocResponse(valid, assoc.handle))

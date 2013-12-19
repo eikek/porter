@@ -32,26 +32,32 @@ trait AssociationDirectives extends OpenIdDirectives {
   private def createPrivateAssocFuture(implicit timeout: Timeout) =
     (assocActor ? CreatePrivateAssoc(AssocType.HmacSha256, SessionType.NoEncryption)).mapTo[GetTokenResult]
 
-  def associationFuture(handle: String)(implicit timeout: Timeout): Future[Association] = {
-    assocLookupFuture(handle).flatMap {
-      case Some(token) if token.isValid => Future.successful(Association(handle, token))
-      case _ => createPrivateAssocFuture.flatMap {
-        case GetTokenResult(h, Some(t)) => Future.successful(Association(h, t))
-        case _ => Future.failed(new Exception("No assocation found and unable to create private one."))
+  def associationFuture(handle: Option[String])(implicit timeout: Timeout): Future[Association] = {
+    lazy val createAssoc = createPrivateAssocFuture.flatMap {
+      case GetTokenResult(h, Some(t)) => Future.successful(Association(h, t))
+      case _ => Future.failed(new Exception("No assocation found and unable to create private one."))
+    }
+    val lookupAssoc = handle match {
+      case Some(h) => assocLookupFuture(h).map {
+        case Some(t) if t.isValid => Some(Association(h, t))
+        case _ => None
       }
+      case _ => Future.successful(None)
+    }
+    lookupAssoc.flatMap {
+      case Some(a) => Future.successful(a)
+      case _ => createAssoc
     }
   }
-  def association(handle: String)(implicit timeout: Timeout): Directive1[Association] =
+  def association(handle: Option[String])(implicit timeout: Timeout): Directive1[Association] =
     onSuccess(associationFuture(handle))
 
-  def associationToken(pred: AssocToken => Boolean)(implicit timeout: Timeout): Directive1[Association] =
-    param(Keys.assoc_handle.openid).hflatMap {
-      case handle #: HNil =>
-        onComplete(assocLookupFuture(handle)).hflatMap {
-          case Success(Some(token)) #: HNil if pred(token) => provide(Association(handle, token))
-          case _ => reject()
-        }
-      case _ => reject()
+  def lookupAssociation(pred: AssocToken => Boolean)(implicit timeout: Timeout): Directive1[Association] =
+    param(Keys.assoc_handle.openid).flatMap { handle =>
+      onComplete(assocLookupFuture(handle)).flatMap {
+        case Success(Some(token)) if pred(token) => provide(Association(handle, token))
+        case _ => reject()
+      }
     }
 
   private def extractAssociationReq: Directive1[CreateAssoc] = formFields.hflatMap {

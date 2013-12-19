@@ -76,15 +76,15 @@ trait AuthDirectives extends AssociationDirectives {
   }
 
   def authenticateToken(creds: Set[Credentials], realm: Ident)(implicit timeout: Timeout): Directive1[Authenticated] =
-    param(Keys.assoc_handle.openid).hflatMap { handle =>
+    paramOpt(Keys.assoc_handle.openid).flatMap { handle =>
       val f = for {
         auth <- authFuture(creds, realm)
         account <- accountFuture(LocalId(auth.realm.id, auth.accountId))
-        assoc <- associationFuture(handle.head)
+        assoc <- associationFuture(handle)
       } yield (account, assoc)
-      onComplete(f).hflatMap {
-        case Success((Some(acc), assoc)) #: HNil => provide(Authenticated(acc, assoc))
-        case Failure(ex) #: HNil => ex.printStackTrace(); reject()
+      onComplete(f).flatMap {
+        case Success((Some(acc), assoc)) => provide(Authenticated(acc, assoc))
+        case Failure(ex) => ex.printStackTrace(); reject()
         case _ => reject()
       }
     }
