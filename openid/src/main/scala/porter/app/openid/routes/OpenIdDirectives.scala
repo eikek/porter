@@ -25,10 +25,12 @@ trait OpenIdDirectives extends Provides {
 
   def openIdEndpoint = PathMatchers.separateOnSlashes(settings.endpointUrl.path.dropChars(1).toString())
 
-  def returnToUrl: Directive1[Uri] = param(Keys.return_to.openid).flatMap { str =>
-    Try(Uri(str)) match {
-      case Success(uri) => provide(uri)
-      case _ => reject()
+  def returnToUrl: Directive1[Uri] = param(Keys.return_to.openid).flatMap { rto =>
+    param(Keys.realm.openid).flatMap { realm =>
+      Try(Uri(rto)) match {
+        case Success(uri) if uri.matchesRealm(realm) => provide(uri)
+        case _ => reject()
+      }
     }
   }
 
