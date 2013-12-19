@@ -16,6 +16,8 @@ class OpenIdSettings(cfg: Config, da: DynamicAccess) extends Extension with Open
 
   val decider = da.getObjectFor[porter.auth.Decider](cfg.getString("decider")).get
 
+  val contact = Try(cfg.getString("contact")).toOption.filter(_.nonEmpty)
+
   val staticResourceDir = Paths.get(cfg.getString("static-resource-dir"))
   val templateDir = Paths.get(cfg.getString("template-dir"))
 

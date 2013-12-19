@@ -8,6 +8,7 @@ object HtmlTemplates {
 
   val loginTemplate = "login-template.html"
   val continueTemplate = "continue-template.html"
+  val errorTemplate = "error-template.html"
 
   def createLoginPage(form: Node, info: Node)(implicit settings: OpenIdServiceSettings): Option[Try[String]] = {
     def loader(s: Supplier) = createPage(s, {
@@ -28,6 +29,9 @@ object HtmlTemplates {
     })
     settings.loadTemplate(continueTemplate).map(loader)
   }
+
+  def createErrorTemplate(implicit settings: OpenIdServiceSettings) =
+    settings.loadTemplate(errorTemplate).map(s => createPage(s, PartialFunction.empty))
   
   def createPage(template: Supplier, trans: PartialFunction[Node, Node]): Try[String] = {
     val templ = template().map(XML.load)

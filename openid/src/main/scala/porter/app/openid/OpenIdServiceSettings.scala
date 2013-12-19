@@ -10,6 +10,8 @@ trait OpenIdServiceSettings {
 
   def decider: porter.auth.Decider
 
+  def contact: Option[String]
+
   def staticResourceDir: java.nio.file.Path
   def templateDir: java.nio.file.Path
 

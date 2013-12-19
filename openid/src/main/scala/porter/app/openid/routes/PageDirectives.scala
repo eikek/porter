@@ -3,8 +3,10 @@ package porter.app.openid.routes
 import scala.xml.NodeSeq
 import porter.app.openid.common.{LocalId, HtmlTemplates, Keys}
 import spray.routing.Directives._
-import spray.http.{MediaTypes, ContentType, HttpEntity, HttpResponse}
+import spray.http._
 import porter.app.openid.common
+import spray.http.HttpResponse
+import porter.app.openid.common.LocalId
 
 trait PageDirectives {
   self: OpenIdDirectives =>
@@ -69,6 +71,8 @@ trait PageDirectives {
       <p>Continue authentication with
         <strong>{req.get(Keys.realm.openid).getOrElse(req(Keys.return_to.openid))}</strong>.</p>)(settings)
 
+  private def errorTemplate =
+    HtmlTemplates.createErrorTemplate(settings)
 
   def renderLoginPage(failed: Boolean) = allParams { req =>
     localIdOption { lidopt =>
@@ -77,6 +81,10 @@ trait PageDirectives {
           loginTemplate(req, lidopt, failed).get.get)))
     }
   }
+
+  def renderErrorPage = complete(HttpResponse(
+    status = StatusCodes.BadRequest,
+    entity = HttpEntity(ContentType(MediaTypes.`text/html`), errorTemplate.get.get)))
 
   def renderContinuePage(params: Map[String, String]) =
     complete(HttpResponse(

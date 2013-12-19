@@ -1,16 +1,36 @@
 package porter.app.openid.routes
 
 import spray.routing.Route
+import porter.model.Credentials
 
 trait EndpointRoute {
   self: AuthDirectives with PageDirectives =>
 
   import spray.routing.Directives._
 
+  private def authenticateRoute(creds: Set[Credentials]): Route = {
+    extractRealm { realm =>
+      authenticateToken(creds, realm)(timeout) { auth =>
+        positiveAssertion(auth, realm) { params =>
+          setPorterCookie(auth.account) {
+            isSetup {
+              renderContinuePage(params)
+            } ~
+            isImmediate {
+              redirectToRelyingParty(params)
+            }
+          }
+        }
+      } ~
+      renderLoginPage(failed = true)
+    }
+  }
+
   def checkRoute: Route = {
     path(openIdEndpoint) {
       isAssociate {
-        createAssociation
+        createAssociation ~
+          complete(errorResponse(direct = true, "Invalid association request", None))
       } ~
       isCheckAuth {
         associationToken(_.priv)(timeout) { assoc =>
@@ -18,12 +38,19 @@ trait EndpointRoute {
             val valid = validateResponse(assoc.token, params)
             complete(checkAssocResponse(valid, assoc.handle))
           }
+        } ~
+        complete(errorResponse(direct = true, "Invalid check-auth request", None))
+      } ~
+      isImmediate {
+        noCredentials {
+          complete(setupNeededResponse)
+        } ~
+        credentials { creds =>
+          authenticateRoute(creds) ~
+            complete(errorResponse(direct = true, "Invalid immediate checkid request", None))
         }
       } ~
-      (isImmediate & noCredentials) {
-        redirectToRelyingParty(setupNeededResponse)
-      } ~
-      (isSetup | isImmediate) {
+      isSetup {
         userCancel {
           redirectToRelyingParty(userCancelResponse)
         } ~
@@ -31,23 +58,11 @@ trait EndpointRoute {
           renderLoginPage(failed = false)
         } ~
         credentials { creds =>
-          extractRealm { realm =>
-            authenticateToken(creds, realm)(timeout) { auth =>
-              positiveAssertion(auth, realm) { params =>
-                setPorterCookie(auth.account) {
-                  isSetup {
-                    renderContinuePage(params)
-                  } ~
-                    isImmediate {
-                      redirectToRelyingParty(params)
-                    }
-                }
-              }
-            } ~
-            renderLoginPage(failed = true)
-          }
+          authenticateRoute(creds) ~
+            redirectToRelyingParty(errorResponse(direct = false, "Invalid checkid request", None))
         }
-      }
+      } ~
+      renderErrorPage
     }
   }
 }
