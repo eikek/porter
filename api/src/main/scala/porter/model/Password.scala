@@ -8,17 +8,29 @@ import javax.crypto.spec.PBEKeySpec
 import porter.util.Base64
 import scala.io.Codec
 import scala.util.Try
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Factory for password secrets. Usage:
  * {{{
+ *   import porter.model.Password
+ *   import porter.model.Password._
  *   Password("test")
- *   Password(Password.Scrypt())("test")
+ *   Password(Scrypt())("test")
+ *   Password("password.1", Bcrypt(12))("test")
  * }}}
  *
  */
 object Password {
-  private val random = SecureRandom.getInstance("SHA1PRNG")
+  private val _random = SecureRandom.getInstance("SHA1PRNG")
+  private val _counter = new AtomicInteger(0)
+  private def random = {
+    if (_counter.compareAndSet(10000, 0)) {
+      _random.setSeed(SecureRandom.getSeed(32))
+    }
+    _counter.incrementAndGet()
+    _random
+  }
   private def intBelow(n: Int) = (random.nextDouble() * n).toInt
   private def randomSalt: Vector[Byte] = {
     val salt = new Array[Byte](16)
@@ -27,6 +39,8 @@ object Password {
   }
   private def split(str: String, c: Char = '$') =
     str.split(c).collect({ case s if s.trim.nonEmpty => s.trim }).toList
+
+  def secretName(num: Int) = Ident(s"password.$num")
 
   type Crypt = String => String
 
@@ -56,7 +70,7 @@ object Password {
   object Pbkdf2 {
     val name = "pbkdf2-sha1"
 
-    def apply(salt: Vector[Byte] = randomSalt, n: Int = 44000 + intBelow(10000)): Crypt = new Crypt {
+    def apply(salt: Vector[Byte] = randomSalt, n: Int = 54000 + intBelow(10000)): Crypt = new Crypt {
       def apply(plain: String) = {
         val len = 160
         val enc = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1")
@@ -75,10 +89,10 @@ object Password {
 
   object Digest {
     val name = "digest"
-    def md5(n: Int = 200000, salt: Vector[Byte] = randomSalt): Crypt = apply("MD5", n, salt)
-    def sha1(n: Int = 200000, salt: Vector[Byte] = randomSalt): Crypt = apply("SHA-1", n, salt)
-    def sha256(n: Int = 200000, salt: Vector[Byte] = randomSalt): Crypt = apply("SHA-256", n, salt)
-    def sha512(n: Int = 200000, salt: Vector[Byte] = randomSalt): Crypt = apply("SHA-512", n, salt)
+    def md5(n: Int = 500000, salt: Vector[Byte] = randomSalt): Crypt = apply("MD5", n, salt)
+    def sha1(n: Int = 500000, salt: Vector[Byte] = randomSalt): Crypt = apply("SHA-1", n, salt)
+    def sha256(n: Int = 500000, salt: Vector[Byte] = randomSalt): Crypt = apply("SHA-256", n, salt)
+    def sha512(n: Int = 500000, salt: Vector[Byte] = randomSalt): Crypt = apply("SHA-512", n, salt)
 
     def apply(algorithm: String, n: Int = 200000, salt: Vector[Byte] = randomSalt): Crypt = new Crypt {
       def apply(plain: String) = {
@@ -86,10 +100,8 @@ object Password {
         val md = MessageDigest.getInstance(algorithm)
         md.reset()
         md.update(salt.toArray)
-        var hashed = md.digest(bytes)
-        for (i <- 1 until n) {
-          md.reset()
-          hashed = md.digest(hashed)
+        val hashed = (1 until n).foldLeft(md.digest(bytes)) { (bytes, i) =>
+          md.reset(); md.digest(bytes)
         }
         name+"$"+algorithm+"$"+n+"$"+Base64.encode(salt) +"$"+ Base64.encode(hashed)
       }
@@ -105,8 +117,8 @@ object Password {
 
   def create(name: Ident, crypt: Crypt)(plain: String): Secret = Secret(name, crypt(plain))
 
-  def apply = create("password.0", Bcrypt())_
+  def apply = create(secretName(0), Bcrypt())_
   def apply(name: Ident) = create(name, Bcrypt())_
-  def apply(crypt: Crypt) = create("password.0", crypt)_
+  def apply(crypt: Crypt) = create(secretName(0), crypt)_
   def apply(name: Ident, crypt: Crypt) = create(name, crypt)_
 }

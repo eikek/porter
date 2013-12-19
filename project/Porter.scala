@@ -44,6 +44,10 @@ object Deps {
   val sprayRouting = Seq(
     "io.spray" % "spray-routing" % "1.2.0"
   )
+
+  val scalate = Seq(
+    "org.fusesource.scalate" %% "scalate-core" % "1.6.1" exclude("org.scala-lang", "scala-compiler")
+  )
 }
 
 object Porter extends sbt.Build {
@@ -111,7 +115,7 @@ object OpenId extends Build {
     base = file("openid"),
     settings = Project.defaultSettings ++ Seq(
       name := "porter-openid",
-      libraryDependencies ++= Deps.akka ++ Deps.spray ++ Deps.sprayRouting ++ Deps.testBasics
+      libraryDependencies ++= Deps.akka ++ Deps.spray ++ Deps.sprayRouting ++ Deps.scalate ++ Deps.testBasics
     )
   ) dependsOn App.module
 }
