@@ -4,7 +4,7 @@ import porter.model.Ident
 import spray.http.Uri
 import java.nio.file.Files
 import scala.util.Try
-import porter.app.openid.common.Supplier
+import porter.app.openid.common.{Mustache, Supplier}
 
 trait OpenIdServiceSettings {
 
@@ -26,7 +26,7 @@ trait OpenIdServiceSettings {
   final def endpointUrl: Uri = endpointBaseUrl.withPath(endpointBaseUrl.path + "/openid/ep")
   final def openIdUrl: Uri = endpointBaseUrl.withPath(endpointBaseUrl.path + "/openid")
 
-  def loadTemplate(name: String): Option[Supplier] = {
+  def loadTemplateFile(name: String): Option[Supplier] = {
     val tfile = templateDir.resolve(name)
     if (Files.isRegularFile(tfile) && Files.isReadable(tfile))
       Some(() => Try(Files.newInputStream(tfile)))
@@ -34,5 +34,9 @@ trait OpenIdServiceSettings {
       val url = Option(getClass.getResource("/porter/app/openid/assets/" + name))
       url.map(u => () => Try(u.openStream()))
     }
+  }
+  def loadTemplate(name: String) = {
+    val in = loadTemplateFile(name)
+    in.map(s => Mustache(s().get)).getOrElse(sys.error(s"$name not found"))
   }
 }

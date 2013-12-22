@@ -1,93 +1,79 @@
 package porter.app.openid.routes
 
-import scala.xml.NodeSeq
-import porter.app.openid.common.{LocalId, HtmlTemplates, Keys}
+import porter.app.openid.common.Keys
 import spray.routing.Directives._
 import spray.http._
-import porter.app.openid.common
 import spray.http.HttpResponse
 import porter.app.openid.common.LocalId
+import porter.BuildInfo
 
 trait PageDirectives {
   self: OpenIdDirectives =>
 
-  private def hiddenInputs(parameters: Map[String, String], failedMessage: Boolean) = {
-    val message =
-      if (failedMessage) {
-        <p class="alert alert-danger alert-dismissable"><strong>Error:</strong> Invalid credentials!</p>
-      } else NodeSeq.Empty
-    val inputs = for ((k, v) <- parameters; if k startsWith "openid") yield {
-        <input type="hidden" name={k} value={v} />
+  lazy val loginTemplate = settings.loadTemplate("login-template.mustache")
+  lazy val errorTemplate = settings.loadTemplate("error-template.mustache")
+  lazy val continueTemplate = settings.loadTemplate("continue-template.mustache")
+
+
+  private val defaultContext = Map(
+    "porter" -> Map("version" -> BuildInfo.version,
+      "revision" -> BuildInfo.revision,
+      "builtTime" -> new java.util.Date(BuildInfo.buildTime))
+  )
+
+  private implicit class MapAdds[A](opt: Option[A]) {
+    def toMap(f: A => Map[String, Any]) = opt match {
+      case Some(a) => f(a)
+      case _ => Map.empty[String, Any]
     }
-    message ++ inputs
   }
 
-  private def continueForm(params: Map[String, String]) =
-    <form class="form-horizontal" role="form" action={params.get(Keys.return_to.openid).get} method="post">
-      { hiddenInputs(params, failedMessage = false) }
-      <div class="form-group">
-        <div class="col-sm-offset-2 col-sm-10">
-          <input type="submit" name="submitType" class="btn btn-primary" value="Continue"></input>
-        </div>
-      </div>
-    </form>
+  private def loginPage(params: Map[String, String], lid: Option[LocalId], failed: Boolean) = {
+    val context = defaultContext ++ Map(
+      "realm" -> params.get(Keys.realm.openid).getOrElse(""),
+      "identity" -> params.get(Keys.identity.openid).getOrElse(""),
+      "endpointUrl" -> settings.endpointUrl.toString(),
+      "params" -> params.map(t => Map("name" -> t._1, "value"->t._2)),
+      "loginFailed" -> failed
+    ) ++ lid.toMap(id => Map("localId" -> Map("realm" -> id.realm.name, "account" -> id.account.name)))
 
-  private def signinForm(params: Map[String, String], lid: Option[LocalId], failedMessage: Boolean) = {
-    import scala.xml.Text
-    val id = lid.map(_.account.name)
-
-    <form role="form" action={settings.endpointUrl.path.toString()} method="post">
-      { hiddenInputs(params, failedMessage) }
-      <div class="form-group">
-        <label for="username" class="sr-only">Username</label>
-        <input type="text" class="form-control input-lg" id="username" name="username" value={id map Text.apply} placeholder="Username"></input>
-      </div>
-      <div class="form-group">
-        <label for="password" class="sr-only">Password</label>
-        <input type="password" class="form-control input-lg" id="password" name="password" placeholder="Password"></input>
-      </div>
-      <div class="form-group">
-        <div class="checkbox">
-          <label>
-            <input type="checkbox" name="rememberme" checked="checked"> Remember me </input>
-          </label>
-        </div>
-      </div>
-      <div class="form-group">
-        <input type="submit" name="submitType" class="btn btn-primary btn-lg" value="Sign in"></input>
-        <input type="submit" name="submitType" class="btn btn-default btn-lg" value="Cancel"></input>
-      </div>
-    </form>
+    loginTemplate(context)
   }
 
-  private def loginTemplate(req: Map[String, String], lid: Option[LocalId], failedMessage: Boolean) =
-    HtmlTemplates.createLoginPage(signinForm(req, lid, failedMessage),
-      <p>You're authenticating with
-        <strong>{req.get(Keys.realm.openid).getOrElse("No Realm!")}</strong> as
-        <strong>{req(Keys.identity.openid)}</strong></p>)(settings)
 
-  private def continueTemplate(req: Map[String, String]) =
-    HtmlTemplates.createContinueTemplate(continueForm(req),
-      <p>Continue authentication with
-        <strong>{req.get(Keys.realm.openid).getOrElse(req(Keys.return_to.openid))}</strong>.</p>)(settings)
+  private def continueForm(returnto: Uri, params: Map[String, String]) = {
+    val rto = returnto.copy(query = Uri.Query.Empty)
+    val context = defaultContext ++ Map(
+      "realm" -> params.get(Keys.realm.openid).getOrElse(""),
+      "identity" -> params.get(Keys.identity.openid).getOrElse(""),
+      "returnToUrl" -> rto,
+      "params" -> (params ++ returnto.query.toMap).map(t => Map("name" -> t._1, "value"->t._2))
+    )
+    continueTemplate(context)
+  }
 
-  private def errorTemplate =
-    HtmlTemplates.createErrorTemplate(settings)
+  private def errorPage(params: Map[String, String]) = {
+    val context = defaultContext ++ Map("params" -> params.map(t => Map("name" -> t._1, "value"->t._2)))
+    errorTemplate(context)
+  }
 
   def renderLoginPage(failed: Boolean) = allParams { req =>
     localIdOption { lidopt =>
       complete(HttpResponse(
         entity = HttpEntity(ContentType(MediaTypes.`text/html`),
-          loginTemplate(req, lidopt, failed).get.get)))
+          loginPage(req, lidopt, failed))))
     }
   }
 
-  def renderErrorPage = complete(HttpResponse(
-    status = StatusCodes.BadRequest,
-    entity = HttpEntity(ContentType(MediaTypes.`text/html`), errorTemplate.get.get)))
-
-  def renderContinuePage(params: Map[String, String]) =
+  def renderErrorPage = allParams { params =>
     complete(HttpResponse(
-      entity = HttpEntity(ContentType(MediaTypes.`text/html`), continueTemplate(params).get.get)))
+      status = StatusCodes.BadRequest,
+      entity = HttpEntity(ContentType(MediaTypes.`text/html`), errorPage(params))))
+  }
+
+  def renderContinuePage(params: Map[String, String]) = returnToUrl { uri =>
+    complete(HttpResponse(
+      entity = HttpEntity(ContentType(MediaTypes.`text/html`), continueForm(uri, params))))
+  } ~ renderErrorPage
 
 }

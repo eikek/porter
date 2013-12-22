@@ -18,9 +18,18 @@
             <h1>Porter <small>OpenId Provider</small></h1>
         </div>
         <h2>Continue</h2>
-        <div id="porter.continueinfo"></div>
+        <p>Continue authentication with <strong>{{realm}}</strong> as <strong>{{identity}}</strong>.</p>
         <div class="col-md-6 col-md-offset-2">
-            <div id="porter.continueform"></div>
+            <form class="form-horizontal" role="form" action="{{returnToUrl}}" method="get">
+                {{#params}}
+                    <input type="hidden" name="{{name}}" value="{{value}}"/>
+                {{/params}}
+                <div class="form-group">
+                    <div class="col-sm-offset-2 col-sm-10">
+                        <input type="submit" class="btn btn-primary" value="Continue"/>
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
   </body>
