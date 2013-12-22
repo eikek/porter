@@ -110,6 +110,6 @@ trait OpenIdDirectives extends Provides {
     params ++ (if (direct) Map("iserror" -> "true") else Map.empty)
   }
 
-  def userCancel: Directive0 = paramIs("submitType", "Cancel")
-  def userSubmit: Directive0 = paramIs("submitType", _ != "Cancel")
+  def userCancel: Directive0 = paramIs("porter.submitType", "Cancel")
+  def userSubmit: Directive0 = paramIs("porter.submitType", _ != "Cancel")
 }

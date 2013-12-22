@@ -103,8 +103,8 @@ trait AuthDirectives extends AssociationDirectives {
 
 
   def userpassCredentials: Directive1[Set[Credentials]] =
-    formField("username").flatMap(un =>
-      formField("password").map(pw =>
+    formField("porter.username").flatMap(un =>
+      formField("porter.password").map(pw =>
         Set[Credentials](PasswordCredentials(un, pw)))) | provide(Set.empty[Credentials])
 
   def credentials: Directive1[Set[Credentials]] =
@@ -123,7 +123,7 @@ trait AuthDirectives extends AssociationDirectives {
     }
     optionalCookie(settings.cookieName).flatMap {
       case Some(c) if DerivedCredentials.tryDecode(settings.cookieKey, c.content).isSuccess => pass
-      case _ => (paramIs("rememberme", "on") & {
+      case _ => (paramIs("porter.rememberme", "on") & {
         val data = DerivedCredentials(account.name, account.secrets.head, 10.days).encode(settings.cookieKey)
         setCookie(HttpCookie(name = settings.cookieName,
           content = data,
@@ -134,14 +134,15 @@ trait AuthDirectives extends AssociationDirectives {
     }
   }
 
-  def positiveAssertion(auth: Authenticated, realm: Ident): Directive1[Map[String, String]] = allParams.hflatMap {
-    case params #: HNil =>
+  def positiveAssertion(auth: Authenticated, realm: Ident): Directive1[Map[String, String]] = allParams.flatMap {
+    case params =>
       val path =
         if (realm == settings.defaultRealm) Uri.Path("/"+auth.account.name.name)
         else Uri.Path("/"+ realm.name +"/"+ auth.account.name.name)
       val id = settings.endpointBaseUrl.withPath(path).toString()
       val incl = params.filter { case (k, v) => successParams contains k }  ++ Map(
         Keys.mode.openid -> "id_res",
+        Keys.realm.openid -> params.get(Keys.realm.openid).getOrElse(""),
         Keys.response_nonce.openid -> nextNonce,
         Keys.op_endpoint.openid -> settings.endpointUrl.toString(),
         Keys.assoc_handle.openid -> auth.association.handle,
@@ -154,7 +155,6 @@ trait AuthDirectives extends AssociationDirectives {
         case _ =>
           provide(signedResponse(auth.association.token)(incl))
       }
-    case _ => reject()
   }
 
   def signedResponse(token: AssocToken)(params: Map[String, String]) = {

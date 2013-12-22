@@ -38,22 +38,22 @@
                 {{/params}}
                 <div class="form-group">
                     <label for="username" class="sr-only">Username</label>
-                    <input type="text" class="form-control input-lg" id="username" name="username" value="{{#localId}}{{account}}{{/localId}}" placeholder="Username"/>
+                    <input type="text" class="form-control input-lg" id="username" name="porter.username" value="{{#localId}}{{account}}{{/localId}}" placeholder="Username"/>
                 </div>
                 <div class="form-group">
                     <label for="password" class="sr-only">Password</label>
-                    <input type="password" class="form-control input-lg" id="password" name="password" placeholder="Password"/>
+                    <input type="password" class="form-control input-lg" id="password" name="porter.password" placeholder="Password"/>
                 </div>
                 <div class="form-group">
                     <div class="checkbox">
                         <label>
-                            <input type="checkbox" name="rememberme" checked="checked"> Remember me </input>
+                            <input type="checkbox" name="porter.rememberme" checked="checked"> Remember me </input>
                         </label>
                     </div>
                 </div>
                 <div class="form-group">
-                    <input type="submit" name="submitType" class="btn btn-primary btn-lg" value="Sign in"/>
-                    <input type="submit" name="submitType" class="btn btn-default btn-lg" value="Cancel"/>
+                    <input type="submit" name="porter.submitType" class="btn btn-primary btn-lg" value="Sign in"/>
+                    <input type="submit" name="porter.submitType" class="btn btn-default btn-lg" value="Cancel"/>
                 </div>
             </form>
         </div>
