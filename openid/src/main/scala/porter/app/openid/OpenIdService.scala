@@ -12,6 +12,7 @@ class OpenIdService(val porter: ActorRef, val assocActor: ActorRef, val settings
   with PageDirectives
   with DiscoveryRoute
   with StaticRoute
+  with HomeRoutes
   with EndpointRoute {
 
   implicit def dispatcher = context.dispatcher
@@ -19,7 +20,7 @@ class OpenIdService(val porter: ActorRef, val assocActor: ActorRef, val settings
   implicit val system = context.system
 
   def receive = runRoute {
-    discovery ~ checkRoute ~ staticRoute
+    discovery ~ checkRoute ~ homeRoute ~ staticRoute
   }
 
 }

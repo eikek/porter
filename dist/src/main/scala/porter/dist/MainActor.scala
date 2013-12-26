@@ -4,7 +4,7 @@ import akka.actor._
 import porter.app.akka.Porter
 import porter.app.akka.telnet.TelnetServer
 import porter.app.akka.http.HttpHandler
-import porter.app.openid.{OpenIdSettings, OpenIdService}
+import porter.app.openid.{OpenIdHandler, OpenIdSettings}
 import akka.util.Timeout
 import akka.io.{Tcp, IO}
 import java.net.InetSocketAddress
@@ -31,7 +31,7 @@ class MainActor extends Actor with ActorLogging {
   println(s"\n---\n--- Porter remote actor listening on ${main.pathFor(porter)} \n---")
   val telnetService = context.actorOf(TelnetServer(porter), "telnet")
   val httpService = context.actorOf(HttpHandler(porter), "http")
-  val openIdService = context.actorOf(OpenIdService(porter, openidSettings), "openid")
+  val openIdService = context.actorOf(OpenIdHandler(porter, openidSettings), "openid")
 
   var boundServices = Map.empty[String, ServiceBound]
 

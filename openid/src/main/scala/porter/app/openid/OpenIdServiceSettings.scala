@@ -39,4 +39,10 @@ trait OpenIdServiceSettings {
     val in = loadTemplateFile(name)
     in.map(s => Mustache(s().get)).getOrElse(sys.error(s"$name not found"))
   }
+
+  lazy val loginTemplate = loadTemplate("login-template.mustache")
+  lazy val errorTemplate = loadTemplate("error-template.mustache")
+  lazy val continueTemplate = loadTemplate("continue-template.mustache")
+  lazy val userTemplate = loadTemplate("user-template.mustache")
+
 }

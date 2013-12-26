@@ -63,9 +63,9 @@ trait AuthDirectives extends AssociationDirectives {
   }
 
   def authenticate(creds: Set[Credentials], realm: Ident)(implicit timeout: Timeout): Directive1[AuthResult] = {
-    onComplete(authFuture(creds, realm)).hflatMap {
-      case Success(result) #: HNil => provide(result)
-      case Failure(x) #: HNil => reject()
+    onComplete(authFuture(creds, realm)).flatMap {
+      case Success(result) => provide(result)
+      case Failure(x) => reject()
     }
   }
 
@@ -75,6 +75,10 @@ trait AuthDirectives extends AssociationDirectives {
       case _ => reject()
     }
   }
+  def authenticateAccount(creds: Set[Credentials], realm: Ident)(implicit timeout: Timeout): Directive1[Account] =
+    authenticate(creds, realm).flatMap { result =>
+      account(LocalId(realm, result.accountId))
+    }
 
   def authenticateToken(creds: Set[Credentials], realm: Ident)(implicit timeout: Timeout): Directive1[Authenticated] =
     paramOpt(Keys.assoc_handle.openid).flatMap { handle =>
@@ -110,8 +114,8 @@ trait AuthDirectives extends AssociationDirectives {
   def credentials: Directive1[Set[Credentials]] =
     cookieCredentials.hflatMap(cs => userpassCredentials.hmap(ps => cs.head++ps.head::HNil))
 
-  def noCredentials: Directive0 = credentials.hflatMap {
-    case s #: HNil if s.nonEmpty => reject()
+  def noCredentials: Directive0 = credentials.flatMap {
+    case s if s.nonEmpty => reject()
     case _ => pass
   }
 
@@ -121,18 +125,18 @@ trait AuthDirectives extends AssociationDirectives {
       case Uri.Path.Empty => "/"
       case p => p.toString()
     }
-    optionalCookie(settings.cookieName).flatMap {
-      case Some(c) if DerivedCredentials.tryDecode(settings.cookieKey, c.content).isSuccess => pass
-      case _ => (paramIs("porter.rememberme", "on") & {
-        val data = DerivedCredentials(account.name, account.secrets.head, 10.days).encode(settings.cookieKey)
-        setCookie(HttpCookie(name = settings.cookieName,
-          content = data,
-          httpOnly = true,
-          path = Some(cookiePath)))
-      }) | pass
-
-    }
+    val data = DerivedCredentials(account.name, account.secrets.head, 10.days).encode(settings.cookieKey)
+    setCookie(HttpCookie(name = settings.cookieName,
+      content = data,
+      httpOnly = true,
+      path = Some(cookiePath)))
   }
+
+  def removePorterCookie() = deleteCookie(settings.cookieName)
+
+  def setPorterCookieOnRememberme(account: Account) =
+    (paramIs("porter.rememberme", _.equalsIgnoreCase("on")) & setPorterCookie(account)) | pass
+
 
   def positiveAssertion(auth: Authenticated, realm: Ident): Directive1[Map[String, String]] = allParams.flatMap {
     case params =>

@@ -41,8 +41,9 @@ trait OpenIdDirectives extends Provides {
   def param(name: String): Directive1[String] = anyParam(name)
   def paramOpt(name: String): Directive1[Option[String]] = param(name).map(Some.apply) | provide(None)
 
-  def paramIs(name: String, pred: String => Boolean): Directive0 = param(name).flatMap { v =>
-    if (pred(v)) pass else reject()
+  def paramIs(name: String, pred: String => Boolean): Directive0 = paramOpt(name).flatMap {
+    case Some(v) => if (pred(v)) pass else reject()
+    case _ => reject()
   }
   def paramIs(name: String, value: String): Directive0 = paramIs(name, _ == value)
 
@@ -51,6 +52,9 @@ trait OpenIdDirectives extends Provides {
       case fd: FormData => fd.fields.toMap
       case _ => Map.empty[String, String]
     }.getOrElse(Map.empty[String, String])
+  }
+  def formFieldIs(name: String, value: String): Directive0 = formField(name).flatMap { v =>
+    if (v == value) pass else reject()
   }
 
   def queryParams: Directive1[Map[String, String]] = extract(_.request.uri.query.toMap)
@@ -68,8 +72,8 @@ trait OpenIdDirectives extends Provides {
 
 
   def localIdOption: Directive1[Option[LocalId]] =
-    param(Keys.identity.openid).hflatMap {
-      case LocalIdParts(lid) #: HNil => provide(Some(lid))
+    paramOpt(Keys.identity.openid).flatMap {
+      case Some(LocalIdParts(lid)) => provide(Some(lid))
       case _ => provide(None)
     }
 

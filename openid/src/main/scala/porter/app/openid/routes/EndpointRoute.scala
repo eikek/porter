@@ -12,7 +12,7 @@ trait EndpointRoute {
     extractRealm { realm =>
       authenticateToken(creds, realm)(timeout) { auth =>
         positiveAssertion(auth, realm) { params =>
-          setPorterCookie(auth.account) {
+          setPorterCookieOnRememberme(auth.account) {
             isSetup {
               renderContinuePage(params)
             } ~

@@ -10,16 +10,7 @@ import porter.BuildInfo
 trait PageDirectives {
   self: OpenIdDirectives =>
 
-  lazy val loginTemplate = settings.loadTemplate("login-template.mustache")
-  lazy val errorTemplate = settings.loadTemplate("error-template.mustache")
-  lazy val continueTemplate = settings.loadTemplate("continue-template.mustache")
-
-
-  private val defaultContext = Map(
-    "porter" -> Map("version" -> BuildInfo.version,
-      "revision" -> BuildInfo.revision,
-      "builtTime" -> new java.util.Date(BuildInfo.buildTime))
-  )
+  import PageDirectives._
 
   private implicit class MapAdds[A](opt: Option[A]) {
     def toMap(f: A => Map[String, Any]) = opt match {
@@ -37,7 +28,7 @@ trait PageDirectives {
       "loginFailed" -> failed
     ) ++ lid.toMap(id => Map("localId" -> Map("realm" -> id.realm.name, "account" -> id.account.name)))
 
-    loginTemplate(context)
+    settings.loginTemplate(context)
   }
 
 
@@ -49,12 +40,12 @@ trait PageDirectives {
       "returnToUrl" -> rto,
       "params" -> (params ++ returnto.query.toMap).map(t => Map("name" -> t._1, "value"->t._2))
     )
-    continueTemplate(context)
+    settings.continueTemplate(context)
   }
 
   private def errorPage(params: Map[String, String]) = {
     val context = defaultContext ++ Map("params" -> params.map(t => Map("name" -> t._1, "value"->t._2)))
-    errorTemplate(context)
+    settings.errorTemplate(context)
   }
 
   def renderLoginPage(failed: Boolean) = allParams { req =>
@@ -75,5 +66,14 @@ trait PageDirectives {
     complete(HttpResponse(
       entity = HttpEntity(ContentType(MediaTypes.`text/html`), continueForm(uri, params))))
   } ~ renderErrorPage
+
+}
+
+object PageDirectives {
+  val defaultContext = Map(
+    "porter" -> Map("version" -> BuildInfo.version,
+      "revision" -> BuildInfo.revision,
+      "builtTime" -> new java.util.Date(BuildInfo.buildTime))
+  )
 
 }
