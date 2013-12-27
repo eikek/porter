@@ -23,16 +23,16 @@ trait HomeRoutes {
         case Success(nacc) =>
           val context = Map("infoMessage" -> Map("level" -> "info", "message" -> "Secret changed."))
           setPorterCookie(nacc) {
-            renderUserPage(Map("account" -> accountMap(nacc), "changeSecretUrl" -> "/") ++ context)
+            renderUserPage(nacc, context)
           }
 
         case Failure(ex) =>
           val context = Map("infoMessage" -> Map("level" -> "danger", "message" -> ex.getMessage))
-          renderUserPage(Map("account" -> accountMap(acc), "changeSecretUrl" -> "/") ++ context)
+          renderUserPage(acc, context)
       }
     case ("logout", acc) =>
       removePorterCookie() {
-        renderLoginPage(defaultContext)
+        redirect(settings.endpointBaseUrl, StatusCodes.TemporaryRedirect)
       }
   }
 
@@ -41,8 +41,8 @@ trait HomeRoutes {
     HttpResponse(entity = HttpEntity(html, page))
   }
 
-  private def renderUserPage(params: Map[String, Any]) = complete {
-    val page = settings.userTemplate(defaultContext ++ params)
+  private def renderUserPage(account: Account, params: Map[String, Any] = Map.empty) = complete {
+    val page = settings.userTemplate(defaultContext ++ Map("account" -> accountMap(account)) ++ params ++ Map("changeSecretUrl" -> "/"))
     HttpResponse(entity = HttpEntity(html, page))
   }
 
@@ -79,7 +79,9 @@ trait HomeRoutes {
           param("porter.action") { action =>
             actions.lift((action, acc)).getOrElse(reject())
           } ~
-          renderUserPage(Map("account" -> accountMap(acc), "changeSecretUrl" -> "/"))
+          setPorterCookie(acc) {
+            renderUserPage(acc)
+          }
         } ~
         renderLoginPage(Map("loginFailed" -> true))
       }
