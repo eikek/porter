@@ -11,7 +11,7 @@ import porter.util.Base64
 import scala.io.Codec
 
 /**
- * Creates an crypted string from a given plain test password.
+ * Creates an crypted string from a given plain text password.
  */
 trait PasswordCrypt extends (String => String)
 
