@@ -23,6 +23,7 @@ class OpenIdSettings(cfg: Config, da: DynamicAccess) extends Extension with Open
 
   val cookieName = cfg.getString("cookie-name")
   val cookieKey = Try(cfg.getString("cookie-key")).map(Base64.decode).getOrElse(AES.generateRandomKey).toVector
+  val cookieSecure = cfg.getBoolean("cookie-secure")
 
   val realms = cfg.getStringList("realms").asScala.toList.map(Ident.apply)
 

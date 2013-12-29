@@ -17,6 +17,7 @@ trait OpenIdServiceSettings {
 
   def cookieName: String
   def cookieKey: Vector[Byte]
+  def cookieSecure: Boolean
 
   def realms: List[Ident]
   def defaultRealm: Ident

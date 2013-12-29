@@ -120,14 +120,16 @@ trait AuthDirectives extends AssociationDirectives {
   }
 
 
-  def setPorterCookie(account: Account): Directive0 = {
+  def setPorterCookie(account: Account, maxAge: Option[Duration] = None): Directive0 = {
     def cookiePath = settings.endpointBaseUrl.path match {
       case Uri.Path.Empty => "/"
       case p => p.toString()
     }
-    val data = DerivedCredentials(account.name, account.secrets.head, 10.days).encode(settings.cookieKey)
+    val data = DerivedCredentials(account.name, account.secrets.head, maxAge.getOrElse(10.days)).encode(settings.cookieKey)
     setCookie(HttpCookie(name = settings.cookieName,
       content = data,
+      maxAge = maxAge.map(_.toSeconds),
+      secure = settings.cookieSecure,
       httpOnly = true,
       path = Some(cookiePath)))
   }
@@ -135,7 +137,7 @@ trait AuthDirectives extends AssociationDirectives {
   def removePorterCookie() = deleteCookie(settings.cookieName)
 
   def setPorterCookieOnRememberme(account: Account) =
-    (paramIs("porter.rememberme", _.equalsIgnoreCase("on")) & setPorterCookie(account)) | pass
+    (paramIs("porter.rememberme", _.equalsIgnoreCase("on")) & setPorterCookie(account, Some(10.days))) | setPorterCookie(account)
 
 
   def positiveAssertion(auth: Authenticated, realm: Ident): Directive1[Map[String, String]] = allParams.flatMap {

@@ -4,10 +4,6 @@ import scala.concurrent.duration.Duration
 import porter.util.{Hash, AES, Base64}
 import scala.util.Try
 
-/**
- * @author Eike Kettner eike.kettner@gmail.com
- * @since 22.11.13 19:20
- */
 @SerialVersionUID(20131122)
 trait Credentials extends Serializable
 

@@ -22,10 +22,9 @@ trait HomeRoutes {
       updateSecretSubmit(settings.defaultRealm, acc) {
         case Success(nacc) =>
           val context = Map("infoMessage" -> Map("level" -> "info", "message" -> "Secret changed."))
-          setPorterCookie(nacc) {
+          setPorterCookieOnRememberme(nacc) {
             renderUserPage(nacc, context)
           }
-
         case Failure(ex) =>
           val context = Map("infoMessage" -> Map("level" -> "danger", "message" -> ex.getMessage))
           renderUserPage(acc, context)
@@ -42,16 +41,15 @@ trait HomeRoutes {
   }
 
   private def renderUserPage(account: Account, params: Map[String, Any] = Map.empty) = complete {
-    val page = settings.userTemplate(defaultContext ++ Map("account" -> accountMap(account)) ++ params ++ Map("changeSecretUrl" -> "/"))
+    val accountMap = Map(
+      "name" -> account.name.name,
+      "props" -> account.props,
+      "groups" -> account.groups.map(_.name).toList,
+      "secrets" -> account.secrets.map(_.name.name)
+    )
+    val page = settings.userTemplate(defaultContext ++ Map("account" -> accountMap) ++ params ++ Map("changeSecretUrl" -> "/"))
     HttpResponse(entity = HttpEntity(html, page))
   }
-
-  private def accountMap(acc: Account): Map[String, Any] = Map(
-    "name" -> acc.name.name,
-    "props" -> acc.props,
-    "groups" -> acc.groups.map(_.name).toList,
-    "secrets" -> acc.secrets.map(_.name.name)
-  )
 
   def updateSecret(realm: Ident, account: Account, pw: String): Directive1[Try[Account]] = {
     val newAccount = account.changeSecret(Password(pw))
@@ -61,6 +59,7 @@ trait HomeRoutes {
       case _ => provide(Failure(new Exception("Error setting secrets")))
     }
   }
+
   def updateSecretSubmit(realm: Ident, account: Account): Directive1[Try[Account]] =
     formField("porter.password1").flatMap { pw1 =>
       formField("porter.password2").flatMap { pw2 =>
@@ -79,7 +78,7 @@ trait HomeRoutes {
           param("porter.action") { action =>
             actions.lift((action, acc)).getOrElse(reject())
           } ~
-          setPorterCookie(acc) {
+          setPorterCookieOnRememberme(acc) {
             renderUserPage(acc)
           }
         } ~
