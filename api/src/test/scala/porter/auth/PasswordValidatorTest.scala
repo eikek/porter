@@ -2,12 +2,11 @@ package porter.auth
 
 import org.scalatest.FunSuite
 import org.scalatest.matchers.ShouldMatchers
-import porter.util.Base64
 
 class PasswordValidatorTest extends FunSuite with ShouldMatchers {
 
   import porter.model._
-  import Password._
+  import PasswordCrypt._
 
   private def createToken(pw: Secret, plain: String) = AuthToken(
     Realm(Ident.randomIdent, ""),

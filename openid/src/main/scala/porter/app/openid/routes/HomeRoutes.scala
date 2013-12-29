@@ -52,7 +52,7 @@ trait HomeRoutes {
   }
 
   def updateSecret(realm: Ident, account: Account, pw: String): Directive1[Try[Account]] = {
-    val newAccount = account.changeSecret(Password(pw))
+    val newAccount = account.changeSecret(Password(settings.passwordCrypt)(pw))
     val f = (porter ? UpdateAccount(realm, newAccount)).mapTo[OperationFinished]
     onComplete(f).flatMap {
       case Success(OperationFinished(true, _)) => provide(Success(newAccount))

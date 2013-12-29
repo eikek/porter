@@ -2,17 +2,22 @@ package porter.app.openid
 
 import com.typesafe.config.Config
 import scala.util.Try
-import java.nio.file.{Files, Paths}
+import java.nio.file.Paths
 import akka.actor._
 import porter.util.{AES, Base64}
 import spray.http.Uri
-import porter.model.Ident
+import porter.model.{PasswordCrypt, Ident}
 
 class OpenIdSettings(cfg: Config, da: DynamicAccess) extends Extension with OpenIdServiceSettings {
   import collection.JavaConverters._
 
   val bindingHost = Try(cfg.getString("host")).getOrElse("localhost")
   val bindinPort = Try(cfg.getInt("port")).getOrElse(8888)
+
+  val passwordCrypt = {
+    val config = cfg.getString("password-encrypt")
+    PasswordCrypt(config).getOrElse(sys.error(s"Invalid configuration for password-crypt: $config"))
+  }
 
   val decider = da.getObjectFor[porter.auth.Decider](cfg.getString("decider")).get
 

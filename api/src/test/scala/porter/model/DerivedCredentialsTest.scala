@@ -4,7 +4,7 @@ import org.scalatest.FunSuite
 import org.scalatest.matchers.ShouldMatchers
 import scala.util.Random
 import porter.util.{Hash, AES}
-import porter.model.Password.Scrypt
+import porter.model.PasswordCrypt.Scrypt
 
 /**
  * @author Eike Kettner eike.kettner@gmail.com

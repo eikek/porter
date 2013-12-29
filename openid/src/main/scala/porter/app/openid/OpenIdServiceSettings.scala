@@ -5,9 +5,11 @@ import spray.http.Uri
 import java.nio.file.Files
 import scala.util.Try
 import porter.app.openid.common.{Mustache, Supplier}
+import porter.model.PasswordCrypt
 
 trait OpenIdServiceSettings {
 
+  def passwordCrypt: PasswordCrypt
   def decider: porter.auth.Decider
 
   def contact: Option[String]
