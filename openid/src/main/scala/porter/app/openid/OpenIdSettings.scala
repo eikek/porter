@@ -15,7 +15,7 @@ class OpenIdSettings(cfg: Config, da: DynamicAccess) extends Extension with Open
   val bindinPort = Try(cfg.getInt("port")).getOrElse(8888)
 
   val passwordCrypt = {
-    val config = cfg.getString("password-encrypt")
+    val config = cfg.getString("password-crypt")
     PasswordCrypt(config).getOrElse(sys.error(s"Invalid configuration for password-crypt: $config"))
   }
 

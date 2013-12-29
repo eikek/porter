@@ -130,8 +130,8 @@ object PasswordCrypt {
     object Verify {
       def unapply(encoded: String):Option[Verifier] = split(encoded) match {
         case `name`::iter::salt::data::Nil =>
-          Try((iter.toInt, Base64.decode(salt).toVector, data)).map { case (n, s, enc) =>
-            (plain: String) => Pbkdf2(n, s)(plain) == enc
+          Try((iter.toInt, Base64.decode(salt).toVector)).map { case (n, s) =>
+            (plain: String) => Pbkdf2(n, s)(plain) == encoded
           }.toOption
         case _ => None
       }
@@ -148,7 +148,7 @@ object PasswordCrypt {
     def apply(algorithm: String, n: Int = 200000, salt: Vector[Byte] = randomSalt): PasswordCrypt = new PasswordCrypt {
       def apply(plain: String) = {
         val bytes = plain.getBytes(Codec.UTF8.charSet)
-        val md = MessageDigest.getInstance(algorithm)
+        val md = MessageDigest.getInstance(algorithm.toUpperCase)
         md.reset()
         md.update(salt.toArray)
         val hashed = (1 until n).foldLeft(md.digest(bytes)) { (bytes, i) =>
@@ -167,8 +167,8 @@ object PasswordCrypt {
     object Verify {
       def unapply(encoded: String): Option[Verifier] = split(encoded) match {
         case `name`::algo::iter::salt::data::Nil =>
-          Try((algo, iter.toInt, Base64.decode(salt).toVector, data)).map { case (a, n, s, enc) =>
-            (plain: String) => Digest(a, n, s)(plain) == enc
+          Try((algo, iter.toInt, Base64.decode(salt).toVector)).map { case (a, n, s) =>
+            (plain: String) => Digest(a, n, s)(plain) == encoded
           }.toOption
         case _ => None
       }

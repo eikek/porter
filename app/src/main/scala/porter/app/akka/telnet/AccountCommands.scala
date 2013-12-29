@@ -88,28 +88,30 @@ object AccountCommands extends Commands {
   }
 
   def changePassword(implicit ec: ExecutionContext, to: Timeout): Command = new Form {
-    def fields = List("login", "password")
+    def fields = List("login", "password", "password-crypt")
 
     def show = {
       case in@Input(msg, conn, _, sess) if msg == "change pass" =>
         in.withRealm { r =>
-          conn ! tcp("Enter the login name and a new password.\n")
+          conn ! tcp("Enter the login name and a new password. Use 'random' for password-crypt if unsure.\n")
         }
         sess.realm.isDefined
     }
 
     def validateConvert = {
       case (key, value) if key == "login" => Try(Ident(value))
+      case (key, value) if key == "password-crypt" => Try(PasswordCrypt(value).get)
     }
 
     def onComplete(in: Input) = {
       val login = in.session[Ident]("login")
       val passw = in.session[String]("password")
+      val crypt = in.session[PasswordCrypt]("password-crypt")
       val result = for {
         r <- in.realmFuture
         resp <- (in.porter ? FindAccounts(r.id, Set(login))).mapTo[FindAccountsResp]
         first <- Future.immediate(resp.accounts.headOption, "Account not found")
-        op <- (in.porter ? UpdateAccount(r.id, first.changeSecret(Password(passw)))).mapTo[OperationFinished]
+        op <- (in.porter ? UpdateAccount(r.id, first.changeSecret(Password(crypt)(passw)))).mapTo[OperationFinished]
       } yield "Password changed: "+ op.result
       in << result
     }
