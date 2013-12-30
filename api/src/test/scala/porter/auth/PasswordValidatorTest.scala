@@ -14,7 +14,6 @@ class PasswordValidatorTest extends FunSuite with ShouldMatchers {
     Set(PasswordCredentials("john", plain))
   )
 
-
   test("check password match") {
     checkpasswords("bcrypt", "password.0", Password(Bcrypt(10)))
     checkpasswords("scrypt", "password.0", Password(Scrypt()))
@@ -46,5 +45,10 @@ class PasswordValidatorTest extends FunSuite with ShouldMatchers {
     token = createToken(Secret("unknown", ""), "test")
     out = PasswordValidator.authenticate(token)
     assert(out.votes.size === 0, name)
+  }
+
+  test("password.verify") {
+    val secret = Password("testpw")
+    Password.verify("testpw", secret) should be (true)
   }
 }

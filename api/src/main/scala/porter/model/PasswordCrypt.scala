@@ -12,6 +12,36 @@ import scala.io.Codec
 
 /**
  * Creates an crypted string from a given plain text password.
+ *
+ * There are four provided crypt algorithms:
+ *
+ * - [[http://www.mindrot.org/projects/jBCrypt/ Bcrypt]]
+ * - [[https://github.com/wg/scrypt Scrypt]]
+ * - PBKDF2WithHmacSHA1 provided by JCE
+ * - a message digest function like MD5 or SHA1/256/512 applied
+ *   multiple times
+ *
+ * Each one can be configured manually or the provided default
+ * arguments can be used. It is possible to create a [[porter.model.PasswordCrypt]]
+ * from a configuration string. The string is expected to either be "random", which
+ * will randomly choose one of the four crypt algorithms, or to start with the name
+ * of the algorithm ("bcrypt", "scrypt", "pbkdf2-sha1" or "digest:algorithm", where
+ * 'algorithm' is one of "MD5", "SHA-1", "SHA256" or "SHA-512") optionally followed
+ * by configuration paramters specific for each algorithm separated by colons ':'.
+ *
+ * To verify passwords, a verifyer can be obtained from an crypted
+ * password string for each algorithm using extractors
+ * {{{
+ *   encodedpassword match {
+ *     case PasswordCrypt.Bcrypt.Verify(verify) => verify(plaintextpassword)
+ *     case _ => false
+ *   }
+ * }}}
+ * If the concrete algorithm used is not of interest, the `verify` function
+ * can be used instead:
+ * {{{
+ *   PasswordCrypt.verify(cryptedpassword, plainpassword)
+ * }}}
  */
 trait PasswordCrypt extends (String => String)
 
@@ -57,6 +87,11 @@ object PasswordCrypt {
       .orElse(Scrypt.Verify.unapply(encoded))
       .orElse(Pbkdf2.Verify.unapply(encoded))
       .orElse(Digest.Verify.unapply(encoded))
+
+  def verify(plain: String, crypted: String): Boolean = crypted match {
+    case PasswordCrypt(verify) => verify(plain)
+    case _ => false
+  }
 
   object Bcrypt {
     val name = "bcrypt"
@@ -145,7 +180,7 @@ object PasswordCrypt {
     def sha256(n: Int = 500000, salt: Vector[Byte] = randomSalt): PasswordCrypt = apply("SHA-256", n, salt)
     def sha512(n: Int = 500000, salt: Vector[Byte] = randomSalt): PasswordCrypt = apply("SHA-512", n, salt)
 
-    def apply(algorithm: String, n: Int = 200000, salt: Vector[Byte] = randomSalt): PasswordCrypt = new PasswordCrypt {
+    def apply(algorithm: String, n: Int = 500000, salt: Vector[Byte] = randomSalt): PasswordCrypt = new PasswordCrypt {
       def apply(plain: String) = {
         val bytes = plain.getBytes(Codec.UTF8.charSet)
         val md = MessageDigest.getInstance(algorithm.toUpperCase)
@@ -174,5 +209,4 @@ object PasswordCrypt {
       }
     }
   }
-
 }

@@ -21,6 +21,6 @@ object PasswordValidator extends Validator {
   @scala.annotation.tailrec
   private def verifyPassword(plain: String, hashed: String): Boolean =
     if (hashed startsWith "$shiro1$") verifyPassword(plain, hashed.replace("$shiro1$", "digest$"))
-    else Password.verify(plain, hashed)
+    else PasswordCrypt.verify(plain, hashed)
 
 }
