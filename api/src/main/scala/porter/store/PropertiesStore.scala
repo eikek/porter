@@ -7,7 +7,7 @@ import porter.util.Properties
 /**
  * Simple store based on java's properties files.
  *
- * It only supports accounts with one password crypted using bcrypt.
+ * It only supports accounts with one crypted password.
  *
  * Example:
  * {{{
@@ -52,7 +52,7 @@ class PropertiesStore(props: Map[String, String]) extends SimpleStore {
       name,
       props.propMap(s"porter.${realm.id.name}.account.$name.props"),
       props.propList(s"porter.${realm.id.name}.account.$name.groups").toSet.map(Ident.apply),
-      Seq(Secret("password.0", props.prop(s"porter.${realm.id.name}.account.$name.secret")))
+      Seq(Password.crypted(props.prop(s"porter.${realm.id.name}.account.$name.secret")))
     )
 }
 

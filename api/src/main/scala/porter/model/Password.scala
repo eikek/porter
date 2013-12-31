@@ -28,5 +28,9 @@ object Password {
   def apply(crypt: PasswordCrypt) = create(secretName(0), crypt)_
   def apply(name: Ident, crypt: PasswordCrypt) = create(name, crypt)_
 
+  def crypted(cryptedPassword: String) = cryptedPassword match {
+    case PasswordCrypt(v) => Secret(secretName(0), cryptedPassword)
+    case _ => sys.error("The given password is not crypted.")
+  }
   def verify(plain: String, secret: Secret): Boolean = PasswordCrypt.verify(plain, secret.asString)
 }

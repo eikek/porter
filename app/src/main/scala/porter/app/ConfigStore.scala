@@ -21,7 +21,7 @@ import scala.util.Try
  *       }
  *       accounts: {
  *         john: {
- *           secret: "bcryptstring"
+ *           secret: "cryptedstring"
  *           groups: [ "admin", "user" ]
  *           props: {
  *             key: "value"
@@ -58,7 +58,7 @@ class ConfigStore(cfg: Config) extends SimpleStore {
       a,
       Try(getProps(cfg.getConfig(s"${r.id.name}.accounts.$a.props"))).getOrElse(Map.empty),
       cfg.getStringList(s"${r.id.name}.accounts.$a.groups").asScala.map(Ident.apply).toSet,
-      Seq(Secret("password.0", cfg.getString(s"${r.id.name}.accounts.$a.secret")))
+      Seq(Password.crypted(cfg.getString(s"${r.id.name}.accounts.$a.secret")))
     )
 
   private def getProps(cfg: Config): Properties =

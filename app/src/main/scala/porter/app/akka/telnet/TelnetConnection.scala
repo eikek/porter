@@ -56,6 +56,7 @@ private[telnet] class TelnetConnection(porter: ActorRef, conn: ActorRef) extends
       s"""
         |Welcome to porter ${BuildInfo.version}
         |
+        |Type 'help' for a list of available commands.
         |""".stripMargin)
     conn ! welcome
   }
