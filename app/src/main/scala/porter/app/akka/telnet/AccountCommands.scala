@@ -137,7 +137,7 @@ object AccountCommands extends Commands {
         r <- in.realmFuture
         resp <- (in.porter ? FindAccounts(r.id, Set(login))).mapTo[FindAccountsResp]
         first <- Future.immediate(resp.accounts.headOption, "Account not found")
-        op <- (in.porter ? UpdateAccount(r.id, first.updateGroups(g => alter(g, toadd)))).mapTo[OperationFinished]
+        op <- (in.porter ? UpdateAccount(r.id, first.updatedGroups(g => alter(g, toadd)))).mapTo[OperationFinished]
       } yield if (op.result) "Successful" else "Failed."
       in << result
     }

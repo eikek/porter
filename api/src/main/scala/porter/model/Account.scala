@@ -6,9 +6,9 @@ case class Account(name: Ident,
   groups: Set[Ident] = Set.empty,
   secrets: Seq[Secret] = Seq.empty) extends Serializable {
 
-  def updateProps(f: Properties => Properties) =  copy(props = f(props))
-  def updateGroups(f: Set[Ident] => Set[Ident]) = copy(groups = f(groups))
-  def updateSecrets(f: Seq[Secret] => Seq[Secret]) = copy(secrets = f(secrets))
+  def updatedProps(f: Properties => Properties) =  copy(props = f(props))
+  def updatedGroups(f: Set[Ident] => Set[Ident]) = copy(groups = f(groups))
+  def updatedSecrets(f: Seq[Secret] => Seq[Secret]) = copy(secrets = f(secrets))
 
   /**
    * Replaces (or just adds) a secret with same name with the given one.
@@ -16,7 +16,7 @@ case class Account(name: Ident,
    * @param s
    * @return
    */
-  def changeSecret(s: Secret) = updateSecrets { secs =>
+  def changeSecret(s: Secret) = updatedSecrets { secs =>
     secs.filterNot(_.name == s.name) :+ s
   }
 

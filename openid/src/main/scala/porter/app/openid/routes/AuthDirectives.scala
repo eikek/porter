@@ -1,23 +1,14 @@
 package porter.app.openid.routes
 
 import porter.model._
-import porter.app.openid._
 import akka.util.Timeout
 import spray.routing._
 import shapeless.HNil
 import spray.http.{Uri, HttpCookie}
 import scala.io.Codec
 import porter.util.Base64
-import porter.auth.AuthResult
-import scala.util.Failure
-import porter.app.akka.api.StoreActor.messages.FindAccountsResp
-import scala.Some
-import porter.app.akka.api.AuthcWorker.messages.Authenticate
-import porter.app.openid.AssocActor.AssocToken
-import porter.app.akka.api.AuthcWorker.messages.AuthenticateResp
-import scala.util.Success
-import porter.app.akka.api.StoreActor.messages.FindAccounts
-import java.util.{TimeZone, Date, UUID}
+import porter.app.akka.api.StoreActor.messages._
+import java.util.{TimeZone, UUID}
 import porter.auth.AuthResult
 import scala.util.Failure
 import scala.Some
@@ -28,6 +19,7 @@ import porter.app.akka.api.StoreActor.messages.FindAccountsResp
 import porter.app.akka.api.AuthcWorker.messages.Authenticate
 import porter.app.openid.AssocActor.AssocToken
 import porter.app.akka.api.StoreActor.messages.FindAccounts
+import porter.app.akka.api.MutableStoreActor.messages.{OperationFinished, UpdateAccount}
 
 trait AuthDirectives extends AssociationDirectives {
   import _root_.porter.app.openid.common._
@@ -50,11 +42,22 @@ trait AuthDirectives extends AssociationDirectives {
   }
 
   def authFuture(creds: Set[Credentials], realm: Ident)(implicit timeout: Timeout) = {
-    (porter ? Authenticate(realm, creds)).mapTo[AuthenticateResp].map {
+    val f = (porter ? Authenticate(realm, creds)).mapTo[AuthenticateResp].map {
       case AuthenticateResp(Some(r), _) if settings.decider(r) => r
       case _ => sys.error("Invalid Credentials")
     }
+    import Property._
+    def updateProps(props: Properties => Properties) = for {
+      acc <- (porter ? FindAccountsFor(realm, creds)).mapTo[FindAccountsResp]
+      if acc.accounts.nonEmpty
+      upd <- (porter ? UpdateAccount(realm, acc.accounts.head.updatedProps(props))).mapTo[OperationFinished]
+    } yield upd
+
+    f onFailure { case x => updateProps(failedLogins.increment) }
+    f onSuccess { case r => updateProps(lastLoginTime.current.andThen(successfulLogins.increment)) }
+    f
   }
+
   def accountFuture(lid: LocalId)(implicit timeout: Timeout) = {
     (porter ? FindAccounts(lid.realm, Set(lid.account))).mapTo[FindAccountsResp].map {
       case FindAccountsResp(a, _) => a.headOption

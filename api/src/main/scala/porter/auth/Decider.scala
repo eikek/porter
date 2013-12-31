@@ -9,8 +9,8 @@ trait Decider extends (AuthResult => Boolean)
 
 /**
  * Returns `true` if there is at least one successful vote and
- * no failed ones. It also checks a property of name "account.disabled";
- * if this exists and is set to "true", the decider returns false.
+ * no failed ones. It also checks the properties
+ * [[porter.model.Property.accountDisabled]] and [[porter.model.Property.accountLocked]].
  */
 object OneSuccessfulVote extends Decider {
   import Decider._
@@ -20,9 +20,8 @@ object OneSuccessfulVote extends Decider {
 
 /**
  * Returns `true` if there is at least one successful vote while
- * it does not look at any failed ones. It also checks a property
- * of name "account.disabled"; if this exists and is set to "true",
- * the decider returns false.
+ * it does not look at any failed ones. It also checks the properties
+ * [[porter.model.Property.accountDisabled]] and [[porter.model.Property.accountLocked]].
  */
 object SomeSuccessfulVote extends Decider {
   import Decider._
@@ -30,9 +29,10 @@ object SomeSuccessfulVote extends Decider {
 }
 
 object Decider {
+  import porter.model.Property._
 
   def isDisabled(result: AuthResult) =
-    result.props.get("account.disabled").exists(_.toLowerCase == "true")
+    accountDisabled.isTrue(result.props) || accountLocked.isTrue(result.props)
 
   def notDisabled(result: AuthResult) = !isDisabled(result)
 

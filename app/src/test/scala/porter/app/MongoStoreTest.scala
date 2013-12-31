@@ -82,7 +82,7 @@ class MongoStoreTest extends FunSuite with ShouldMatchers with BeforeAndAfterAll
     val l2 = Await.result(store.allAccounts(r.id), 5 seconds)
     l2 should be (List(acc2))
 
-    Await.ready(store.updateAccount(r.id, acc2.updateGroups(s => Set.empty)), 5 seconds)
+    Await.ready(store.updateAccount(r.id, acc2.updatedGroups(s => Set.empty)), 5 seconds)
     val l2u = Await.result(store.findAccounts(r.id, Set(acc2.name)), 5 seconds)
     l2u should not be List(acc2)
     l2u(0).groups should have size 0
