@@ -1,12 +1,13 @@
 package porter.app.openid
 
-import akka.actor.{Actor, Props, ActorRef}
+import akka.actor.{ActorLogging, Actor, Props, ActorRef}
 import spray.routing.HttpServiceActor
 import porter.app.openid.routes._
 import akka.util.Timeout
 import spray.http._
 
 class OpenIdService(val porter: ActorRef, val assocActor: ActorRef, val settings: OpenIdServiceSettings) extends HttpServiceActor
+  with ActorLogging
   with Provides
   with AuthDirectives
   with PageDirectives

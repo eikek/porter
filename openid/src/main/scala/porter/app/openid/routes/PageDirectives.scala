@@ -38,6 +38,7 @@ trait PageDirectives {
       "realm" -> params.get(Keys.realm.openid).getOrElse(""),
       "identity" -> params.get(Keys.identity.openid).getOrElse(""),
       "returnToUrl" -> rto,
+      "endpointUrl" -> settings.endpointUrl.toString(),
       "params" -> (params ++ returnto.query.toMap).map(t => Map("name" -> t._1, "value"->t._2))
     )
     settings.continueTemplate(context)
@@ -63,8 +64,15 @@ trait PageDirectives {
   }
 
   def renderContinuePage(params: Map[String, String]) = returnToUrl { uri =>
+    val localid = params.get(Keys.identity.openid) match {
+      case Some(LocalIdParts(lid)) => lid
+      case _ => sys.error("Invalid positive assertion! Does not contain openid.identity attribute")
+    }
+    val paramsWithId = params
+      .updated("porter.realm", localid.realm.name)
+      .updated("porter.account", localid.account.name)
     complete(HttpResponse(
-      entity = HttpEntity(ContentType(MediaTypes.`text/html`), continueForm(uri, params))))
+      entity = HttpEntity(ContentType(MediaTypes.`text/html`), continueForm(uri, paramsWithId))))
   } ~ renderErrorPage
 
 }

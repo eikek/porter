@@ -35,7 +35,7 @@ trait OpenIdDirectives extends Provides {
   }
 
   def redirectToRelyingParty(params: Map[String, String]) = returnToUrl { returnto =>
-    redirect(returnto.withQuery(params), StatusCodes.Found)
+    redirect(returnto.withQuery(params ++ returnto.query.toMap), StatusCodes.Found)
   }
 
   def param(name: String): Directive1[String] = anyParam(name)
@@ -114,6 +114,7 @@ trait OpenIdDirectives extends Provides {
     params ++ (if (direct) Map("iserror" -> "true") else Map.empty)
   }
 
-  def userCancel: Directive0 = paramIs("porter.submitType", "Cancel")
-  def userSubmit: Directive0 = paramIs("porter.submitType", _ != "Cancel")
+  def signinCancel: Directive0 = paramIs("porter.submitType", "Cancel")
+  def signinSubmit: Directive0 = paramIs("porter.submitType", "Sign in")
+  def continueSubmit: Directive0 = paramIs("porter.submitType", "Continue")
 }

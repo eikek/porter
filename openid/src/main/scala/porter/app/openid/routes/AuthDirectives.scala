@@ -6,7 +6,7 @@ import spray.routing._
 import shapeless.HNil
 import spray.http.{Uri, HttpCookie}
 import scala.io.Codec
-import porter.util.Base64
+import porter.util.{Hash, Base64}
 import porter.app.akka.api.StoreActor.messages._
 import java.util.{TimeZone, UUID}
 import porter.auth.AuthResult
@@ -20,6 +20,7 @@ import porter.app.akka.api.AuthcWorker.messages.Authenticate
 import porter.app.openid.AssocActor.AssocToken
 import porter.app.akka.api.StoreActor.messages.FindAccounts
 import porter.app.akka.api.MutableStoreActor.messages.{OperationFinished, UpdateAccount}
+import porter.model.Property.BoolProperty
 
 trait AuthDirectives extends AssociationDirectives {
   import _root_.porter.app.openid.common._
@@ -182,4 +183,7 @@ trait AuthDirectives extends AssociationDirectives {
       case _ => false
     }
   }
+
+  def rememberRealmProperty(realmUri: String) =
+    BoolProperty("porter-openid-rememberRealm-"+ Hash.md5String(realmUri))
 }

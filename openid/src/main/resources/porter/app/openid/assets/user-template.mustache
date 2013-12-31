@@ -15,7 +15,7 @@
 <body>
 <div class="container">
     <div class="header">
-        <h1>Porter <small>OpenId Provider</small></h1>
+        <h1>Porter <small>OpenId Provider {{#porter}}v{{version}}{{/porter}}</small></h1>
         <span class="pull-right">
             <a href="/?porter.action=logout">Logout</a>
         </span>
@@ -25,22 +25,32 @@
         <p class="alert alert-{{level}}">{{message}}</p>
     {{/infoMessage}}
 
-    <div>
-        <h4>Change password</h4>
-        <form role="form" action="{{changeSecretUrl}}" method="post">
-            <input type="hidden" name="porter.action" value="changeSecret"/>
-            <div class="form-group">
-                <label for="password1" class="sr-only">New Password</label>
-                <input type="password" class="form-control" id="password1" name="porter.password1" placeholder="New password"/>
-            </div>
-            <div class="form-group">
-                <label for="password2" class="sr-only">Repeat</label>
-                <input type="password" class="form-control" id="password2" name="porter.password2" placeholder="Repeat password"/>
-            </div>
-            <div class="form-group">
-                <input type="submit" name="porter.submitType" class="btn btn-primary" value="OK"/>
-            </div>
-        </form>
+    <div class="row">
+        <div class="col-md-6">
+            <form role="form" action="{{clearRememberContinueUrl}}" method="post">
+                <h4>Clear remembered realms</h4>
+                <p>Clears remembered realm decisions.</p>
+                <input type="hidden" name="porter.action" value="clearRememberedRealms"/>
+                <input type="submit" class="btn btn-primary" value="Clear"/>
+            </form>
+        </div>
+        <div class="col-md-6">
+            <form role="form" action="{{changeSecretUrl}}" method="post">
+                <h4>Change password</h4>
+                <input type="hidden" name="porter.action" value="changeSecret"/>
+                <div class="form-group">
+                    <label for="password1" class="sr-only">New Password</label>
+                    <input type="password" class="form-control" id="password1" name="porter.password1" placeholder="New password"/>
+                </div>
+                <div class="form-group">
+                    <label for="password2" class="sr-only">Repeat</label>
+                    <input type="password" class="form-control" id="password2" name="porter.password2" placeholder="Repeat password"/>
+                </div>
+                <div class="form-group">
+                    <input type="submit" name="porter.submitType" class="btn btn-primary" value="OK"/>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 </body>

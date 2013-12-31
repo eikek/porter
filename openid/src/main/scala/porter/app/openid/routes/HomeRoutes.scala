@@ -21,7 +21,7 @@ trait HomeRoutes {
     case ("changeSecret", acc) =>
       updateSecretSubmit(settings.defaultRealm, acc) {
         case Success(nacc) =>
-          val context = Map("infoMessage" -> Map("level" -> "info", "message" -> "Secret changed."))
+          val context = Map("infoMessage" -> Map("level" -> "success", "message" -> "Secret changed."))
           setPorterCookieOnRememberme(nacc) {
             renderUserPage(nacc, context)
           }
@@ -33,6 +33,13 @@ trait HomeRoutes {
       removePorterCookie() {
         redirect(settings.endpointBaseUrl, StatusCodes.TemporaryRedirect)
       }
+
+    case ("clearRememberedRealms", acc) =>
+      val propname = rememberRealmProperty("").name
+      val nacc = acc.updatedProps(_.filterKeys(k => !k.startsWith(propname)))
+      porter ! UpdateAccount(settings.defaultRealm, nacc)
+      val context = Map("infoMessage" -> Map("level" -> "success", "message" -> "Decision cache cleared."))
+      renderUserPage(nacc, context)
   }
 
   private def renderLoginPage(params: Map[String, Any]) = complete {
