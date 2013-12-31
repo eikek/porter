@@ -15,6 +15,26 @@ trait AuthC {
 
   private val auth = AuthC.authenticate(_: AuthToken, validators)
 
+  def authenticate(realm: Ident, creds: Set[Credentials], decider: Decider)(implicit ec: ExecutionContext): Future[Boolean] = {
+    import Property._
+    authenticate(realm, creds).map { result =>
+      val decision = decider(result)
+      val props =
+        if (decision) lastLoginTime.current.andThen(successfulLogins.increment)
+        else failedLogins.increment
+      mutableStore(realm) match {
+        case Some(ms) =>
+          for {
+            acc <- store.findAccountsFor(realm, creds)
+            if acc.nonEmpty
+            upd <- ms.updateAccount(realm, acc.head.updatedProps(props))
+          } yield upd
+        case _ =>
+      }
+      decision
+    }
+  }
+
   def authenticate(realm: Ident, creds: Set[Credentials])(implicit ec: ExecutionContext): Future[AuthResult] = {
     for {
       r <- store.findRealms(Set(realm))

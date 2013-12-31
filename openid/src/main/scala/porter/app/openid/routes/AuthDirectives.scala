@@ -7,7 +7,6 @@ import shapeless.HNil
 import spray.http.{Uri, HttpCookie}
 import scala.io.Codec
 import porter.util.{Hash, Base64}
-import porter.app.akka.api.StoreActor.messages._
 import java.util.{TimeZone, UUID}
 import porter.auth.AuthResult
 import scala.util.Failure
@@ -19,8 +18,8 @@ import porter.app.akka.api.StoreActor.messages.FindAccountsResp
 import porter.app.akka.api.AuthcWorker.messages.Authenticate
 import porter.app.openid.AssocActor.AssocToken
 import porter.app.akka.api.StoreActor.messages.FindAccounts
-import porter.app.akka.api.MutableStoreActor.messages.{OperationFinished, UpdateAccount}
 import porter.model.Property.BoolProperty
+import porter.app.akka.api.PorterMain.UpdateAuthProps
 
 trait AuthDirectives extends AssociationDirectives {
   import _root_.porter.app.openid.common._
@@ -44,18 +43,13 @@ trait AuthDirectives extends AssociationDirectives {
 
   def authFuture(creds: Set[Credentials], realm: Ident)(implicit timeout: Timeout) = {
     val f = (porter ? Authenticate(realm, creds)).mapTo[AuthenticateResp].map {
-      case AuthenticateResp(Some(r), _) if settings.decider(r) => r
-      case _ => sys.error("Invalid Credentials")
+      case AuthenticateResp(Some(r), _) if settings.decider(r) =>
+        porter ! UpdateAuthProps(realm, creds, success = true)
+        r
+      case _ =>
+        porter ! UpdateAuthProps(realm, creds, success = false)
+        sys.error("Invalid Credentials")
     }
-    import Property._
-    def updateProps(props: Properties => Properties) = for {
-      acc <- (porter ? FindAccountsFor(realm, creds)).mapTo[FindAccountsResp]
-      if acc.accounts.nonEmpty
-      upd <- (porter ? UpdateAccount(realm, acc.accounts.head.updatedProps(props))).mapTo[OperationFinished]
-    } yield upd
-
-    f onFailure { case x => updateProps(failedLogins.increment) }
-    f onSuccess { case r => updateProps(lastLoginTime.current.andThen(successfulLogins.increment)) }
     f
   }
 

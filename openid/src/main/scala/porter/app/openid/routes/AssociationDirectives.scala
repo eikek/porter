@@ -1,8 +1,6 @@
 package porter.app.openid.routes
 
-import porter.app.openid._
 import porter.util.Base64
-import porter.app.openid
 import akka.util.Timeout
 import scala.concurrent.Future
 import spray.routing._
