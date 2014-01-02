@@ -21,12 +21,14 @@
   <body>
     <div class="container">
         <div class="header">
-            <h1>Porter <small>OpenId Provider {{#porter}}v{{version}}{{/porter}}</small></h1>
+            <h1>Porter <small>{{#identity}}OpenId Provider {{/identity}}{{#porter}}v{{version}}{{/porter}}</small></h1>
         </div>
         <h2>Sign In</h2>
+        {{#identity}}
         <div id="porter.logininfo">
             <p>You're authenticating with <strong>{{realm}}</strong> as <strong>{{identity}}</strong></p>
         </div>
+        {{/identity}}
         <br/>
         <div class="col-md-5 col-md-offset-3 porter-loginform">
             <form role="form" action="{{endpointUrl}}" method="post">
@@ -54,7 +56,9 @@
                 </div>
                 <div class="form-group">
                     <input type="submit" name="porter.submitType" class="btn btn-primary btn-lg" value="Sign in"/>
+                    {{#identity}}
                     <input type="submit" name="porter.submitType" class="btn btn-default btn-lg" value="Cancel"/>
+                    {{/identity}}
                 </div>
             </form>
         </div>

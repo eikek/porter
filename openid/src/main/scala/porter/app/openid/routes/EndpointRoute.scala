@@ -9,7 +9,6 @@ trait EndpointRoute {
   self: AuthDirectives with PageDirectives =>
 
   import spray.routing.Directives._
-  import _root_.porter.model.Property._
   import _root_.porter.app.akka.Porter.Messages.store._
   import _root_.porter.app.akka.Porter.Messages.mutableStore._
   import akka.pattern.ask
@@ -52,7 +51,7 @@ trait EndpointRoute {
           }
         }
       } ~
-      renderLoginPage(failed = true)
+      renderLoginPage(settings.endpointUrl.path.toString(), failed = true)
     }
   }
 
@@ -85,7 +84,7 @@ trait EndpointRoute {
           redirectToRelyingParty(userCancelResponse)
         } ~
         noCredentials {
-          renderLoginPage(failed = false)
+          renderLoginPage(settings.endpointUrl.path.toString(), failed = false)
         } ~
         credentials { creds =>
           authenticateRoute(creds) ~

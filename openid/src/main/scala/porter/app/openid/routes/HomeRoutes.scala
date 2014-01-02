@@ -91,13 +91,6 @@ trait HomeRoutes {
       }
   }
 
-  private def renderLoginPage(params: Map[String, Any]) = removePorterCookie() {
-    complete {
-      val page = settings.loginTemplate(defaultContext ++ params)
-      HttpResponse(entity = HttpEntity(html, page))
-    }
-  }
-
   private def renderUserPage(account: Account, params: Map[String, Any] = Map.empty) = complete {
     import PropertyList._
     val accountMap = Map(
@@ -149,7 +142,7 @@ trait HomeRoutes {
   def homeRoute: Route = {
     path(PathMatchers.separateOnSlashes(settings.endpointBaseUrl.path.toString())) {
       noCredentials {
-        renderLoginPage(defaultContext)
+        renderLoginPage(settings.endpointBaseUrl.path.toString(), failed = false)
       } ~
       credentials { creds =>
         authenticateAccount(creds, settings.defaultRealm)(timeout) { acc =>
@@ -160,7 +153,7 @@ trait HomeRoutes {
             renderUserPage(acc)
           }
         } ~
-        renderLoginPage(Map("loginFailed" -> true))
+        renderLoginPage(settings.endpointBaseUrl.path.toString(), failed = true)
       }
     }
   }

@@ -61,9 +61,9 @@ object Mustache {
       }
     }
     case class Block(name: String, inverse: Boolean, inner: Template) extends Template {
-      private val emptyValues = Set("", false, None)
-      private def createContext(any: Any): Seq[Context] = {
-        any match {
+      private val emptyValues = Set("", false, None, 0, null)
+      private def createContext(context: Context, name: String): Seq[Context] = {
+        context(name) match {
           case map: Map[_, _] => Seq(map.asInstanceOf[Map[String, Any]])
           case seq: Iterable[_] =>
             seq.headOption match {
@@ -71,7 +71,7 @@ object Mustache {
               case Some(h) => seq.map(e => Map("." -> e)).toList
               case _ => Seq.empty
             }
-          case obj if !emptyValues.contains(obj) => Seq(Map("." -> obj))
+          case obj if !emptyValues.contains(obj) => Seq(context)
           case _ => Seq.empty
         }
       }
@@ -82,7 +82,7 @@ object Mustache {
             case _ => inner(context)
           }
         } else {
-          val seq = Try(createContext(context(name))).getOrElse(Seq.empty[Context])
+          val seq = Try(createContext(context, name)).getOrElse(Seq.empty[Context])
           seq.foldLeft("") { (s, ctx) => s + inner(ctx) }
         }
       }

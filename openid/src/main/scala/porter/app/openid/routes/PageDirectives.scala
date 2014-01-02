@@ -8,7 +8,7 @@ import porter.app.openid.common.LocalId
 import porter.BuildInfo
 
 trait PageDirectives {
-  self: OpenIdDirectives =>
+  self: OpenIdDirectives with AuthDirectives =>
 
   import PageDirectives._
 
@@ -19,11 +19,11 @@ trait PageDirectives {
     }
   }
 
-  private def loginPage(params: Map[String, String], lid: Option[LocalId], failed: Boolean) = {
+  private def loginPage(params: Map[String, String], lid: Option[LocalId], endpointUrl: String, failed: Boolean) = {
     val context = defaultContext ++ Map(
       "realm" -> params.get(Keys.realm.openid).getOrElse(""),
       "identity" -> params.get(Keys.identity.openid).getOrElse(""),
-      "endpointUrl" -> settings.endpointUrl.toString(),
+      "endpointUrl" -> endpointUrl,
       "params" -> params.map(t => Map("name" -> t._1, "value"->t._2)),
       "loginFailed" -> failed
     ) ++ lid.toMap(id => Map("localId" -> Map("realm" -> id.realm.name, "account" -> id.account.name)))
@@ -49,11 +49,13 @@ trait PageDirectives {
     settings.errorTemplate(context)
   }
 
-  def renderLoginPage(failed: Boolean) = allParams { req =>
+  def renderLoginPage(endpointUrl: String, failed: Boolean) = allParams { req =>
     localIdOption { lidopt =>
-      complete(HttpResponse(
-        entity = HttpEntity(ContentType(MediaTypes.`text/html`),
-          loginPage(req, lidopt, failed))))
+      removePorterCookie() {
+        complete(HttpResponse(
+          entity = HttpEntity(ContentType(MediaTypes.`text/html`),
+            loginPage(req, lidopt, endpointUrl, failed))))
+      }
     }
   }
 
