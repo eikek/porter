@@ -4,12 +4,10 @@ import spray.routing.{Directive1, PathMatchers, Directives, Route}
 import spray.http._
 import porter.model._
 import scala.util.Try
-import porter.app.akka.api.MutableStoreActor.messages.UpdateAccount
 import scala.util.Failure
 import spray.http.HttpResponse
 import porter.model.Account
 import scala.util.Success
-import porter.app.akka.api.MutableStoreActor.messages.OperationFinished
 
 trait HomeRoutes {
   self: OpenIdDirectives with PageDirectives with AuthDirectives =>
@@ -18,6 +16,7 @@ trait HomeRoutes {
   import HomeRoutes._
   import PageDirectives._
   import akka.pattern.ask
+  import _root_.porter.app.akka.Porter.Messages.mutableStore._
 
   type Action = PartialFunction[(String, Account), Route]
 
@@ -60,11 +59,37 @@ trait HomeRoutes {
           renderUserPage(nacc, context)
         }
       }
+    case ("removeAccount", acc) =>
+      paramOpt("porter.removeAccount") { p =>
+        if (p == Some("on")) {
+          log.info(s"About to delete account '${acc.name.name}'.")
+          val f = (porter ? DeleteAccount(settings.defaultRealm, acc.name)).mapTo[OperationFinished]
+          onComplete(f) {
+            case Success(of) if of.result =>
+              log.info(s"Account '${acc.name.name}' deleted.")
+              removePorterCookie() {
+                redirect(settings.endpointBaseUrl, StatusCodes.TemporaryRedirect)
+              }
+            case Success(of) =>
+              log.error(s"Failed to delete account '${acc.name.name}")
+              val context = Map("infoMessage" -> Map("level" -> "danger", "message" -> "Could not remove account."))
+              renderUserPage(acc, context)
+            case Failure(ex) =>
+              log.error(ex, s"Failed to delete account '${acc.name.name}")
+              val context = Map("infoMessage" -> Map("level" -> "danger", "message" -> s"Could not remove account: ${ex.getMessage}."))
+              renderUserPage(acc, context)
+          }
+        } else {
+          renderUserPage(acc, Map("infoMessage" -> Map("level" -> "info", "message" -> "Please enable the check box to allow deletion.")))
+        }
+      }
   }
 
-  private def renderLoginPage(params: Map[String, Any]) = complete {
-    val page = settings.loginTemplate(defaultContext ++ params)
-    HttpResponse(entity = HttpEntity(html, page))
+  private def renderLoginPage(params: Map[String, Any]) = removePorterCookie() {
+    complete {
+      val page = settings.loginTemplate(defaultContext ++ params)
+      HttpResponse(entity = HttpEntity(html, page))
+    }
   }
 
   private def renderUserPage(account: Account, params: Map[String, Any] = Map.empty) = complete {
@@ -93,7 +118,7 @@ trait HomeRoutes {
       Map("account" -> accountMap) ++
       Map("properties" -> properties) ++
       Map("adminProps" -> adminProps) ++
-      Map("changeSecretUrl" -> "/")
+      Map("actionUrl" -> settings.endpointBaseUrl.path.toString())
     val page = settings.userTemplate(context)
     HttpResponse(entity = HttpEntity(html, page))
   }
@@ -116,7 +141,7 @@ trait HomeRoutes {
     }
 
   def homeRoute: Route = {
-    (path(PathMatchers.Slash) | path("")) {
+    path(PathMatchers.separateOnSlashes(settings.endpointBaseUrl.path.toString())) {
       noCredentials {
         renderLoginPage(defaultContext)
       } ~
