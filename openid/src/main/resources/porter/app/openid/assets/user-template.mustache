@@ -38,12 +38,16 @@
                 <h4>Change password</h4>
                 <input type="hidden" name="porter.action" value="changeSecret"/>
                 <div class="form-group">
+                    <label for="currentpassword" class="sr-only">New Password</label>
+                    <input type="password" class="form-control" id="currentpassword" name="porter.currentpassword" placeholder="Current password"/>
+                </div>
+                <div class="form-group">
                     <label for="password1" class="sr-only">New Password</label>
                     <input type="password" class="form-control" id="password1" name="porter.password1" placeholder="New password"/>
                 </div>
                 <div class="form-group">
                     <label for="password2" class="sr-only">Repeat</label>
-                    <input type="password" class="form-control" id="password2" name="porter.password2" placeholder="Repeat password"/>
+                    <input type="password" class="form-control" id="password2" name="porter.password2" placeholder="Repeat new password"/>
                 </div>
                 <div class="form-group">
                     <input type="submit" name="porter.submitType" class="btn btn-primary" value="Change Password"/>

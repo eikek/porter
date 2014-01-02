@@ -22,16 +22,22 @@ trait HomeRoutes {
 
   private lazy val actions: Action = {
     case ("changeSecret", acc) =>
-      updateSecretSubmit(settings.defaultRealm, acc) {
-        case Success(nacc) =>
-          val context = Map("infoMessage" -> Map("level" -> "success", "message" -> "Secret changed."))
-          setPorterCookieOnRememberme(nacc) {
-            renderUserPage(nacc, context)
+      formField("porter.currentpassword") { cpw =>
+        authenticateAccount(Set(PasswordCredentials(acc.name, cpw)), settings.defaultRealm)(timeout) { _ =>
+          updateSecretSubmit(settings.defaultRealm, acc) {
+            case Success(nacc) =>
+              val context = Map("infoMessage" -> Map("level" -> "success", "message" -> "Secret changed."))
+              setPorterCookieOnRememberme(nacc) {
+                renderUserPage(nacc, context)
+              }
+            case Failure(ex) =>
+              val context = Map("infoMessage" -> Map("level" -> "danger", "message" -> ex.getMessage))
+              renderUserPage(acc, context)
           }
-        case Failure(ex) =>
-          val context = Map("infoMessage" -> Map("level" -> "danger", "message" -> ex.getMessage))
-          renderUserPage(acc, context)
+        } ~
+        renderUserPage(acc, Map("infoMessage" -> Map("level" -> "danger", "message" -> "Authentication failed.")))
       }
+
     case ("logout", acc) =>
       removePorterCookie() {
         redirect(settings.endpointBaseUrl, StatusCodes.TemporaryRedirect)
