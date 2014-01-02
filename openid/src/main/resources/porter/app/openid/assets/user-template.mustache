@@ -15,7 +15,7 @@
 <body>
 <div class="container">
     <div class="header">
-        <h1>Porter <small>OpenId Provider {{#porter}}v{{version}}{{/porter}}</small></h1>
+        <h1>Porter <small>{{#porter}}v{{version}}{{/porter}}</small></h1>
         <span class="pull-right">
             <a href="/?porter.action=logout">Logout</a>
         </span>
@@ -24,16 +24,15 @@
     {{#infoMessage}}
         <p class="alert alert-{{level}}">{{message}}</p>
     {{/infoMessage}}
-
     <div class="row">
-        <div class="col-md-6">
-            <form role="form" action="{{clearRememberContinueUrl}}" method="post">
-                <h4>Clear remembered realms</h4>
-                <p>Clears remembered realm decisions.</p>
-                <input type="hidden" name="porter.action" value="clearRememberedRealms"/>
-                <input type="submit" class="btn btn-primary" value="Clear"/>
-            </form>
-        </div>
+        <dl class="dl-horizontal">
+            {{#adminProps}}
+                <dt>{{label}}</dt>
+                <dd>{{value}}</dd>
+            {{/adminProps}}
+        </dl>
+    </div>
+    <div class="row">
         <div class="col-md-6">
             <form role="form" action="{{changeSecretUrl}}" method="post">
                 <h4>Change password</h4>
@@ -47,7 +46,29 @@
                     <input type="password" class="form-control" id="password2" name="porter.password2" placeholder="Repeat password"/>
                 </div>
                 <div class="form-group">
-                    <input type="submit" name="porter.submitType" class="btn btn-primary" value="OK"/>
+                    <input type="submit" name="porter.submitType" class="btn btn-primary" value="Change Password"/>
+                </div>
+            </form>
+            <hr/>
+            <form role="form" action="{{clearRememberContinueUrl}}" method="post">
+                <h4>Clear remembered realms</h4>
+                <p>Clears remembered realm decisions.</p>
+                <input type="hidden" name="porter.action" value="clearRememberedRealms"/>
+                <input type="submit" class="btn btn-primary" value="Clear"/>
+            </form>
+        </div>
+        <div class="col-md-6">
+            <form role="form" action="{{updatePropertiesUrl}}" method="post">
+                <h4>Account Properties</h4>
+                <input type="hidden" name="porter.action" value="updateProperties"/>
+                {{#properties}}
+                    <div class="form-group">
+                        <label for="{{id}}">{{label}}</label>
+                        <input type="text" class="form-control" id="{{id}}" name="{{id}}" placeholder="{{label}}" value="{{value}}">
+                    </div>
+                {{/properties}}
+                <div class="form-group">
+                    <input type="submit" name="porter.submitType" class="btn btn-primary" value="Save"/>
                 </div>
             </form>
         </div>

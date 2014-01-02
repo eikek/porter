@@ -16,7 +16,7 @@ trait AuthC {
   private val auth = AuthC.authenticate(_: AuthToken, validators)
 
   def authenticate(realm: Ident, creds: Set[Credentials], decider: Decider)(implicit ec: ExecutionContext): Future[Boolean] = {
-    import Property._
+    import PropertyList._
     authenticate(realm, creds).map { result =>
       val decision = decider(result)
       val props =

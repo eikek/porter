@@ -2,10 +2,14 @@ package porter.app.openid.routes
 
 import spray.routing.{Directive1, PathMatchers, Directives, Route}
 import spray.http._
+import porter.model._
+import scala.util.Try
+import porter.app.akka.api.MutableStoreActor.messages.UpdateAccount
+import scala.util.Failure
 import spray.http.HttpResponse
-import porter.model.{Password, Ident, Account}
-import porter.app.akka.api.MutableStoreActor.messages.{OperationFinished, UpdateAccount}
-import scala.util.{Failure, Try, Success}
+import porter.model.Account
+import scala.util.Success
+import porter.app.akka.api.MutableStoreActor.messages.OperationFinished
 
 trait HomeRoutes {
   self: OpenIdDirectives with PageDirectives with AuthDirectives =>
@@ -40,6 +44,22 @@ trait HomeRoutes {
       porter ! UpdateAccount(settings.defaultRealm, nacc)
       val context = Map("infoMessage" -> Map("level" -> "success", "message" -> "Decision cache cleared."))
       renderUserPage(nacc, context)
+
+    case ("updateProperties", acc) =>
+      formFields { values =>
+        val props = PropertyList.userProps.partition(p => values.get(p.name).exists(_.trim.nonEmpty)) match {
+          case (add, remove) => add.map(p => p.setRaw(values(p.name))) ++ remove.map(p => p.remove)
+        }
+        if (props.isEmpty) {
+          val context = Map("infoMessage" -> Map("level" -> "info", "message" -> "Nothing to save."))
+          renderUserPage(acc, context)
+        } else {
+          val nacc = acc.updatedProps(props.reduce(_ andThen _))
+          porter ! UpdateAccount(settings.defaultRealm, nacc)
+          val context = Map("infoMessage" -> Map("level" -> "success", "message" -> "Account saved."))
+          renderUserPage(nacc, context)
+        }
+      }
   }
 
   private def renderLoginPage(params: Map[String, Any]) = complete {
@@ -48,13 +68,33 @@ trait HomeRoutes {
   }
 
   private def renderUserPage(account: Account, params: Map[String, Any] = Map.empty) = complete {
+    import PropertyList._
     val accountMap = Map(
       "name" -> account.name.name,
       "props" -> account.props,
       "groups" -> account.groups.map(_.name).toList,
       "secrets" -> account.secrets.map(_.name.name)
     )
-    val page = settings.userTemplate(defaultContext ++ Map("account" -> accountMap) ++ params ++ Map("changeSecretUrl" -> "/"))
+    val adminProps = List(lastLoginTime, successfulLogins, failedLogins).map { prop =>
+      Map(
+        "label" -> prop.name.substring("porter-admin-".length),
+        "id" -> prop.name,
+        "value" -> prop.getRaw(account.props).getOrElse("")
+      )
+    }
+    val properties = userProps.map { prop =>
+      Map(
+        "label" -> prop.name.substring("porter-user-".length),
+        "id" -> prop.name,
+        "value" -> prop.getRaw(account.props).getOrElse("")
+      )
+    }
+    val context = defaultContext ++ params ++
+      Map("account" -> accountMap) ++
+      Map("properties" -> properties) ++
+      Map("adminProps" -> adminProps) ++
+      Map("changeSecretUrl" -> "/")
+    val page = settings.userTemplate(context)
     HttpResponse(entity = HttpEntity(html, page))
   }
 

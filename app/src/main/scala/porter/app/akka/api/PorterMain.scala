@@ -31,7 +31,7 @@ class PorterMain(settings: PorterSettings) extends Actor with ActorLogging {
       val w = context.actorOf(AuthcWorker(store, settings.validators))
       w forward authc
     case UpdateAuthProps(realm, creds, success, id) =>
-      import porter.model.Property._
+      import porter.model.PropertyList._
       import akka.pattern.ask
       import akka.pattern.pipe
       import context.dispatcher

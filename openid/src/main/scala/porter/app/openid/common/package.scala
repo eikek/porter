@@ -5,6 +5,7 @@ import java.io.InputStream
 import porter.model.{Account, Ident}
 import porter.app.openid.AssocActor.AssocToken
 import spray.http.Uri
+import porter.util.ObjectRegistry
 
 package object common {
 

@@ -1,4 +1,4 @@
-package porter.app.openid.common
+package porter.util
 
 import java.util.concurrent.atomic.AtomicReference
 

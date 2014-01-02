@@ -10,7 +10,7 @@ trait Decider extends (AuthResult => Boolean)
 /**
  * Returns `true` if there is at least one successful vote and
  * no failed ones. It also checks the properties
- * [[porter.model.Property.accountDisabled]] and [[porter.model.Property.accountLocked]].
+ * [[porter.model.PropertyList.accountDisabled]] and [[porter.model.PropertyList.accountLocked]].
  */
 object OneSuccessfulVote extends Decider {
   import Decider._
@@ -21,7 +21,7 @@ object OneSuccessfulVote extends Decider {
 /**
  * Returns `true` if there is at least one successful vote while
  * it does not look at any failed ones. It also checks the properties
- * [[porter.model.Property.accountDisabled]] and [[porter.model.Property.accountLocked]].
+ * [[porter.model.PropertyList.accountDisabled]] and [[porter.model.PropertyList.accountLocked]].
  */
 object SomeSuccessfulVote extends Decider {
   import Decider._
@@ -29,7 +29,7 @@ object SomeSuccessfulVote extends Decider {
 }
 
 object Decider {
-  import porter.model.Property._
+  import porter.model.PropertyList._
 
   def isDisabled(result: AuthResult) =
     accountDisabled.isTrue(result.props) || accountLocked.isTrue(result.props)

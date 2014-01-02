@@ -21,9 +21,11 @@ package object model {
 
   trait Property[T] {
     def name: String
-    def set(value: T): Properties => Properties = _.updated(name, value.toString)
-    def remove: Properties => Properties = _ - name
+    def setRaw(value: String): Properties => Properties = _.updated(name, value)
+    def getRaw(map: Properties): Option[String] = map.get(name)
+    def set(value: T): Properties => Properties = setRaw(value.toString)
     def get(map: Properties): Option[T]
+    def remove: Properties => Properties = _ - name
   }
   object Property {
     case class BoolProperty(name: String) extends Property[Boolean] {
@@ -65,27 +67,5 @@ package object model {
       def getMillis(map: Properties) = get(map).map(_.getTime)
       def getString(map: Properties) = map.get(name)
     }
-
-    /** Property to indicate that an account has been automatically disabled (maybe
-      * due to too many failed logins).
-      */
-    val accountDisabled = BoolProperty("porter-admin-accountDisabled")
-
-    /** Property to indicate that an account has manually been locked by the admin. */
-    val accountLocked = BoolProperty("porter-admin-accountLocked")
-
-    /** Timestamp of the last successful login */
-    val lastLoginTime = TimestampProperty("porter-admin-lastloginTime")
-
-    /** Number of failed login attempts of some time period. */
-    val failedLogins = CounterProperty("porter-admin-failedLogins")
-
-    /** Number of successful logins of some time period. */
-    val successfulLogins = CounterProperty("porter-admin-successfulLogins")
-
-    val firstName = StringProperty("porter-user-firstname")
-    val lastName = StringProperty("porter-user-lastname")
-    val firstEmail = StringProperty("porter-user-email-1")
-    val secondEmail = StringProperty("porter-user-email-2")
   }
 }
