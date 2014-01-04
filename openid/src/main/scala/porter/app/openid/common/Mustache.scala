@@ -78,7 +78,7 @@ object Mustache {
       def apply(context: Context): String = {
         if (inverse) {
           context.get(name) match {
-            case Some(_) => ""
+            case Some(x) if !emptyValues.contains(x) => ""
             case _ => inner(context)
           }
         } else {
