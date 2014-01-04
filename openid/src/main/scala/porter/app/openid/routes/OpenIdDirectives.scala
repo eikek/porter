@@ -3,25 +3,16 @@ package porter.app.openid.routes
 import spray.routing._
 import spray.http._
 import spray.routing.Directives._
-import shapeless.HNil
-import spray.httpx.marshalling.{ToResponseMarshallingContext, ToResponseMarshallable}
-import spray.http.HttpResponse
 import porter.model.Ident
 import scala.util.{Success, Try}
 
-trait OpenIdDirectives extends Provides {
+trait OpenIdDirectives {
+  self: OpenIdActors =>
+
   import _root_.porter.app.openid.common._
+  import Implicits._
   import spray.httpx.unmarshalling._
   import shapeless.HList.ListCompat._
-
-  implicit class KeyValueResponse(value: Map[String, String]) extends ToResponseMarshallable {
-    def marshal(ctx: ToResponseMarshallingContext) = {
-      val error = value.get("iserror").exists(_ == "true")
-      val kvs = (value - "iserror").map { case (k, v) => s"$k:$v\n" }.mkString
-      val status = if (error) StatusCodes.BadRequest else StatusCodes.OK
-      ctx.marshalTo(HttpResponse(status = status, entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, kvs)))
-    }
-  }
 
   def openIdEndpoint = PathMatchers.separateOnSlashes(settings.endpointUrl.path.dropChars(1).toString())
 
@@ -84,8 +75,7 @@ trait OpenIdDirectives extends Provides {
 
   def extractRealm: Directive1[Ident] =
     (localId.map(_.realm) | provide(settings.defaultRealm)).flatMap {
-      case realm if settings.acceptRealm(realm) =>
-        provide(realm)
+      case realm if settings.acceptRealm(realm) => provide(realm)
       case _ => reject()
     }
 
@@ -110,11 +100,17 @@ trait OpenIdDirectives extends Provides {
      Keys.ns -> openid20,
      Keys.mode -> Modes.error,
      Keys.error -> msg
-    ) map { case (k, v) => if (direct) (k.name, v) else (k.openid, v) }
+    ) map  { case (k, v) => if (direct) (k.name, v) else (k.openid, v) }
     params ++ (if (direct) Map("iserror" -> "true") else Map.empty)
   }
 
   def signinCancel: Directive0 = paramIs("porter.submitType", "Cancel")
   def signinSubmit: Directive0 = paramIs("porter.submitType", "Sign in")
   def continueSubmit: Directive0 = paramIs("porter.submitType", "Continue")
+
+  def nextNonce = {
+    val df = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
+    df.setTimeZone(java.util.TimeZone.getTimeZone("UTC"))
+    df.format(new java.util.Date()) + java.util.UUID.randomUUID().toString.replace('-', 'z')
+  }
 }

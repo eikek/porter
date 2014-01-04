@@ -8,34 +8,40 @@ import scala.util.Failure
 import spray.http.HttpResponse
 import porter.model.Account
 import scala.util.Success
+import porter.app.client.spray.{PorterDirectives, PorterContext, PorterAuthenticator}
+import spray.routing.authentication.UserPass
 
-trait HomeRoutes {
-  self: OpenIdDirectives with PageDirectives with AuthDirectives =>
+trait HomeRoutes extends OpenIdDirectives with PageDirectives with AuthDirectives {
+  self: OpenIdActors =>
 
   import Directives._
-  import HomeRoutes._
   import PageDirectives._
   import akka.pattern.ask
-  import _root_.porter.app.akka.Porter.Messages.mutableStore._
+  import porter.app.akka.Porter.Messages.mutableStore._
 
   type Action = PartialFunction[(String, Account), Route]
+
+  private val porterContext = PorterContext(porterRef, settings.defaultRealm, settings.decider)
+  private def PorterAuth = PorterAuthenticator(porterContext, settings.cookieKey, settings.cookieName)
+
+  private def message(level: String = "info", msg: String) = Map("infoMessage" -> Map(
+    "level" -> level, "message" -> msg
+  ))
 
   private lazy val actions: Action = {
     case ("changeSecret", acc) =>
       formField("porter.currentpassword") { cpw =>
-        authenticateAccount(Set(PasswordCredentials(acc.name, cpw)), settings.defaultRealm)(timeout) { _ =>
+        authcAccount(settings.defaultRealm, Set(PasswordCredentials(acc.name, cpw)))(timeout) { _ =>
           updateSecretSubmit(settings.defaultRealm, acc) {
             case Success(nacc) =>
-              val context = Map("infoMessage" -> Map("level" -> "success", "message" -> "Secret changed."))
               setPorterCookieOnRememberme(nacc) {
-                renderUserPage(nacc, context)
+                renderUserPage(nacc, message("success", "Secret changed."))
               }
             case Failure(ex) =>
-              val context = Map("infoMessage" -> Map("level" -> "danger", "message" -> ex.getMessage))
-              renderUserPage(acc, context)
+              renderUserPage(acc, message("danger", ex.getMessage))
           }
         } ~
-        renderUserPage(acc, Map("infoMessage" -> Map("level" -> "danger", "message" -> "Authentication failed.")))
+        renderUserPage(acc, message("danger", "Authentication failed."))
       }
 
     case ("logout", acc) =>
@@ -44,11 +50,10 @@ trait HomeRoutes {
       }
 
     case ("clearRememberedRealms", acc) =>
-      val propname = rememberRealmProperty("").name
+      val propname = rememberRealmPropName
       val nacc = acc.updatedProps(_.filterKeys(k => !k.startsWith(propname)))
-      porter ! UpdateAccount(settings.defaultRealm, nacc)
-      val context = Map("infoMessage" -> Map("level" -> "success", "message" -> "Decision cache cleared."))
-      renderUserPage(nacc, context)
+      porterRef ! UpdateAccount(settings.defaultRealm, nacc)
+      renderUserPage(nacc, message("success", "Decision cache cleared."))
 
     case ("updateProperties", acc) =>
       formFields { values =>
@@ -56,20 +61,18 @@ trait HomeRoutes {
           case (add, remove) => add.map(p => p.setRaw(values(p.name))) ++ remove.map(p => p.remove)
         }
         if (props.isEmpty) {
-          val context = Map("infoMessage" -> Map("level" -> "info", "message" -> "Nothing to save."))
-          renderUserPage(acc, context)
+          renderUserPage(acc, message("info", "Nothing to save."))
         } else {
           val nacc = acc.updatedProps(props.reduce(_ andThen _))
-          porter ! UpdateAccount(settings.defaultRealm, nacc)
-          val context = Map("infoMessage" -> Map("level" -> "success", "message" -> "Account saved."))
-          renderUserPage(nacc, context)
+          porterRef ! UpdateAccount(settings.defaultRealm, nacc)
+          renderUserPage(nacc, message("success", "Account saved."))
         }
       }
     case ("removeAccount", acc) =>
       paramOpt("porter.removeAccount") { p =>
         if (p == Some("on")) {
           log.info(s"About to delete account '${acc.name.name}'.")
-          val f = (porter ? DeleteAccount(settings.defaultRealm, acc.name)).mapTo[OperationFinished]
+          val f = (porterRef ? DeleteAccount(settings.defaultRealm, acc.name)).mapTo[OperationFinished]
           onComplete(f) {
             case Success(of) if of.result =>
               log.info(s"Account '${acc.name.name}' deleted.")
@@ -78,45 +81,25 @@ trait HomeRoutes {
               }
             case Success(of) =>
               log.error(s"Failed to delete account '${acc.name.name}")
-              val context = Map("infoMessage" -> Map("level" -> "danger", "message" -> "Could not remove account."))
-              renderUserPage(acc, context)
+              renderUserPage(acc, message("info", "Could not remove account."))
             case Failure(ex) =>
               log.error(ex, s"Failed to delete account '${acc.name.name}")
-              val context = Map("infoMessage" -> Map("level" -> "danger", "message" -> s"Could not remove account: ${ex.getMessage}."))
-              renderUserPage(acc, context)
+              renderUserPage(acc, message("danger", "Could not remove account: " +ex.getMessage))
           }
         } else {
-          renderUserPage(acc, Map("infoMessage" -> Map("level" -> "info", "message" -> "Please enable the check box to allow deletion.")))
+          renderUserPage(acc, message("info", "Please enable the check box to allow deletion."))
         }
       }
   }
 
   private def renderUserPage(account: Account, params: Map[String, Any] = Map.empty) = complete {
     import PropertyList._
-    val accountMap = Map(
-      "name" -> account.name.name,
-      "props" -> account.props,
-      "groups" -> account.groups.map(_.name).toList,
-      "secrets" -> account.secrets.map(_.name.name)
-    )
-    val adminProps = List(lastLoginTime, successfulLogins, failedLogins).map { prop =>
-      Map(
-        "label" -> prop.name.substring("porter-admin-".length),
-        "id" -> prop.name,
-        "value" -> prop.getRaw(account.props).getOrElse("")
-      )
-    }
-    val properties = userProps.map { prop =>
-      Map(
-        "label" -> prop.name.substring("porter-user-".length),
-        "id" -> prop.name,
-        "value" -> prop.getRaw(account.props).getOrElse("")
-      )
-    }
+    import Implicits._
+    val adminProps = List(lastLoginTime, successfulLogins, failedLogins)
     val context = defaultContext ++ params ++
-      Map("account" -> accountMap) ++
-      Map("properties" -> properties) ++
-      Map("adminProps" -> adminProps) ++
+      Map("account" -> account.toMap) ++
+      Map("properties" -> userProps.map(_.toMap(account, _.substring("porter-user-".length)))) ++
+      Map("adminProps" -> adminProps.map(_.toMap(account, _.substring("porter-admin-".length)))) ++
       Map("actionUrl" -> settings.endpointBaseUrl.path.toString())
     val page = settings.userTemplate(context)
     HttpResponse(entity = HttpEntity(html, page))
@@ -124,7 +107,7 @@ trait HomeRoutes {
 
   def updateSecret(realm: Ident, account: Account, pw: String): Directive1[Try[Account]] = {
     val newAccount = account.changeSecret(Password(settings.passwordCrypt)(pw))
-    val f = (porter ? UpdateAccount(realm, newAccount)).mapTo[OperationFinished]
+    val f = (porterRef ? UpdateAccount(realm, newAccount)).mapTo[OperationFinished]
     onComplete(f).flatMap {
       case Success(OperationFinished(true, _)) => provide(Success(newAccount))
       case _ => provide(Failure(new Exception("Error setting secrets")))
@@ -144,20 +127,15 @@ trait HomeRoutes {
       noCredentials {
         renderLoginPage(settings.endpointBaseUrl.path.toString(), failed = false)
       } ~
-      credentials { creds =>
-        authenticateAccount(creds, settings.defaultRealm)(timeout) { acc =>
-          param("porter.action") { action =>
-            actions.lift((action, acc)).getOrElse(reject())
-          } ~
-          setPorterCookieOnRememberme(acc) {
-            renderUserPage(acc)
-          }
+      authenticate(PorterAuth) { acc =>
+        param("porter.action") { action =>
+          actions.lift((action, acc)).getOrElse(reject())
         } ~
-        renderLoginPage(settings.endpointBaseUrl.path.toString(), failed = true)
-      }
+        setPorterCookieOnRememberme(acc) {
+          renderUserPage(acc)
+        }
+      } ~
+      renderLoginPage(settings.endpointBaseUrl.path.toString(), failed = true)
     }
   }
-}
-object HomeRoutes {
-  val html = ContentType(MediaTypes.`text/html`)
 }

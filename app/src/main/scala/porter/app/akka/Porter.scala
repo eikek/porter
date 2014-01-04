@@ -29,7 +29,7 @@ class Porter(system: ExtendedActorSystem) extends Extension {
 
 
   /**
-   * Creates a new porter actor within this actor system and returns the ref.
+   * Creates a new porter actor using the given factory and returns the ref.
    *
    * @param settings settings to configure porter
    * @param name the name of the new actor
@@ -39,7 +39,7 @@ class Porter(system: ExtendedActorSystem) extends Extension {
     factory.actorOf(PorterMain(settings), name)
 
   /**
-   * Creates a new porter actor within this actor system and returns the ref. The
+   * Creates a new porter actor using the given actor factory and returns the ref. The
    * porter actor is created by looking up a [[com.typesafe.config.Config]] using
    * the given `configName` and using this to create a [[porter.app.PorterSettings]]
    * object.
@@ -50,7 +50,7 @@ class Porter(system: ExtendedActorSystem) extends Extension {
    * @param actorName the name of the new actor
    * @return
    */
-  def createPorter(factory: ActorRefFactory, configName: String, actorName: String = "api"): ActorRef = {
+  def createPorter(factory: ActorRefFactory, configName: String = "porter", actorName: String = "api"): ActorRef = {
     val cfg = system.settings.config.getConfig(configName)
     val settings = PorterSettings.fromConfig(cfg, system.dynamicAccess)
     createPorter(factory, settings, actorName)
@@ -60,7 +60,7 @@ class Porter(system: ExtendedActorSystem) extends Extension {
    * For convenience, this creates a new porter actor within this actor system by
    * looking up a configuration of name "porter" and the actor name "porter-api".
    */
-  lazy val main = createPorter(system, "porter")
+  lazy val main = createPorter(system)
 }
 
 object Porter extends ExtensionId[Porter] with ExtensionIdProvider {

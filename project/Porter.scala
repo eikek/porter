@@ -100,7 +100,7 @@ object App extends sbt.Build {
     base = file("app"),
     settings = Project.defaultSettings ++ Seq(
       name := "porter-app",
-      libraryDependencies ++= Deps.akka ++ Deps.testBasics ++ Deps.casbah ++ Deps.spray
+      libraryDependencies ++= Deps.akka ++ Deps.testBasics ++ Deps.casbah ++ Deps.spray ++ Deps.sprayRouting.map(_ % "optional")
     )
   ) dependsOn Api.module
 }

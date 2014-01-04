@@ -3,7 +3,7 @@ package porter.app.openid.routes
 import spray.routing.{PathMatchers, Route}
 
 trait StaticRoute {
-  self: Provides with OpenIdDirectives =>
+  self: OpenIdActors =>
 
   import spray.routing.Directives._
   import spray.routing.RoutingSettings.default

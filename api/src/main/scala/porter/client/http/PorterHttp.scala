@@ -1,4 +1,4 @@
-package porter.util
+package porter.client.http
 
 import java.net.{HttpURLConnection, URL, InetSocketAddress}
 import porter.model.{Realm, Ident}
@@ -11,9 +11,6 @@ import porter.auth.{Vote, AuthResult}
 /**
  * Simple client for performing authentication and authorization on a remote
  * instance using http.
- *
- * @author Eike Kettner eike.kettner@gmail.com
- * @since 28.11.13 02:11
  */
 class PorterHttp(addr: InetSocketAddress) {
   import porter.util.JsonHelper._

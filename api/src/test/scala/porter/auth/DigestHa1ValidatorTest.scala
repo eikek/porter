@@ -19,12 +19,6 @@ class DigestHa1ValidatorTest extends FunSuite with ShouldMatchers {
   val realm = Realm(Ident.randomIdent, "")
   val acc = Account(name = "john", secrets = Seq(DigestHa1("john", realm.name, "test")))
 
-  // 1. client accesses page
-  // 2. server sends 401 Unauthorized with (realm, qops, nonce)
-  // 3. user enters (username, password)
-  // 4. client sends same request with "response".
-  //    response = md5( ha1=md5(username:realm:password) : nonce : ha2=md5(method, uri) )
-
   def ha1(username: String, password: String) = Hash.md5String(username +":"+ realm.name +":"+ password)
 
   def clientResponse(ha1: String, nonce: String, qop: Option[DigestQop]) = {
@@ -39,7 +33,7 @@ class DigestHa1ValidatorTest extends FunSuite with ShouldMatchers {
   }
 
   test("simple digest") {
-    val nonce = DigestValidator.generateNonce(realm.id.name)
+    val nonce = DigestValidator.generateNonce()
     val response = clientResponse(ha1("john", "test"), nonce, None)
     val creds = DigestCredentials("john", method, uri, nonce, response)
 
@@ -50,7 +44,7 @@ class DigestHa1ValidatorTest extends FunSuite with ShouldMatchers {
   }
 
   test("digest with qop=auth") {
-    val nonce = DigestValidator.generateNonce(realm.id.name)
+    val nonce = DigestValidator.generateNonce()
     val qop = DigestAuth(UUID.randomUUID().toString, "42")
     val response = clientResponse(ha1("john", "test"), nonce, Some(qop))
     val creds = DigestCredentials("john", method, uri, nonce, response, Some(qop))
@@ -62,7 +56,8 @@ class DigestHa1ValidatorTest extends FunSuite with ShouldMatchers {
   }
 
   test("nonce expired") {
-    val nonce = "1385858038965$$2a$10$m8o0JO4dHC7Yg3fxivrZ7e4UalPhZzVsC6E06BnpTp1a1fJHgwMfm"
+    import scala.concurrent.duration._
+    val nonce = DigestValidator.generateNonce(-1.millis)
     val response = clientResponse(ha1("john", "test"), nonce, None)
     val creds = DigestCredentials("john", method, uri, nonce, response)
 

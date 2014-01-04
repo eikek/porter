@@ -6,8 +6,8 @@ import spray.httpx.marshalling.{ToResponseMarshallingContext, ToResponseMarshall
 import scala.xml.{NodeSeq, Elem}
 import spray.http.HttpResponse
 
-trait DiscoveryRoute {
-  self: OpenIdDirectives =>
+trait DiscoveryRoute extends OpenIdDirectives {
+  self: OpenIdActors =>
 
   import spray.routing.Directives._
   import scala.language.implicitConversions

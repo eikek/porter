@@ -7,19 +7,13 @@ import spray.http.HttpResponse
 import porter.app.openid.common.LocalId
 import porter.BuildInfo
 
-trait PageDirectives {
-  self: OpenIdDirectives with AuthDirectives =>
+trait PageDirectives extends OpenIdDirectives with AuthDirectives {
+  self: OpenIdActors =>
 
   import PageDirectives._
 
-  private implicit class MapAdds[A](opt: Option[A]) {
-    def toMap(f: A => Map[String, Any]) = opt match {
-      case Some(a) => f(a)
-      case _ => Map.empty[String, Any]
-    }
-  }
-
   private def loginPage(params: Map[String, String], lid: Option[LocalId], endpointUrl: String, failed: Boolean) = {
+    import Implicits._
     val context = defaultContext ++ Map(
       "realm" -> params.get(Keys.realm.openid).getOrElse(""),
       "identity" -> params.get(Keys.identity.openid).getOrElse(""),
@@ -53,7 +47,7 @@ trait PageDirectives {
     localIdOption { lidopt =>
       removePorterCookie() {
         complete(HttpResponse(
-          entity = HttpEntity(ContentType(MediaTypes.`text/html`),
+          entity = HttpEntity(html,
             loginPage(req, lidopt, endpointUrl, failed))))
       }
     }
@@ -62,7 +56,7 @@ trait PageDirectives {
   def renderErrorPage = allParams { params =>
     complete(HttpResponse(
       status = StatusCodes.BadRequest,
-      entity = HttpEntity(ContentType(MediaTypes.`text/html`), errorPage(params))))
+      entity = HttpEntity(html, errorPage(params))))
   }
 
   def renderContinuePage(params: Map[String, String]) = returnToUrl { uri =>
@@ -74,12 +68,15 @@ trait PageDirectives {
       .updated("porter.realm", localid.realm.name)
       .updated("porter.account", localid.account.name)
     complete(HttpResponse(
-      entity = HttpEntity(ContentType(MediaTypes.`text/html`), continueForm(uri, paramsWithId))))
+      entity = HttpEntity(html, continueForm(uri, paramsWithId))))
   } ~ renderErrorPage
 
 }
 
 object PageDirectives {
+
+  val html = ContentType(MediaTypes.`text/html`)
+
   val defaultContext = Map(
     "porter" -> Map("version" -> BuildInfo.version,
       "revision" -> BuildInfo.revision,

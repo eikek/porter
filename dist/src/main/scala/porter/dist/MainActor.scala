@@ -27,13 +27,11 @@ class MainActor extends Actor with ActorLogging {
   val main = MainExt(context.system)
   val openidSettings = OpenIdSettings(context.system)
 
-  val porter = Porter(context.system).createPorter(context, "porter", "api")
+  val porter = Porter(context.system).createPorter(context)
   println(s"\n---\n--- Porter remote actor listening on ${main.pathFor(porter)} \n---")
   val telnetService = context.actorOf(TelnetServer(porter), "telnet")
   val httpService = context.actorOf(HttpHandler(porter), "http")
   val openIdService = context.actorOf(OpenIdHandler(porter, openidSettings), "openid")
-
-  var boundServices = Map.empty[String, ServiceBound]
 
   private def toTcp(actor: ActorRef, host: String, port: Int) = {
     val endpoint = new InetSocketAddress(host, port)
@@ -44,7 +42,7 @@ class MainActor extends Actor with ActorLogging {
   }
 
   private def bind(name: String, bind: => Future[Any]) {
-    def mapBindResponse(name: String, f: Future[Any]): Future[Any] = {
+    def mapBindResponse(f: Future[Any]): Future[Any] = {
       f.map({
         case ok:Tcp.Bound => ServiceBound(name, ok)
         case f: Tcp.CommandFailed => ServiceBoundFailure(name, new Exception(f.cmd.toString))
@@ -52,8 +50,7 @@ class MainActor extends Actor with ActorLogging {
       }).recover({case x => ServiceBoundFailure(name, x) })
     }
 
-    if (boundServices.contains(name)) sender ! ServiceBoundFailure(name, new Exception("Already bound"))
-    else mapBindResponse(name, bind) pipeTo sender
+    mapBindResponse(bind) pipeTo sender
   }
   
   def receive = {
@@ -67,7 +64,6 @@ class MainActor extends Actor with ActorLogging {
       bind("openid", toHttp(openIdService, host, port))
 
     case b@ServiceBound(name, addr) =>
-      boundServices = boundServices.updated(name, b)
       println(s"--- Bound $name to ${addr.localAddress}")
 
     case ServiceBoundFailure(name, ex) =>

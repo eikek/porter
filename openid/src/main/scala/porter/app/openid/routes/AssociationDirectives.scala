@@ -17,9 +17,11 @@ import porter.app.openid.AssocActor.GetTokenResult
 import porter.app.openid.AssocActor.CreateAssoc
 
 trait AssociationDirectives extends OpenIdDirectives {
-  import _root_.porter.app.openid.common._
+  self: OpenIdActors =>
+
+  import porter.app.openid.common._
   import akka.pattern.ask
-  import shapeless.HList.ListCompat._
+  import Implicits._
 
   private def assocLookupFuture(handle: String)(implicit timeout: Timeout) = {
     (assocActor ? GetToken(handle)).mapTo[GetTokenResult].map {
@@ -58,8 +60,8 @@ trait AssociationDirectives extends OpenIdDirectives {
       }
     }
 
-  private def extractAssociationReq: Directive1[CreateAssoc] = formFields.hflatMap {
-    case CreateAssocExtr(req) #: HNil => provide(req)
+  private def extractAssociationReq: Directive1[CreateAssoc] = formFields.flatMap {
+    case CreateAssocExtr(req) => provide(req)
     case _ => reject()
   }
 
@@ -75,29 +77,6 @@ trait AssociationDirectives extends OpenIdDirectives {
     Keys.is_valid.name -> valid.toString,
     Keys.invalidate_handle.name -> handle
   )
-
-  implicit class GetTokenResponseMap(result: GetTokenResult) {
-    def toParameterMap = {
-      val standard = result.token match {
-        case Some(AssocToken(at, st, mac, valid, priv, _)) if !priv =>
-          Map(Keys.assoc_type.name -> at.name,
-            Keys.ns.name -> openid20,
-            Keys.assoc_handle.name -> result.handle,
-            Keys.session_type.name -> st.name,
-            Keys.expires_in.name -> valid.toSeconds.toString)
-        case _ => Map.empty[String, String]
-      }
-      val crypt = result.token match {
-        case Some(AssocToken(_, _, mac, _, _, None)) =>
-          Map(Keys.mac_key.name -> Base64.encode(mac.getEncoded))
-        case Some(AssocToken(_, _, _, _, _, Some(DHParams(macEnc, kpair)))) =>
-          Map(Keys.enc_mac_key.name -> Base64.encode(macEnc),
-            Keys.dh_server_public.name -> Base64.encode(kpair.getPublic.getY.toByteArray))
-        case _ => Map.empty[String, String]
-      }
-      standard ++ crypt
-    }
-  }
 
   object CreateAssocExtr {
     def unapply(map: Map[String, String]): Option[CreateAssoc] = {

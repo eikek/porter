@@ -4,7 +4,7 @@ import org.scalatest.WordSpec
 
 class RealmVerifyTest extends WordSpec {
 
-  import porter.app.openid.common.RealmVerify
+  import porter.app.openid.routes.Implicits._
   import spray.http.Uri
 
   "A realm verifiyer" must {

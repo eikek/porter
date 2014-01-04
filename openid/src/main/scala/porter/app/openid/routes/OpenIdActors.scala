@@ -6,7 +6,7 @@ import akka.actor.{ActorSystem, ActorRef}
 import akka.util.Timeout
 import akka.event.LoggingAdapter
 
-trait Provides {
+trait OpenIdActors {
 
   def log: LoggingAdapter
   def settings: OpenIdServiceSettings
@@ -16,5 +16,5 @@ trait Provides {
   implicit def timeout: Timeout
 
   def assocActor: ActorRef
-  def porter: ActorRef
+  def porterRef: ActorRef
 }

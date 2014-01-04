@@ -1,18 +1,16 @@
 package porter.app.openid.routes
 
-import spray.routing.{Directive0, Route}
+import spray.routing.{Directives, Directive0, Route}
 import porter.model.{Account, Credentials}
 import porter.app.openid.common.{LocalId, Keys}
-import porter.util.Hash
 
-trait EndpointRoute {
-  self: AuthDirectives with PageDirectives =>
+trait EndpointRoute extends Directives with AuthDirectives with PageDirectives {
+  self: OpenIdActors =>
 
-  import spray.routing.Directives._
   import _root_.porter.app.akka.Porter.Messages.store._
   import _root_.porter.app.akka.Porter.Messages.mutableStore._
   import akka.pattern.ask
-
+  import Implicits._
 
   private def continueRemembered(account: Account, params: Map[String, String]): Directive0 = {
     params.get(Keys.realm.openid) match {
@@ -25,9 +23,9 @@ trait EndpointRoute {
 
   private def updateContinueRemembered(localId: LocalId, realmUri: String) {
     val f = for {
-      acc <- (porter ? FindAccounts(localId.realm, Set(localId.account))).mapTo[FindAccountsResp]
+      acc <- (porterRef ? FindAccounts(localId.realm, Set(localId.account))).mapTo[FindAccountsResp]
       if acc.accounts.nonEmpty
-      upd <- (porter ? UpdateAccount(localId.realm, acc.accounts.head.updatedProps(rememberRealmProperty(realmUri).set(true)))).mapTo[OperationFinished]
+      upd <- (porterRef ? UpdateAccount(localId.realm, acc.accounts.head.updatedProps(rememberRealmProperty(realmUri).set(true)))).mapTo[OperationFinished]
     } yield upd
     f onFailure { case x =>
       log.error(x, "Unable to remember continue decision")
@@ -36,7 +34,7 @@ trait EndpointRoute {
 
   private def authenticateRoute(creds: Set[Credentials]): Route = {
     extractRealm { realm =>
-      authenticateToken(creds, realm)(timeout) { auth =>
+      authcToken(realm, creds)(timeout) { auth =>
         positiveAssertion(auth, realm) { params =>
           setPorterCookieOnRememberme(auth.account) {
             isSetup {

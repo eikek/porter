@@ -6,11 +6,9 @@ import porter.app.openid.routes._
 import akka.util.Timeout
 import spray.http._
 
-class OpenIdService(val porter: ActorRef, val assocActor: ActorRef, val settings: OpenIdServiceSettings) extends HttpServiceActor
+class OpenIdService(val porterRef: ActorRef, val assocActor: ActorRef, val settings: OpenIdServiceSettings) extends HttpServiceActor
   with ActorLogging
-  with Provides
-  with AuthDirectives
-  with PageDirectives
+  with OpenIdActors
   with DiscoveryRoute
   with StaticRoute
   with HomeRoutes
