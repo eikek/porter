@@ -7,8 +7,8 @@ import porter.model.{Credentials, Ident, Account}
 import spray.routing.{StandardRoute, RequestContext}
 import akka.actor.ActorRef
 import akka.util.Timeout
-import porter.app.akka.api.PorterUtil
 import spray.routing.AuthenticationFailedRejection.CredentialsRejected
+import porter.app.akka.PorterUtil
 
 class PorterAuthenticator(porterContext: PorterContext,
                           cookieKey: Vector[Byte],

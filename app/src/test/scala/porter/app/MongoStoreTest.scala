@@ -49,7 +49,7 @@ class MongoStoreTest extends FunSuite with ShouldMatchers with BeforeAndAfterAll
     val og1 = Await.result(store.findGroups(r.id, Set("g1")), 5 seconds)
     og1 should be (List(g1))
 
-    Await.ready(store.updateGroup(r.id, g2.updateRules(r => Set.empty)), 5 seconds)
+    Await.ready(store.updateGroup(r.id, g2.updatedRules(r => Set.empty)), 5 seconds)
     val og2 = Await.result(store.findGroups(r.id, Set("g2")), 5 seconds)
     og2 should not be List(g2)
     og2(0).name should be (g2.name)

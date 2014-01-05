@@ -11,9 +11,9 @@ import scala.concurrent.ExecutionContext
 import porter.auth.{DigestValidator, AuthResult}
 import scala.Some
 import porter.model.Account
-import porter.app.akka.api.PorterUtil
 import scala.util.Success
 import spray.routing.AuthenticationFailedRejection.CredentialsRejected
+import porter.app.akka.PorterUtil
 
 trait PorterDirectives {
 

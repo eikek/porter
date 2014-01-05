@@ -1,15 +1,20 @@
-package porter.app.akka.api
+package porter.app.akka
 
 import akka.actor.ActorRef
-import porter.model.{Account, Credentials, Ident}
+import porter.model._
 import porter.auth.{AuthResult, OneSuccessfulVote, Decider}
 import scala.concurrent.{Future, ExecutionContext}
 import akka.util.Timeout
 import porter.app.akka.Porter.Messages.authc._
 import porter.app.akka.Porter.Messages.authz._
 import porter.app.akka.Porter.Messages.store._
+import porter.app.akka.Porter.Messages.mutableStore._
 import porter.app.akka.api.PorterMain.UpdateAuthProps
 
+/**
+ * Utility functions combining different porter messages.
+ *
+ */
 object PorterUtil {
   /**
    * A future that authenticates at the given porter actor. If the future completes
@@ -103,5 +108,73 @@ object PorterUtil {
     import akka.pattern.ask
     val f = (porter ? Authorize(realm, account, perms)).mapTo[AuthorizeResp]
     f.map(_.authorized)
+  }
+
+  /**
+   * Future set loads the account with the given name and applies the function
+   * to it and updates the store with the result.
+   *
+   * @param porterRef
+   * @param realm
+   * @param account
+   * @param alter
+   * @param ec
+   * @param timeout
+   * @return
+   */
+  def updateAccount(porterRef: ActorRef, realm: Ident, account: Ident, alter: Account => Account)
+                   (implicit ec: ExecutionContext, timeout: Timeout): Future[OperationFinished] = {
+    import akka.pattern.ask
+    import porter.util._
+    for {
+      resp <- (porterRef ? FindAccounts(realm, Set(account))).mapTo[FindAccountsResp]
+      first <- Future.immediate(resp.accounts.headOption, s"Account '${account.name}' not found")
+      op <- (porterRef ? UpdateAccount(realm, alter(first))).mapTo[OperationFinished]
+    } yield op
+  }
+
+  /**
+   * Future that loads a group with the given name and stores the result of the
+   * given `alter` function.
+   *
+   * @param porterRef
+   * @param realm
+   * @param group
+   * @param alter
+   * @param ec
+   * @param timeout
+   * @return
+   */
+  def updateGroup(porterRef: ActorRef, realm: Ident, group: Ident, alter: Group => Group)
+                 (implicit ec: ExecutionContext, timeout: Timeout): Future[OperationFinished] = {
+    import akka.pattern.ask
+    import porter.util._
+    for {
+      resp <- (porterRef ? FindGroups(realm, Set(group))).mapTo[FindGroupsResp]
+      first <- Future.immediate(resp.groups.headOption, s"Group '${group.name}' not found")
+      op <- (porterRef ? UpdateGroup(realm, alter(first))).mapTo[OperationFinished]
+    } yield op
+  }
+
+  /**
+   * Loads a realm with the given name and stores the result of the given
+   * `alter` function.
+   *
+   * @param porterRef
+   * @param realm
+   * @param alter
+   * @param ec
+   * @param timeout
+   * @return
+   */
+  def updateRealm(porterRef: ActorRef, realm: Ident, alter: Realm => Realm)
+                 (implicit ec: ExecutionContext, timeout: Timeout): Future[OperationFinished] = {
+    import akka.pattern.ask
+    import porter.util._
+    for {
+      resp <- (porterRef ? FindRealms(Set(realm))).mapTo[FindRealmsResp]
+      first <- Future.immediate(resp.realms.headOption, s"Realm '${realm.name}' not found.")
+      op <- (porterRef ? UpdateRealm(alter(first))).mapTo[OperationFinished]
+    } yield op
   }
 }

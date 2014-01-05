@@ -4,7 +4,7 @@ import scala.concurrent.{Future, ExecutionContext}
 import akka.util.Timeout
 import porter.model._
 import scala.util.Try
-import porter.app.akka.Porter
+import porter.app.akka.{PorterUtil, Porter}
 import porter.model.Account
 
 /**
@@ -71,8 +71,8 @@ object AccountCommands extends Commands {
         list <- (porter ? GetAllAccounts(r.id)).mapTo[FindAccountsResp].map(_.accounts)
       } yield {
         val groups = (a: Account) => a.groups.map(_.name).mkString("(", ",", ")")
-        val props = (a: Account) => a.props.map({case (k,v) => k +"="+v}).mkString("[", ",", "]")
-        list.map(a => s"${a.name.name} ${groups(a)} ${props(a)}")
+        val props = (a: Account) => a.props.map({case (k,v) => k +"="+v}).mkString("   ", "\n   ", "")
+        list.map(a => s"${a.name.name} ${groups(a)}\n${props(a)}")
       }
       in <<< result
   }
@@ -107,13 +107,10 @@ object AccountCommands extends Commands {
       val login = in.session[Ident]("login")
       val passw = in.session[String]("password")
       val crypt = in.session[PasswordCrypt]("password-crypt")
-      val result = for {
-        r <- in.realmFuture
-        resp <- (in.porter ? FindAccounts(r.id, Set(login))).mapTo[FindAccountsResp]
-        first <- Future.immediate(resp.accounts.headOption, "Account not found")
-        op <- (in.porter ? UpdateAccount(r.id, first.changeSecret(Password(crypt)(passw)))).mapTo[OperationFinished]
-      } yield "Password changed: "+ op.result
-      in << result
+      in.withRealm { realm =>
+        val f = PorterUtil.updateAccount(in.porter, realm.id, login, _.changeSecret(Password(crypt)(passw)))
+        in << f.map(or => s"Password changed: ${or.result}")
+      }
     }
   }
 
@@ -133,13 +130,11 @@ object AccountCommands extends Commands {
     def onComplete(in: Input) = {
       val login = in.session[Ident]("login")
       val toadd = in.session[Set[Ident]]("groups")
-      val result = for {
-        r <- in.realmFuture
-        resp <- (in.porter ? FindAccounts(r.id, Set(login))).mapTo[FindAccountsResp]
-        first <- Future.immediate(resp.accounts.headOption, "Account not found")
-        op <- (in.porter ? UpdateAccount(r.id, first.updatedGroups(g => alter(g, toadd)))).mapTo[OperationFinished]
-      } yield if (op.result) "Successful" else "Failed."
-      in << result
+      in.withRealm { realm =>
+        val change: Account => Account = _.updatedGroups(g => alter(g, toadd))
+        val f = PorterUtil.updateAccount(in.porter, realm.id, login, change)
+        in << f.map(or => if (or.result) "Success" else "Failed")
+      }
     }
   }
 

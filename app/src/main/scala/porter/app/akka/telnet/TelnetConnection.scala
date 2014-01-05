@@ -65,6 +65,6 @@ private[telnet] class TelnetConnection(porter: ActorRef, conn: ActorRef) extends
 object TelnetConnection {
   private[telnet] def props(porter:ActorRef, conn: ActorRef) = Props(classOf[TelnetConnection], porter, conn)
 
-  private val allCommands = HelpCommands ++ RealmCommands ++ AccountCommands ++ GroupCommands ++ AuthCommands
+  private val allCommands = HelperCommands ++ RealmCommands ++ AccountCommands ++ GroupCommands ++ AuthCommands
   val documentation = allCommands.makeDoc
 }
