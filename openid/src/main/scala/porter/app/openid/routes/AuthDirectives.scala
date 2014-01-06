@@ -34,10 +34,7 @@ trait AuthDirectives extends AssociationDirectives {
 
   private def porterContext(realm: Ident) = PorterContext(porterRef, realm, settings.decider)
   private def cookieSettings(maxAge: Option[Duration]) = {
-    val cookiePath = settings.endpointBaseUrl.path match {
-      case Uri.Path.Empty => "/"
-      case p => p.toString()
-    }
+    val cookiePath = settings.endpointBaseUrl.toRelative.toString()
     CookieSettings(settings.cookieKey, maxAge, Some(1.days), cookiePath, settings.cookieName, settings.cookieSecure)
   }
 

@@ -49,7 +49,7 @@ trait EndpointRoute extends Directives with AuthDirectives with PageDirectives {
           }
         }
       } ~
-      renderLoginPage(settings.endpointUrl.path.toString(), failed = true)
+      renderLoginPage(settings.endpointUrl, failed = true)
     }
   }
 
@@ -82,7 +82,7 @@ trait EndpointRoute extends Directives with AuthDirectives with PageDirectives {
           redirectToRelyingParty(userCancelResponse)
         } ~
         noCredentials {
-          renderLoginPage(settings.endpointUrl.path.toString(), failed = false)
+          renderLoginPage(settings.endpointUrl, failed = false)
         } ~
         credentials { creds =>
           authenticateRoute(creds) ~

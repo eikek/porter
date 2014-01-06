@@ -134,6 +134,28 @@ object PorterUtil {
   }
 
   /**
+   * Future that first loads an account using the given one and performs an update
+   * only if an empty response is returned.
+   *
+   * @param porterRef
+   * @param realm
+   * @param account
+   * @param ec
+   * @param timeout
+   * @return
+   */
+  def createNewAccount(porterRef: ActorRef, realm: Ident, account: Account)
+                      (implicit ec: ExecutionContext, timeout: Timeout): Future[Account] = {
+    import akka.pattern.ask
+    import porter.util._
+    for {
+      resp <- (porterRef ? FindAccounts(realm, Set(account.name))).mapTo[FindAccountsResp]
+      empty <- Future.immediate(if (resp.accounts.isEmpty) resp else sys.error(s"Account '${account.name}' already exists"))
+      upd <- (porterRef ? UpdateAccount(realm, account)).mapTo[OperationFinished]
+    } yield if (upd.result) account else sys.error("Unable to create account")
+  }
+
+  /**
    * Future that loads a group with the given name and stores the result of the
    * given `alter` function.
    *

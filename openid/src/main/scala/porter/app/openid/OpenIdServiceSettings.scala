@@ -29,7 +29,11 @@ trait OpenIdServiceSettings {
   final def endpointUrl: Uri = endpointBaseUrl.withPath(endpointBaseUrl.path + "/openid/ep")
   final def openIdUrl: Uri = endpointBaseUrl.withPath(endpointBaseUrl.path + "/openid")
 
-  def loadTemplateFile(name: String): Option[Supplier] = {
+  def registrationEnabled: Boolean
+  def registrationRequiresEmail: Boolean
+  def registrationKey: Option[String]
+
+  private def loadTemplateFile(name: String): Option[Supplier] = {
     val tfile = templateDir.resolve(name)
     if (Files.isRegularFile(tfile) && Files.isReadable(tfile))
       Some(() => Try(Files.newInputStream(tfile)))
@@ -38,7 +42,7 @@ trait OpenIdServiceSettings {
       url.map(u => () => Try(u.openStream()))
     }
   }
-  def loadTemplate(name: String) = {
+  private def loadTemplate(name: String) = {
     val in = loadTemplateFile(name)
     in.map(s => Mustache(s().get)).getOrElse(sys.error(s"$name not found"))
   }
@@ -47,5 +51,5 @@ trait OpenIdServiceSettings {
   lazy val errorTemplate = loadTemplate("error-template.mustache")
   lazy val continueTemplate = loadTemplate("continue-template.mustache")
   lazy val userTemplate = loadTemplate("user-template.mustache")
-
+  lazy val registerTemplate = loadTemplate("register-template.mustache")
 }

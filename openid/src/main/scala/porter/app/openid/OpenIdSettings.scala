@@ -36,6 +36,9 @@ class OpenIdSettings(cfg: Config, da: DynamicAccess) extends Extension with Open
 
   val endpointBaseUrl = Try(cfg.getString("endpoint-base-url")).map(Uri.apply).getOrElse(Uri(s"http://$bindingHost:$bindinPort"))
 
+  val registrationEnabled = cfg.getBoolean("registration-enabled")
+  val registrationRequiresEmail = cfg.getBoolean("registration-requires-email")
+  val registrationKey = Try(cfg.getString("registration-invitation-key")).toOption.filter(_.trim.nonEmpty)
 }
 
 object OpenIdSettings extends ExtensionId[OpenIdSettings] with ExtensionIdProvider {

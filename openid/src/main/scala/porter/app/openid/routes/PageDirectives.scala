@@ -12,13 +12,14 @@ trait PageDirectives extends OpenIdDirectives with AuthDirectives {
 
   import PageDirectives._
 
-  private def loginPage(params: Map[String, String], lid: Option[LocalId], endpointUrl: String, failed: Boolean) = {
+  private def loginPage(params: Map[String, String], lid: Option[LocalId], endpointUrl: Uri, failed: Boolean) = {
     import Implicits._
     val context = defaultContext ++ Map(
       "realm" -> params.get(Keys.realm.openid).getOrElse(""),
       "identity" -> params.get(Keys.identity.openid).getOrElse(""),
-      "endpointUrl" -> endpointUrl,
+      "endpointUrl" -> endpointUrl.toRelative.toString(),
       "params" -> params.map(t => Map("name" -> t._1, "value"->t._2)),
+      "registerUrl" -> (if (settings.registrationEnabled) settings.endpointBaseUrl.toRelative.toString()+"?register" else ""),
       "loginFailed" -> failed
     ) ++ lid.toMap(id => Map("localId" -> Map("realm" -> id.realm.name, "account" -> id.account.name)))
 
@@ -43,7 +44,7 @@ trait PageDirectives extends OpenIdDirectives with AuthDirectives {
     settings.errorTemplate(context)
   }
 
-  def renderLoginPage(endpointUrl: String, failed: Boolean) = allParams { req =>
+  def renderLoginPage(endpointUrl: Uri, failed: Boolean) = allParams { req =>
     localIdOption { lidopt =>
       removePorterCookie() {
         complete(HttpResponse(
