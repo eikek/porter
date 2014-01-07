@@ -28,7 +28,7 @@ class RuleFactoryActorSpec extends TestKit(ActorSystem("RuleFactoryActorSpec", C
         DefaultPermission("git:push:*"),
         ResourcePermission("resource:read:/main/**"),
         ResourcePermission("resource:read:/index")
-      ), 0))
+      )))
     }
 
     "return failure status in case of error" in {

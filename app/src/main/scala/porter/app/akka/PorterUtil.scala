@@ -34,7 +34,7 @@ object PorterUtil {
                           (implicit ec: ExecutionContext, timeout: Timeout): Future[AuthResult] = {
     import akka.pattern.ask
     val f = (porter ? Authenticate(realm, creds)).mapTo[AuthenticateResp].map {
-      case AuthenticateResp(Some(r), _) if decider(r) =>
+      case AuthenticateResp(Some(r)) if decider(r) =>
         porter ! UpdateAuthProps(realm, creds, success = true)
         r
       case _ =>
@@ -54,13 +54,48 @@ object PorterUtil {
    * @param timeout
    * @return
    */
-  def accountFuture(porter: ActorRef, realm: Ident, account: Ident)
-                   (implicit ec: ExecutionContext, timeout: Timeout) = {
+  def findAccount(porter: ActorRef, realm: Ident, account: Ident)
+                   (implicit ec: ExecutionContext, timeout: Timeout): Future[Option[Account]] = {
     import akka.pattern.ask
     (porter ? FindAccounts(realm, Set(account))).mapTo[FindAccountsResp].map {
-      case FindAccountsResp(a, _) => a.headOption
-      case _ => None
+      case FindAccountsResp(a) => a.headOption
     }
+  }
+
+  /**
+   * Finds a single group with the given identifier.
+   *
+   * @param porterRef
+   * @param realm
+   * @param group
+   * @param ec
+   * @param timeout
+   * @return
+   */
+  def findGroup(porterRef: ActorRef, realm: Ident, group: Ident)
+               (implicit ec: ExecutionContext, timeout: Timeout): Future[Option[Group]] = {
+    import akka.pattern.ask
+    (porterRef ? FindGroups(realm, Set(group))).mapTo[FindGroupsResp].map {
+      case FindGroupsResp(g) => g.headOption
+    }
+  }
+
+  /**
+   * Finds a single realm given its id.
+   *
+   * @param porterRef
+   * @param realm
+   * @param ec
+   * @param timeout
+   * @return
+   */
+  def findRealm(porterRef: ActorRef, realm: Ident)
+               (implicit ec: ExecutionContext, timeout: Timeout): Future[Option[Realm]] = {{
+    import akka.pattern.ask
+    (porterRef ? FindRealms(Set(realm))).mapTo[FindRealmsResp].map {
+      case FindRealmsResp(r) => r.headOption
+    }
+  }
   }
 
   /**
@@ -83,7 +118,7 @@ object PorterUtil {
                          (implicit ec: ExecutionContext, timeout: Timeout): Future[(AuthResult, Account)] = {
     val f = for {
       auth <- authenticationFuture(porter, realm, creds, decider)
-      acc <- accountFuture(porter, realm, auth.accountId)
+      acc <- findAccount(porter, realm, auth.accountId)
     } yield (auth, acc)
     f.flatMap {
       case (result, Some(a)) => Future.successful((result, a))
@@ -153,6 +188,31 @@ object PorterUtil {
       empty <- Future.immediate(if (resp.accounts.isEmpty) resp else sys.error(s"Account '${account.name}' already exists"))
       upd <- (porterRef ? UpdateAccount(realm, account)).mapTo[OperationFinished]
     } yield if (upd.result) account else sys.error("Unable to create account")
+  }
+
+  /**
+   * Future that authenticates to get the account and then updates the password with
+   * the given plain password.
+   *
+   * @param porterRef
+   * @param realm
+   * @param current
+   * @param plainPassword
+   * @param crypt
+   * @param decider
+   * @param ec
+   * @param timeout
+   * @return
+   */
+  def changePassword(porterRef: ActorRef, realm: Ident, current: Credentials, plainPassword: String, crypt: PasswordCrypt = PasswordCrypt.randomCrypt, decider: Decider = OneSuccessfulVote)
+                    (implicit ec: ExecutionContext, timeout: Timeout): Future[Account] = {
+
+    import akka.pattern.ask
+    for {
+      account <- authenticateAccount(porterRef, realm, Set(current), decider).map(_._2)
+      nacc <- Future.successful(account.changeSecret(Password(crypt)(plainPassword)))
+      upd <- (porterRef ? UpdateAccount(realm, nacc)).mapTo[OperationFinished]
+    } yield if (upd.result) nacc else sys.error("Unable to change password")
   }
 
   /**

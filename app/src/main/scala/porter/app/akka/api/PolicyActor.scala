@@ -17,25 +17,25 @@ class PolicyActor(store: ActorRef, ruleFactory: ActorRef) extends Actor {
   }
 
   def findPolicy(client: ActorRef, req: GetPolicy) = actor(new Act {
-    whenStarting { store ! FindAccounts(req.realmId, Set(req.account), req.id) }
+    whenStarting { store ! FindAccounts(req.realmId, Set(req.account)) }
     become {
-      case FindAccountsResp(accounts, id) =>
+      case FindAccountsResp(accounts) =>
         if (accounts.isEmpty || accounts.size > 1) {
-          client ! GetPolicyResp(req.account, Policy.empty, id)
+          client ! GetPolicyResp(req.account, Policy.empty)
           context.stop(self)
         } else {
-          store ! FindGroups(req.realmId, accounts.flatMap(_.groups), id)
+          store ! FindGroups(req.realmId, accounts.flatMap(_.groups))
         }
-      case FindGroupsResp(groups, id) =>
+      case FindGroupsResp(groups) =>
         if (groups.isEmpty) {
-          client ! GetPolicyResp(req.account, Policy.empty, id)
+          client ! GetPolicyResp(req.account, Policy.empty)
           context.stop(self)
         } else {
-          ruleFactory ! MakeRules(groups.flatMap(_.rules), id)
+          ruleFactory ! MakeRules(groups.flatMap(_.rules))
         }
-      case MakeRulesResp(rules, id) =>
+      case MakeRulesResp(rules) =>
         val policy = Policy(rules)
-        client ! GetPolicyResp(req.account, policy, id)
+        client ! GetPolicyResp(req.account, policy)
         context.stop(self)
 
       case err: Status.Failure =>
@@ -49,15 +49,15 @@ class PolicyActor(store: ActorRef, ruleFactory: ActorRef) extends Actor {
     var rules: Option[Set[Rule]] = None
 
     whenStarting {
-      ruleFactory ! MakeRules(req.perms.toSet, req.id)
-      findPolicy(self, GetPolicy(req.realm, req.account, req.id))
+      ruleFactory ! MakeRules(req.perms.toSet)
+      findPolicy(self, GetPolicy(req.realm, req.account))
     }
 
     become {
-      case GetPolicyResp(_, p, _) =>
+      case GetPolicyResp(_, p) =>
         this.policy = Some(p)
         if (rules.nonEmpty) self ! Done
-      case MakeRulesResp(r, _) =>
+      case MakeRulesResp(r) =>
         this.rules = Some(r)
         if (policy.nonEmpty) self ! Done
       case Done =>
@@ -65,7 +65,7 @@ class PolicyActor(store: ActorRef, ruleFactory: ActorRef) extends Actor {
         if (rev.nonEmpty) {
           client ! Status.Failure(new Exception("Cannot authorize revocations: "+rev))
         } else {
-          client ! AuthorizeResp(req.realm, req.account, policy.get.grantsAll(perms), req.id)
+          client ! AuthorizeResp(req.realm, req.account, policy.get.grantsAll(perms))
         }
         context.stop(self)
       case err: Status.Failure =>
@@ -80,11 +80,14 @@ object PolicyActor {
   import porter.model._
 
   object messages {
-    case class GetPolicy(realmId: Ident, account: Ident, id: Int = 0) extends RealmMessage
-    case class GetPolicyResp(account: Ident, policy: Policy, id: Int) extends PorterMessage
+    case class GetPolicy(realmId: Ident, account: Ident) extends PorterMessage
+    case class GetPolicyResp(account: Ident, policy: Policy) extends PorterMessage
 
-    case class Authorize(realm: Ident, account: Ident, perms: Iterable[String], id: Int = 0) extends PorterMessage
-    case class AuthorizeResp(realm: Ident, account: Ident, authorized: Boolean, id: Int) extends PorterMessage
+    type Authorize = porter.client.Messages.auth.Authorize
+    val Authorize = porter.client.Messages.auth.Authorize
+
+    type AuthorizeResp = porter.client.Messages.auth.AuthorizeResp
+    val AuthorizeResp = porter.client.Messages.auth.AuthorizeResp
   }
 
   def apply(store: ActorRef, ruleFactory: ActorRef) =

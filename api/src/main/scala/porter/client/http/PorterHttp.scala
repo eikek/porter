@@ -1,72 +1,88 @@
 package porter.client.http
 
-import java.net.{HttpURLConnection, URL, InetSocketAddress}
-import porter.model.{Realm, Ident}
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
-import scala.util.parsing.json.{JSONObject, JSON}
-import scala.io.Codec
-import porter.auth.{Vote, AuthResult}
+import java.net.InetSocketAddress
+import scala.concurrent.{Future, ExecutionContext}
+import porter.client.json.MessageJsonProtocol
+import porter.client.PorterClient
+import porter.client.Messages.store._
+import porter.client.Messages.mutableStore._
+import porter.client.Messages.auth._
 
 /**
- * Simple client for performing authentication and authorization on a remote
- * instance using http.
+ * Simple rest client providing basic porter functions. Note that "spray-json" dependency is
+ * required for this and it is not included by default. You will need to provide the "spray-json"
+ * artefacts yourself.
+ *
+ * @param addr
  */
-class PorterHttp(addr: InetSocketAddress) {
-  import porter.util.JsonHelper._
-
+class PorterHttp(addr: InetSocketAddress) extends PorterClient {
   def this() = this(new InetSocketAddress("localhost", 6789))
 
-  private def post(path: String, data: String)(implicit ec: ExecutionContext): Future[String] = Future {
-    val url = new URL("http", addr.getHostName, addr.getPort, path)
-    val conn = url.openConnection().asInstanceOf[HttpURLConnection]
-    conn.setRequestMethod("POST")
-    conn.setRequestProperty("Content-Type", "application/json; charset=UTF8")
-    conn.setRequestProperty("Content-Length", data.getBytes.length.toString)
-    conn.setUseCaches(false)
-    conn.setDoInput(true)
-    conn.setDoOutput(true)
+  import spray.json._
+  import MessageJsonProtocol._
 
-    val out = conn.getOutputStream
-    try {
-      out.write(data.getBytes(Codec.UTF8.name))
-      out.flush()
-    } finally {
-      out.close()
-    }
-
-    val in = conn.getInputStream
-    val result = Try(io.Source.fromInputStream(in).getLines().mkString)
-    in.close()
-    result.get
+  private implicit class FutureUnmarshall(f: Future[String]) {
+    def convertTo[A](implicit ec: ExecutionContext, rf: RootJsonFormat[A]): Future[A] =
+      f.map(_.toJson.convertTo[A])
   }
+  private def post[A](path: String, data: A)(implicit ec: ExecutionContext, rfa: RootJsonFormat[A]) =
+    Http.post(addr, path, rfa.write(data).compactPrint)
 
-  def authorize(realm: Ident, login: Ident, perms: Set[String])(implicit ec: ExecutionContext): Future[Boolean] = {
-    val req = toJsonString(Map(
-      "realm" -> realm.name,
-      "login" -> login.name,
-      "perms" -> perms
-    ))
 
-    post("/api/authz", req) map { data =>
-      JSON.parseRaw(data) match {
-        case Some(JSONObject(map)) =>
-          map.get("result").exists(x => x == true)
-        case _ => false
-      }
+  def authenticate = new AuthcCmd {
+    def apply(req: Authenticate)(implicit ec: ExecutionContext) = {
+      val path = "/api/authc"
+      post(path, req).convertTo[AuthenticateResp]
     }
   }
 
-  def authenticate(realm: Ident, login: Ident, password: String)(implicit ec: ExecutionContext): Future[AuthResult] = {
-    val req = toJsonString(Map(
-      "realm" -> realm.name,
-      "login" -> login.name,
-      "password" -> password
-    ))
-
-    post("/api/authc", req) map {
-      case JsonAuthResult(r) => r
-      case data => throw new IllegalStateException("Invalid response: " + data)
+  def authenticateAccount = new AuthcAccountCmd {
+    def apply(req: Authenticate)(implicit ec: ExecutionContext) = {
+      val path = "/api/authcAccount"
+      post(path, req).convertTo[AuthAccount]
     }
   }
+
+  def authorize = new AuthzCmd {
+    def apply(req: Authorize)(implicit ec: ExecutionContext) = {
+      val path = "/api/authz"
+      post(path, req).convertTo[AuthorizeResp]
+    }
+  }
+
+  def findAccounts = new FindAccountCmd {
+    def apply(req: FindAccounts)(implicit ec: ExecutionContext) = {
+      val path = "/api/account/find"
+      post(path, req).convertTo[FindAccountsResp]
+    }
+  }
+
+  def findGroups = new FindGroupCmd {
+    def apply(req: FindGroups)(implicit ec: ExecutionContext) = {
+      val path = "/api/group/find"
+      post(path, req).convertTo[FindGroupsResp]
+    }
+  }
+
+  def findRealms = new FindRealmCmd {
+    def apply(req: FindRealms)(implicit ec: ExecutionContext) = {
+      val path = "/api/realm/find"
+      post(path, req).convertTo[FindRealmsResp]
+    }
+  }
+
+  private def modifyCmd[A](path: String)(implicit rf: RootJsonFormat[A]) = new Command[A, OperationFinished] {
+    def apply(req: A)(implicit ec: ExecutionContext) = {
+      post(path, req).convertTo[OperationFinished]
+    }
+  }
+
+  def updateAccount = modifyCmd[UpdateAccount]("/api/account/update")
+  def createNewAccount = modifyCmd[UpdateAccount]("/api/account/new")
+  def updateGroup = modifyCmd[UpdateGroup]("/api/group/update")
+  def updateRealm = modifyCmd[UpdateRealm]("/api/realm/update")
+  def deleteAccount = modifyCmd[DeleteAccount]("/api/account/delete")
+  def deleteGroup = modifyCmd[DeleteGroup]("/api/group/delete")
+  def deleteRealm = modifyCmd[DeleteRealm]("/api/realm/delete")
+  def changePassword = modifyCmd[ChangePassword]("/api/account/changePassword")
 }

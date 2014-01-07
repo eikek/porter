@@ -28,14 +28,14 @@ class GetPolicySpec extends TestKit(ActorSystem("GetPolicySpec", ConfigFactory.l
 
     "return reduced policy" in {
       val actor = createActor()
-      actor ! GetPolicy(realm.id, john.name, 1)
-      expectMsg(GetPolicyResp("john", policyJohn, 1))
+      actor ! GetPolicy(realm.id, john.name)
+      expectMsg(GetPolicyResp("john", policyJohn))
     }
 
     "return empty policy for unknown accounts" in {
       val actor = createActor()
-      actor ! GetPolicy(realm.id, "heinz", 2)
-      expectMsg(GetPolicyResp("heinz", Policy.empty, 2))
+      actor ! GetPolicy(realm.id, "heinz")
+      expectMsg(GetPolicyResp("heinz", Policy.empty))
     }
   }
 }

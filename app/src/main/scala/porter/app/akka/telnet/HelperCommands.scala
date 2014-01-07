@@ -39,7 +39,7 @@ object HelperCommands extends Commands {
         in << Password(PasswordCrypt.randomCrypt)(plain).asString
 
     case in@Input(show, conn, porter, _) if show == "show settings" =>
-      val settings = (porter ? ShowSettings()).mapTo[String]
+      val settings = (porter ? ShowSettings).mapTo[String]
       in << settings.map(s => s /* + s"\nPorter path: ${porter.porterPath}" */)
 
   }, manageProps("add"), manageProps("remove"))

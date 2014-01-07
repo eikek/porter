@@ -43,7 +43,7 @@ object RealmCommands extends Commands {
 
   def listRealms(implicit executor: ExecutionContext, to: Timeout): Command = {
     case in @ Input(msg, conn, porter, _) if msg == "lr" =>
-      in << (for (iter <- (porter ? GetAllRealms()).mapTo[FindRealmsResp].map(_.realms)) yield {
+      in << (for (iter <- (porter ? GetAllRealms).mapTo[FindRealmsResp].map(_.realms)) yield {
         s"Realm list (${iter.size})\n" + iter.map(r => s"${r.id.name}: ${r.name}").mkString(" ", "\n ", "")
       })
   }

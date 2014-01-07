@@ -3,15 +3,10 @@ package porter.app.akka.http
 import akka.actor._
 import spray.can.Http
 import akka.actor.Terminated
-import scala.concurrent.{Future, ExecutionContext}
-import akka.io.{Tcp, IO}
-import akka.util.Timeout
+import porter.auth.Decider
+import porter.model.PasswordCrypt
 
-/**
- * @author Eike Kettner eike.kettner@gmail.com
- * @since 27.11.13 18:42
- */
-class HttpHandler(porter: ActorRef) extends Actor with ActorLogging {
+class HttpHandler(porter: ActorRef, decider: Decider, crypt: PasswordCrypt) extends Actor with ActorLogging {
   import HttpHandler._
 
   var connections = 0
@@ -21,7 +16,7 @@ class HttpHandler(porter: ActorRef) extends Actor with ActorLogging {
       log.info("Bound http interface to "+ addr)
 
     case Http.Connected(_, _) =>
-      val newchild = context.watch(context.actorOf(HttpConnection.props(porter), name = s"httpconn$connections"))
+      val newchild = context.watch(context.actorOf(HttpConnection(porter, decider, crypt), name = s"httpconn$connections"))
       connections += 1
       logConnections()
       sender ! Http.Register(newchild)
@@ -43,22 +38,7 @@ object HttpHandler {
 
   case object GetConnCount extends Serializable
 
-  def apply(porter: ActorRef) = Props(classOf[HttpHandler], porter)
+  def apply(porter: ActorRef, decider: Decider, crypt: PasswordCrypt) =
+    Props(classOf[HttpHandler], porter, decider, crypt)
 
-  /**
-   * Binds the http service to the given address. The Future is completed
-   * with either [[akka.io.Tcp.Bound]] or [[akka.io.Tcp.CommandFailed]].
-   *
-   * @param host
-   * @param port
-   * @param system
-   * @param ec
-   * @return
-   */
-  def bind(porter: ActorRef, host: String, port: Int)
-          (implicit system: ActorSystem, ec: ExecutionContext, bindTimeout: Timeout) = {
-    import akka.pattern.ask
-    val httpHandler = system.actorOf(apply(porter), name = "porter-http")
-    (IO(Http) ? Http.Bind(httpHandler, interface = host, port = port)).mapTo[Tcp.Event]
-  }
 }

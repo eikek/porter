@@ -29,8 +29,8 @@ class MutableStoreSpec extends TestKit(ActorSystem("RuleFactoryActorSpec", Confi
       store ! "count"
       expectMsg(0)
 
-      store ! UpdateRealm(realm, id = 0)
-      expectMsg(OperationFinished(result = true, id = 0))
+      store ! UpdateRealm(realm)
+      expectMsg(OperationFinished(result = true))
       this.expectNoMsg(300.millis)
       store ! "count"
       expectMsg(0)
@@ -42,8 +42,8 @@ class MutableStoreSpec extends TestKit(ActorSystem("RuleFactoryActorSpec", Confi
       }
       val store = system.actorOf(MutableStoreActor(List(Set.empty[Ident] -> failstore)))
 
-      store ! UpdateRealm(realm, id = 1)
-      expectMsg(OperationFinished(result = false, id = 1))
+      store ! UpdateRealm(realm)
+      expectMsg(OperationFinished(result = false))
     }
 
     "recover from store error" in {
@@ -52,8 +52,8 @@ class MutableStoreSpec extends TestKit(ActorSystem("RuleFactoryActorSpec", Confi
       }
       val store = system.actorOf(MutableStoreActor(List(Set.empty[Ident] -> failstore)))
 
-      store ! UpdateRealm(realm, id = 2)
-      expectMsg(OperationFinished(result = false, id = 2))
+      store ! UpdateRealm(realm)
+      expectMsg(OperationFinished(result = false))
     }
   }
 }

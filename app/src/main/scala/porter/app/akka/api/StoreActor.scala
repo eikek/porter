@@ -6,9 +6,6 @@ import akka.util.Timeout
 import scala.util.{Failure, Success, Try}
 import scala.concurrent.Future
 
-/**
- * @since 05.12.13 15:24
- */
 class StoreActor(stores: List[Store]) extends Actor {
   import StoreActor.messages._
   import StoreActor.readOnlyProps
@@ -30,14 +27,14 @@ class StoreActor(stores: List[Store]) extends Actor {
     case req: FindGroups => receiveGroups(sender, req)
     case req: GetAllGroups => receiveGroups(sender, req)
     case req: GetAllAccounts => receiveAccounts(sender, req)
-    case req: GetAllRealms => receiveRealms(sender, req)
+    case GetAllRealms => receiveRealms(sender, GetAllRealms)
   }
 
   private def receiveRealms(client: ActorRef, req: PorterMessage) {
     context.actorOf(Props[CollectingActor](new CollectingActor(client, req, readonly) {
       type Res = FindRealmsResp
-      def empty = FindRealmsResp(Set(), req.id)
-      def merge(r1: Res, r2: Res) = FindRealmsResp(r1.realms ++ r2.realms, r1.id)
+      def empty = FindRealmsResp(Set())
+      def merge(r1: Res, r2: Res) = FindRealmsResp(r1.realms ++ r2.realms)
       object Extr {
         def unapply(a: Any) = a match {
           case r: FindRealmsResp => Some(r)
@@ -56,10 +53,10 @@ class StoreActor(stores: List[Store]) extends Actor {
           case _ => None
         }
       }
-      val empty = FindAccountsResp(Set(), req.id)
+      val empty = FindAccountsResp(Set())
 
       def merge(r1: FindAccountsResp, r2: FindAccountsResp) =
-        FindAccountsResp(r1.accounts ++ r2.accounts, r1.id)
+        FindAccountsResp(r1.accounts ++ r2.accounts)
     }))
   }
 
@@ -67,8 +64,8 @@ class StoreActor(stores: List[Store]) extends Actor {
     context.actorOf(Props[CollectingActor](new CollectingActor(client, req, readonly) {
       type Res = FindGroupsResp
       def merge(r1: this.type#Res, r2: this.type#Res) =
-        FindGroupsResp(r1.groups++r2.groups, r1.id)
-      val empty = FindGroupsResp(Set(), req.id)
+        FindGroupsResp(r1.groups++r2.groups)
+      val empty = FindGroupsResp(Set())
 
       object Extr {
         def unapply(a: Any) = a match {
@@ -103,20 +100,20 @@ object StoreActor {
     }
 
     def receive = {
-      case FindRealms(names, id) =>
-        exec(Try(store.findRealms(names).map(r => FindRealmsResp(r.toSet, id))))
-      case FindAccounts(realm, names, id) =>
-        exec(Try(store.findAccounts(realm, names).map(s => FindAccountsResp(s.toSet, id))))
-      case FindAccountsFor(realm, creds, id) =>
-        exec(Try(store.findAccountsFor(realm, creds).map(s => FindAccountsResp(s.toSet, id))))
-      case FindGroups(realm, names, id) =>
-        exec(Try(store.findGroups(realm, names).map(s => FindGroupsResp(s.toSet, id))))
-      case GetAllRealms(id) =>
-        exec(Try(store.allRealms.map(r => FindRealmsResp(r.toSet, id))))
-      case GetAllAccounts(realm, id) =>
-        exec(Try(store.allAccounts(realm).map(a => FindAccountsResp(a.toSet, id))))
-      case GetAllGroups(realm, id) =>
-        exec(Try(store.allGroups(realm).map(g => FindGroupsResp(g.toSet, id))))
+      case FindRealms(names) =>
+        exec(Try(store.findRealms(names).map(r => FindRealmsResp(r.toSet))))
+      case FindAccounts(realm, names) =>
+        exec(Try(store.findAccounts(realm, names).map(s => FindAccountsResp(s.toSet))))
+      case FindAccountsFor(realm, creds) =>
+        exec(Try(store.findAccountsFor(realm, creds).map(s => FindAccountsResp(s.toSet))))
+      case FindGroups(realm, names) =>
+        exec(Try(store.findGroups(realm, names).map(s => FindGroupsResp(s.toSet))))
+      case GetAllRealms =>
+        exec(Try(store.allRealms.map(r => FindRealmsResp(r.toSet))))
+      case GetAllAccounts(realm) =>
+        exec(Try(store.allAccounts(realm).map(a => FindAccountsResp(a.toSet))))
+      case GetAllGroups(realm) =>
+        exec(Try(store.allGroups(realm).map(g => FindGroupsResp(g.toSet))))
     }
 
     override def preRestart(reason: Throwable, message: Option[Any]) = {
@@ -131,19 +128,26 @@ object StoreActor {
   }
 
   object messages {
-    trait StoreMessage extends PorterMessage
-    case class FindRealms(names: Set[Ident], id: Int = 0) extends StoreMessage
-    case class GetAllRealms(id: Int = 0) extends StoreMessage
-    case class FindRealmsResp(realms: Set[Realm], id: Int) extends StoreMessage
+    type StoreMessage = porter.client.Messages.store.StoreMessage
 
-    case class FindAccounts(realm: Ident, names: Set[Ident], id: Int = 0) extends StoreMessage
-    case class FindAccountsFor(realm: Ident, creds: Set[Credentials], id: Int = 0) extends StoreMessage
-    case class GetAllAccounts(realm: Ident, id: Int = 0) extends StoreMessage
-    case class FindAccountsResp(accounts: Set[Account], id: Int) extends StoreMessage
+    type FindRealms = porter.client.Messages.store.FindRealms
+    val FindRealms = porter.client.Messages.store.FindRealms
+    type FindRealmsResp = porter.client.Messages.store.FindRealmsResp
+    val FindRealmsResp = porter.client.Messages.store.FindRealmsResp
+    case object GetAllRealms extends StoreMessage
 
-    case class FindGroups(realm: Ident, names: Set[Ident], id: Int = 0) extends StoreMessage
-    case class GetAllGroups(realm: Ident, id: Int = 0) extends StoreMessage
-    case class FindGroupsResp(groups: Set[Group], id: Int) extends StoreMessage
+    val FindAccounts = porter.client.Messages.store.FindAccounts
+    type FindAccounts = porter.client.Messages.store.FindAccounts
+    case class FindAccountsFor(realm: Ident, creds: Set[Credentials]) extends StoreMessage
+    case class GetAllAccounts(realm: Ident) extends StoreMessage
+    type FindAccountsResp = porter.client.Messages.store.FindAccountsResp
+    val FindAccountsResp = porter.client.Messages.store.FindAccountsResp
+
+    type FindGroups = porter.client.Messages.store.FindGroups
+    val FindGroups = porter.client.Messages.store.FindGroups
+    case class GetAllGroups(realm: Ident) extends StoreMessage
+    type FindGroupsResp = porter.client.Messages.store.FindGroupsResp
+    val FindGroupsResp = porter.client.Messages.store.FindGroupsResp
   }
 
 }

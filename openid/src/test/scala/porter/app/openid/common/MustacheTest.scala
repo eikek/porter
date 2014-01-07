@@ -22,7 +22,6 @@ class MustacheTest extends FunSuite with ShouldMatchers {
     tokens.zip(expect).foreach { case (t, e) =>
       assert(t === e)
     }
-
   }
 
   test("makeTemplate") {
@@ -47,7 +46,7 @@ class MustacheTest extends FunSuite with ShouldMatchers {
   }
 
   test("inverse blocks") {
-    val template = Mustache("Hallo, {{^name}}Unknown{{/name}}{{#name}}{{.}}{{/name}}.")
+    val template = Mustache("Hallo, {{^name}}Unknown{{/name}}{{#name}}{{name}}{{/name}}.")
     val s1 = template(Map("test" -> "other"))
     s1 should be ("Hallo, Unknown.")
     val s2 = template(Map("name" -> "John"))
@@ -61,7 +60,5 @@ class MustacheTest extends FunSuite with ShouldMatchers {
 
     val s2 = template(Map("flag" -> true))
     s2 should be ("Hello Sir Fauntleroy")
-    
-    
   }
 }

@@ -1,8 +1,10 @@
 package porter.dist
 
 import akka.actor._
-import porter.dist.MainExt.InterfaceSettings
+import porter.dist.MainExt.{HttpSettings, InterfaceSettings}
 import porter.app.openid.OpenIdSettings
+import porter.auth.Decider
+import porter.model.PasswordCrypt
 
 object MainExt extends ExtensionId[MainExt] with ExtensionIdProvider {
   def lookup() = MainExt
@@ -11,6 +13,7 @@ object MainExt extends ExtensionId[MainExt] with ExtensionIdProvider {
     MainExt(system.provider.getDefaultAddress, system)
 
   case class InterfaceSettings(host: String, port: Int, enabled: Boolean)
+  case class HttpSettings(iface: InterfaceSettings, decider: Decider, crypt: PasswordCrypt)
 }
 
 case class MainExt(address: Address, private val system: ExtendedActorSystem) extends Extension {
@@ -27,10 +30,15 @@ case class MainExt(address: Address, private val system: ExtendedActorSystem) ex
     config.getBoolean("telnet.enabled")
   )
 
-  val http = InterfaceSettings(
-    config.getString("http.host"),
-    config.getInt("http.port"),
-    config.getBoolean("http.enabled")
+  val http = HttpSettings(
+    InterfaceSettings(
+      config.getString("http.host"),
+      config.getInt("http.port"),
+      config.getBoolean("http.enabled")
+    ),
+    system.dynamicAccess.getObjectFor[porter.auth.Decider](config.getString("http.decider")).get,
+    PasswordCrypt(config.getString("http.password-crypt"))
+      .getOrElse(sys.error(s"Invalid configuration for password-crypt '${config.getString("http.password-crypt")}'"))
   )
 
   val openid = InterfaceSettings(

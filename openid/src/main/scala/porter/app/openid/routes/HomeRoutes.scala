@@ -3,13 +3,7 @@ package porter.app.openid.routes
 import spray.routing._
 import spray.http._
 import porter.model._
-import scala.util.Try
-import scala.util.Failure
-import spray.http.HttpResponse
-import porter.model.Account
-import scala.util.Success
-import porter.app.client.spray.{PorterDirectives, PorterContext, PorterAuthenticator}
-import spray.routing.authentication.UserPass
+import porter.app.client.spray.PorterAuthenticator
 import porter.app.openid.routes.HomeRoutes.Registration
 import scala.util.Failure
 import scala.Some
@@ -34,24 +28,24 @@ trait HomeRoutes extends OpenIdDirectives with PageDirectives with AuthDirective
   private val porterContext = PorterContext(porterRef, settings.defaultRealm, settings.decider)
   private def PorterAuth = PorterAuthenticator(porterContext, settings.cookieKey, settings.cookieName)
 
+  private def changePwFuture(cpw: ChangePassword) =
+    PorterUtil.changePassword(porterRef, cpw.realm, cpw.current, cpw.plain, settings.passwordCrypt, settings.decider)
+
   private def message(level: String = "info", msg: String) = Map("infoMessage" -> Map(
     "level" -> level, "message" -> msg
   ))
 
   private lazy val actions: Action = {
     case ("changeSecret", acc) =>
-      formField("porter.currentpassword") { cpw =>
-        authcAccount(settings.defaultRealm, Set(PasswordCredentials(acc.name, cpw)))(timeout) { _ =>
-          updateSecretSubmit(settings.defaultRealm, acc) {
-            case Success(nacc) =>
-              setPorterCookieOnRememberme(nacc) {
-                renderUserPage(nacc, message("success", "Secret changed."))
-              }
-            case Failure(ex) =>
-              renderUserPage(acc, message("danger", ex.getMessage))
-          }
-        } ~
-        renderUserPage(acc, message("danger", "Authentication failed."))
+      changePassword(acc.name) { cpw =>
+        onComplete(changePwFuture(cpw)) {
+          case Success(nacc) =>
+            setPorterCookieOnRememberme(nacc) {
+              renderUserPage(nacc, message("success", "Secret changed."))
+            }
+          case Failure(ex) =>
+            renderUserPage(acc, message("danger", ex.getMessage))
+        }
       }
 
     case ("logout", acc) =>
@@ -133,22 +127,16 @@ trait HomeRoutes extends OpenIdDirectives with PageDirectives with AuthDirective
     }
   }
 
-  def updateSecret(realm: Ident, account: Account, pw: String): Directive1[Try[Account]] = {
-    val newAccount = account.changeSecret(Password(settings.passwordCrypt)(pw))
-    val f = (porterRef ? UpdateAccount(realm, newAccount)).mapTo[OperationFinished]
-    onComplete(f).flatMap {
-      case Success(OperationFinished(true, _)) => provide(Success(newAccount))
-      case _ => provide(Failure(new Exception("Error setting secrets")))
-    }
-  }
-
-  def updateSecretSubmit(realm: Ident, account: Account): Directive1[Try[Account]] =
-    formField("porter.password1").flatMap { pw1 =>
-      formField("porter.password2").flatMap { pw2 =>
-        if (pw1 == pw2) updateSecret(realm, account, pw1)
-        else provide(Failure(new Exception("Passwords are not equal")))
+  def changePassword(account: Ident): Directive1[ChangePassword] =
+    formField("porter.currentpassword").flatMap { cpw =>
+      formField("porter.password1").flatMap { pw1 =>
+        formField("porter.password2").flatMap { pw2 =>
+          if (pw1 == pw2) provide(ChangePassword(settings.defaultRealm, PasswordCredentials(account, cpw), pw1))
+          else reject()
+        }
       }
     }
+
 
   private def registration: Directive1[Registration] = formFields.flatMap {
     case Registration(reg) => provide(reg)

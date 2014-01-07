@@ -251,7 +251,7 @@ trait PorterDirectives {
    * @return
    */
   def loadAccount(porterContext: PorterContext, account: Ident)(implicit ec: ExecutionContext, to: Timeout): Directive1[Account] = {
-    onSuccess(PorterUtil.accountFuture(porterContext.porterRef, porterContext.realm, account)).flatMap {
+    onSuccess(PorterUtil.findAccount(porterContext.porterRef, porterContext.realm, account)).flatMap {
       case Some(a) => provide(a)
       case _ => reject()
     }

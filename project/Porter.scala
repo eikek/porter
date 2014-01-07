@@ -39,10 +39,11 @@ object Deps {
   )
 
   val spray = Seq(
-    "io.spray" % "spray-can" % "1.2.0"
-  )
-  val sprayRouting = Seq(
+    "io.spray" % "spray-can" % "1.2.0",
     "io.spray" % "spray-routing" % "1.2.0"
+  )
+  val sprayJson = Seq(
+    "io.spray" %%  "spray-json" % "1.2.5"
   )
 }
 
@@ -63,6 +64,7 @@ object Porter extends sbt.Build {
   override lazy val settings = super.settings ++ Seq(
     version := "0.1.0",
     resolvers ++= Seq("spray repo" at "http://repo.spray.io"),
+    pomIncludeRepository := { _ => false },
     organization := "org.eknet.porter",
     scalaVersion := Version.scala,
     scalacOptions := Seq("-unchecked", "-deprecation", "-feature"),
@@ -81,7 +83,7 @@ object Api extends sbt.Build {
       sourceGenerators in Compile <+= buildInfo,
       buildInfoKeys := Seq(name, version, scalaVersion, buildTimeKey, gitRevKey),
       buildInfoPackage := "porter",
-      libraryDependencies ++= Deps.apiCompile ++ Deps.testBasics
+      libraryDependencies ++= Deps.apiCompile ++ Deps.testBasics ++ Deps.sprayJson.map(_ % "optional")
     )
   )
 
@@ -100,7 +102,7 @@ object App extends sbt.Build {
     base = file("app"),
     settings = Project.defaultSettings ++ Seq(
       name := "porter-app",
-      libraryDependencies ++= Deps.akka ++ Deps.testBasics ++ Deps.casbah ++ Deps.spray ++ Deps.sprayRouting.map(_ % "optional")
+      libraryDependencies ++= Deps.akka ++ Deps.testBasics ++ Deps.casbah ++ Deps.spray ++ Deps.sprayJson
     )
   ) dependsOn Api.module
 }
@@ -111,7 +113,7 @@ object OpenId extends Build {
     base = file("openid"),
     settings = Project.defaultSettings ++ Seq(
       name := "porter-openid",
-      libraryDependencies ++= Deps.akka ++ Deps.spray ++ Deps.sprayRouting ++ Deps.testBasics
+      libraryDependencies ++= Deps.akka ++ Deps.spray ++ Deps.testBasics
     )
   ) dependsOn App.module
 }

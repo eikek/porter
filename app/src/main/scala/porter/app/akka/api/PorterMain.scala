@@ -6,7 +6,7 @@ import porter.app.PorterSettings
 import porter.app.akka.api.PorterMain.{UpdateAuthProps, ShowSettings}
 import porter.app.akka.api.StoreActor.messages.{FindAccountsResp, FindAccountsFor, StoreMessage}
 import porter.app.akka.api.RuleFactoryActor.messages.MakeRules
-import porter.app.akka.api.MutableStoreActor.messages.{OperationFinished, UpdateAccount, MutableStoreMessage}
+import porter.app.akka.api.MutableStoreActor.messages._
 import porter.app.akka.api.PolicyActor.messages.{Authorize, GetPolicy}
 import porter.app.akka.api.AuthcWorker.messages.Authenticate
 import porter.model.Credentials
@@ -21,7 +21,7 @@ class PorterMain(settings: PorterSettings) extends Actor with ActorLogging {
   val policy = context.actorOf(PolicyActor(store, ruleFactory), name = "porter-policy")
 
   def receive = {
-    case s: ShowSettings => sender ! settings.toString
+    case ShowSettings => sender ! settings.toString
     case sm: StoreMessage => store forward sm
     case mm: MutableStoreMessage => mstore forward mm
     case mr: MakeRules => ruleFactory forward mr
@@ -30,7 +30,7 @@ class PorterMain(settings: PorterSettings) extends Actor with ActorLogging {
     case authc: Authenticate =>
       val w = context.actorOf(AuthcWorker(store, settings.validators))
       w forward authc
-    case UpdateAuthProps(realm, creds, success, id) =>
+    case UpdateAuthProps(realm, creds, success) =>
       import porter.model.PropertyList._
       import akka.pattern.ask
       import akka.pattern.pipe
@@ -40,13 +40,13 @@ class PorterMain(settings: PorterSettings) extends Actor with ActorLogging {
         if (success) lastLoginTime.current.andThen(successfulLogins.increment)
         else failedLogins.increment
       val f = for {
-        acc <- (store ? FindAccountsFor(realm, creds, id)).mapTo[FindAccountsResp]
+        acc <- (store ? FindAccountsFor(realm, creds)).mapTo[FindAccountsResp]
         if acc.accounts.nonEmpty
-        upd <- (mstore ? UpdateAccount(realm, acc.accounts.head.updatedProps(props), id)).mapTo[OperationFinished]
+        upd <- (mstore ? UpdateAccount(realm, acc.accounts.head.updatedProps(props))).mapTo[OperationFinished]
       } yield upd
       f.onFailure { case x =>
         log.error(x, "Cannot update acount properties")
-        OperationFinished(result = false, id)
+        OperationFinished(result = false)
       }
       f pipeTo sender
   }
@@ -55,8 +55,8 @@ class PorterMain(settings: PorterSettings) extends Actor with ActorLogging {
 object PorterMain {
   import porter.model.Ident
 
-  case class ShowSettings(id: Int = 0) extends PorterMessage
-  case class UpdateAuthProps(realm: Ident, creds: Set[Credentials], success: Boolean, id: Int = 0) extends PorterMessage
+  case object ShowSettings extends PorterMessage
+  case class UpdateAuthProps(realm: Ident, creds: Set[Credentials], success: Boolean) extends PorterMessage
 
   def apply(settings: PorterSettings) = Props(classOf[PorterMain], settings)
 }

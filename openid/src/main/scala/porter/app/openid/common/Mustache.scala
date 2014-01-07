@@ -48,7 +48,8 @@ object Mustache {
       override def toString() = "empty()"
     }
     case class Composite(ts: Vector[Template]) extends Template {
-      def apply(ctx: Context): String = ts.foldLeft("") { (s, t) => s + t(ctx) }
+      def apply(ctx: Context): String =
+        ts.foldLeft(StringBuilder.newBuilder) { (s, t) => s append t(ctx) }.toString()
       override def ++(t: Template): Template = Composite(ts :+ t)
     }
     case class Text(s: String) extends Template {

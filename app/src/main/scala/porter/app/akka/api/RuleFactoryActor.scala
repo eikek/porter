@@ -26,15 +26,15 @@ class RuleFactoryActor(list: Iterable[PermissionFactory]) extends Actor {
   def receive = normal
 
   def empty: Receive = {
-    case MakeRules(_, _) =>
+    case MakeRules(_) =>
       sender ! Status.Failure(new Exception("No permission factories provided."))
   }
 
   def normal: Receive = {
-    case req@MakeRules(rules, id) =>
+    case req@MakeRules(rules) =>
       makeRules(rules) match {
         case Success(s) if s.nonEmpty || isLast =>
-          sender ! MakeRulesResp(s, id)
+          sender ! MakeRulesResp(s)
         case Success(s) if s.isEmpty =>
           next map (_ forward req)
         case Failure(ex) =>
@@ -53,8 +53,8 @@ object RuleFactoryActor {
   }
 
   object messages {
-    case class MakeRules(rules: Set[String], id: Int = 0) extends PorterMessage
-    case class MakeRulesResp(rules: Set[Rule], id: Int) extends PorterMessage {
+    case class MakeRules(rules: Set[String]) extends PorterMessage
+    case class MakeRulesResp(rules: Set[Rule]) extends PorterMessage {
       lazy val (permissions, revocations) = partitionRules(rules)
     }
   }

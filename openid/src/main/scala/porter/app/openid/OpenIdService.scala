@@ -5,6 +5,7 @@ import spray.routing.HttpServiceActor
 import porter.app.openid.routes._
 import akka.util.Timeout
 import spray.http._
+import akka.io.Tcp.ConnectionClosed
 
 class OpenIdService(val porterRef: ActorRef, val assocActor: ActorRef, val settings: OpenIdServiceSettings) extends HttpServiceActor
   with ActorLogging
@@ -22,6 +23,7 @@ class OpenIdService(val porterRef: ActorRef, val assocActor: ActorRef, val setti
     discovery ~ checkRoute ~ homeRoute ~ staticRoute
   }
 
+  override def onConnectionClosed(ev: ConnectionClosed) = context.stop(self)
 }
 
 object OpenIdService {

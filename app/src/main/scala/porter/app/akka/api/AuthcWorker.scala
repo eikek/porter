@@ -2,9 +2,6 @@ package porter.app.akka.api
 
 import akka.actor.{Status, Props, ActorRef, Actor}
 import porter.auth._
-import porter.auth.AuthResult
-import porter.auth.AuthToken
-import scala.Some
 
 /**
  * Actor for processing one `Authenticate` request. After done, the actor stops itself.
@@ -13,7 +10,7 @@ import scala.Some
  */
 class AuthcWorker(store: ActorRef, validators: List[Validator]) extends Actor {
   import AuthcWorker._
-  import AuthcWorker.messages._
+  import porter.client.Messages.auth._
   import StoreActor.messages._
 
   val handlers = validators.map(a => context.actorOf(handlerProps(a)))
@@ -23,14 +20,14 @@ class AuthcWorker(store: ActorRef, validators: List[Validator]) extends Actor {
   def receive = normal
 
   def empty: Receive = {
-    case req@Authenticate(realm, creds, id) =>
+    case req@Authenticate(realm, creds) =>
       sender ! Status.Failure(new Exception("No validators defined."))
   }
 
   def normal: Receive = {
-    case req@Authenticate(realm, creds, id) =>
-      store ! FindRealms(Set(realm), 1)
-      store ! FindAccountsFor(realm, creds, 2)
+    case req@Authenticate(realm, creds) =>
+      store ! FindRealms(Set(realm))
+      store ! FindAccountsFor(realm, creds)
       context.become(waiting(sender, None, None, req))
   }
 
@@ -57,14 +54,14 @@ class AuthcWorker(store: ActorRef, validators: List[Validator]) extends Actor {
           case (Some(realm), Some(acc)) =>
             val token = AuthToken(realm, acc, req.creds)
             if (handlers.isEmpty) {
-              client ! AuthenticateResp(Some(token.toResult), req.id)
+              client ! AuthenticateResp(Some(token.toResult))
               context.stop(self)
             } else {
               handlers.foreach(_ ! token)
               context.become(authenticating(client, token, req, handlers.toSet))
             }
           case _ =>
-            client ! AuthenticateResp(None, req.id)
+            client ! AuthenticateResp(None)
             context.stop(self)
         }
       }
@@ -73,7 +70,7 @@ class AuthcWorker(store: ActorRef, validators: List[Validator]) extends Actor {
   def authenticating(client: ActorRef, token: AuthToken, req: Authenticate, refs: Set[ActorRef]): Receive = {
     case t:AuthToken if refs.size <= 1 =>
       val merged = merge(token, t)
-      client ! AuthenticateResp(Some(merged.toResult), req.id)
+      client ! AuthenticateResp(Some(merged.toResult))
       context.stop(self)
 
     case t:AuthToken if refs.size > 1 =>
@@ -82,7 +79,13 @@ class AuthcWorker(store: ActorRef, validators: List[Validator]) extends Actor {
 }
 
 object AuthcWorker {
-  import porter.model._
+  object messages {
+    type Authenticate = porter.client.Messages.auth.Authenticate
+    val Authenticate = porter.client.Messages.auth.Authenticate
+
+    type AuthenticateResp = porter.client.Messages.auth.AuthenticateResp
+    val AuthenticateResp = porter.client.Messages.auth.AuthenticateResp
+  }
 
   def apply(store: ActorRef, handlers: Iterable[Validator]) =
     Props(classOf[AuthcWorker], store, handlers)
@@ -105,10 +108,5 @@ object AuthcWorker {
       }
     }
     t1.copy(votes = newmap)
-  }
-
-  object messages {
-    case class Authenticate(realmId: Ident, creds: Set[Credentials], id: Int = 0) extends RealmMessage
-    case class AuthenticateResp(result: Option[AuthResult], id: Int) extends PorterMessage
   }
 }

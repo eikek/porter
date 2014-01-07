@@ -23,6 +23,11 @@ object PasswordCredentials {
 
   def apply(accountName: Ident, password: String): PasswordCredentials = UserPass(accountName, password)
 
+  def unapply(cred: Credentials): Option[(Ident, String)] = cred match {
+    case pc: PasswordCredentials => Some((pc.accountName, pc.password))
+    case _ => None
+  }
+
   @SerialVersionUID(20131216)
   private case class UserPass(accountName: Ident, password: String) extends PasswordCredentials
 

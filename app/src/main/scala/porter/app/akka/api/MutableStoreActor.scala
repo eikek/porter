@@ -13,6 +13,7 @@ import scala.concurrent.Future
  */
 class MutableStoreActor(stores: List[(Set[Ident], MutableStore)]) extends Actor {
   import MutableStoreActor._
+  import messages._
 
   private def findStore(realm: Ident) =
     stores.find({ case (id, a) => id.contains(realm) }).map(_._2)
@@ -29,53 +30,55 @@ class MutableStoreActor(stores: List[(Set[Ident], MutableStore)]) extends Actor 
   }
 
   def receive = {
-    case pm: RealmMessage =>
-      withStore(pm.realmId, _ forward pm, sender ! failed(pm.id))
+    case pm: MutableStoreMessage =>
+      withStore(pm.realmId, _ forward pm, sender ! failed)
   }
 }
 
 object MutableStoreActor {
   import porter.model._
+
+  val messages = porter.client.Messages.mutableStore
   import messages._
 
   def apply(stores: List[(Set[Ident], MutableStore)]) = Props(classOf[MutableStoreActor], stores)
 
   private def workerProps(store: MutableStore) = Props(classOf[WorkerActor], store)
 
-  private def failed(id: Int) = OperationFinished(result = false, id)
-  private def finish(id: Int)(result: Boolean) = OperationFinished(result, id)
+  private def failed = OperationFinished(result = false)
+  private def finish(result: Boolean) = OperationFinished(result)
 
   private class WorkerActor(store: MutableStore) extends Actor with ActorLogging {
     import akka.pattern.pipe
     import context.dispatcher
     implicit val timeout = Timeout(3000)
 
-    private def fail(id: Int): PartialFunction[Throwable, OperationFinished] = {
+    private def fail: PartialFunction[Throwable, OperationFinished] = {
       case x =>
         log.error(x, "Mutable store operation failed")
-        failed(id)
+        failed
     }
 
-    private def exec(result: Try[Future[Boolean]], id: Int) {
+    private def exec(result: Try[Future[Boolean]]) {
       result match {
-        case Success(f) => f.map(finish(id)).recover(fail(id)) pipeTo sender
-        case Failure(ex) => sender ! fail(id)(ex)
+        case Success(f) => f.map(finish).recover(fail) pipeTo sender
+        case Failure(ex) => sender ! fail(ex)
       }
     }
 
     def receive = {
-      case UpdateRealm(realm, id) =>
-        exec(Try(store.updateRealm(realm)), id)
-      case DeleteRealm(realm, id) =>
-        exec(Try(store.deleteRealm(realm)), id)
-      case UpdateAccount(realm, account, id) =>
-        exec(Try(store.updateAccount(realm, account)), id)
-      case DeleteAccount(realm, account, id) =>
-        exec(Try(store.deleteAccount(realm, account)), id)
-      case UpdateGroup(realm, group, id) =>
-        exec(Try(store.updateGroup(realm, group)), id)
-      case DeleteGroup(realm, group, id) =>
-        exec(Try(store.deleteGroup(realm, group)), id)
+      case UpdateRealm(realm) =>
+        exec(Try(store.updateRealm(realm)))
+      case DeleteRealm(realm) =>
+        exec(Try(store.deleteRealm(realm)))
+      case UpdateAccount(realm, account) =>
+        exec(Try(store.updateAccount(realm, account)))
+      case DeleteAccount(realm, account) =>
+        exec(Try(store.deleteAccount(realm, account)))
+      case UpdateGroup(realm, group) =>
+        exec(Try(store.updateGroup(realm, group)))
+      case DeleteGroup(realm, group) =>
+        exec(Try(store.deleteGroup(realm, group)))
     }
 
     override def preRestart(reason: Throwable, message: Option[Any]) = {
@@ -87,18 +90,5 @@ object MutableStoreActor {
       super.postStop()
       store.close()
     }
-  }
-
-  object messages {
-    trait MutableStoreMessage extends PorterMessage
-    case class UpdateRealm(realm: Realm, id: Int = 0) extends RealmMessage with MutableStoreMessage {
-      val realmId = realm.id
-    }
-    case class DeleteRealm(realmId: Ident, id: Int = 0) extends RealmMessage with MutableStoreMessage
-    case class UpdateAccount(realmId: Ident, account: Account, id: Int = 0) extends RealmMessage with MutableStoreMessage
-    case class DeleteAccount(realmId: Ident, account: Ident, id: Int = 0) extends RealmMessage with MutableStoreMessage
-    case class UpdateGroup(realmId: Ident, group: Group, id: Int = 0) extends RealmMessage with MutableStoreMessage
-    case class DeleteGroup(realmId: Ident, group: Ident, id: Int = 0) extends RealmMessage with MutableStoreMessage
-    case class OperationFinished(result: Boolean, id: Int) extends PorterMessage with MutableStoreMessage
   }
 }

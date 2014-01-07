@@ -28,25 +28,25 @@ class StoreActorSpec extends TestKit(ActorSystem("StoreActorSpec", ConfigFactory
     "return realms from all stores" in {
       val store = system.actorOf(StoreActor(List(store1, store2)))
       store ! FindRealms(Set("r1", "r4"))
-      expectMsg(FindRealmsResp(Set(realm, Realm("r4", "")), 0))
+      expectMsg(FindRealmsResp(Set(realm, Realm("r4", ""))))
 
-      store ! GetAllRealms(2)
-      expectMsg(FindRealmsResp(Set(realm, Realm("r4", "")), 2))
+      store ! GetAllRealms
+      expectMsg(FindRealmsResp(Set(realm, Realm("r4", ""))))
     }
 
     "return accounts from all stores" in {
       val store = system.actorOf(StoreActor(List(store1, store2)))
       store ! FindAccounts(realm.id, Set("john", "gloria"))
-      expectMsg(FindAccountsResp(Set(john, Account(name = "gloria")), 0))
+      expectMsg(FindAccountsResp(Set(john, Account(name = "gloria"))))
     }
 
     "return groups from all stores" in {
       val store = system.actorOf(StoreActor(List(store1, store2)))
       store ! FindGroups("r1", Set("g4", "g2"))
-      expectMsg(FindGroupsResp(Set(g2, g4), 0))
+      expectMsg(FindGroupsResp(Set(g2, g4)))
 
-      store ! GetAllGroups("r1", 1)
-      expectMsg(FindGroupsResp(Set(g1, g2, g3, g4), 1))
+      store ! GetAllGroups("r1")
+      expectMsg(FindGroupsResp(Set(g1, g2, g3, g4)))
     }
 
     "recover from errors in store" in {
