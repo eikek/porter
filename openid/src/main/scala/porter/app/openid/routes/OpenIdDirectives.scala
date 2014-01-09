@@ -4,7 +4,12 @@ import spray.routing._
 import spray.http._
 import spray.routing.Directives._
 import porter.model.Ident
-import scala.util.{Success, Try}
+import scala.util.Try
+import java.util.Locale
+import porter.model.PropertyList._
+import scala.Some
+import porter.model.Account
+import scala.util.Success
 
 trait OpenIdDirectives {
   self: OpenIdActors =>
@@ -113,4 +118,23 @@ trait OpenIdDirectives {
     df.setTimeZone(java.util.TimeZone.getTimeZone("UTC"))
     df.format(new java.util.Date()) + java.util.UUID.randomUUID().toString.replace('-', 'z')
   }
+
+  def requestLocale: Directive1[Locale] = headerValuePF {
+    case HttpHeaders.`Accept-Language`(lang) if lang.nonEmpty =>
+      Locale.forLanguageTag(lang.head.toString())
+  }
+
+  def accountLocale(account: Account): Directive1[Locale] = {
+    val loc = for {
+      accloc <- locale.get(account.props)
+      loc <- Try(Locale.forLanguageTag(accloc)).toOption
+    } yield loc
+    loc.map(provide).getOrElse(reject)
+  }
+
+  def localeWithDefault(acc: Option[Account] = None): Directive1[Locale] =
+    acc.map(accountLocale).getOrElse {
+      requestLocale | provide(Locale.getDefault)
+    }
+
 }

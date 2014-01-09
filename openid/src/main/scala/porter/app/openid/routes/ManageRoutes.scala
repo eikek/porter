@@ -4,18 +4,18 @@ import spray.routing._
 import spray.http._
 import porter.model._
 import porter.app.client.spray.PorterAuthenticator
-import porter.app.openid.routes.HomeRoutes.Registration
-import scala.util.Failure
+import porter.app.openid.routes.ManageRoutes.Registration
+import scala.util.{Try, Failure, Success}
 import scala.Some
 import spray.http.HttpResponse
 import porter.model.Account
-import scala.util.Success
 import porter.app.client.spray.PorterContext
 import porter.app.openid.OpenIdServiceSettings
 import porter.app.akka.api.StoreActor.messages.{FindAccountsResp, FindAccounts}
 import porter.app.akka.PorterUtil
+import java.util.Locale
 
-trait HomeRoutes extends OpenIdDirectives with PageDirectives with AuthDirectives {
+trait ManageRoutes extends OpenIdDirectives with PageDirectives with AuthDirectives {
   self: OpenIdActors =>
 
   import Directives._
@@ -96,18 +96,22 @@ trait HomeRoutes extends OpenIdDirectives with PageDirectives with AuthDirective
       }
   }
 
-  private def renderUserPage(account: Account, params: Map[String, Any] = Map.empty) = complete {
-    import PropertyList._
-    import Implicits._
-    val adminProps = List(lastLoginTime, successfulLogins, failedLogins)
-    val context = defaultContext ++ params ++
-      Map("account" -> account.toMap) ++
-      Map("properties" -> userProps.map(_.toMap(account, _.substring("porter-user-".length)))) ++
-      Map("adminProps" -> adminProps.map(_.toMap(account, _.substring("porter-admin-".length)))) ++
-      Map("actionUrl" -> settings.endpointBaseUrl.toRelative.toString())
-    val page = settings.userTemplate(context)
-    HttpResponse(entity = HttpEntity(html, page))
-  }
+  private def renderUserPage(account: Account, params: Map[String, Any] = Map.empty) =
+    localeWithDefault(Some(account)) { loc =>
+      complete {
+        println("Locale: "+ loc)
+        import PropertyList._
+        import Implicits._
+        val adminProps = List(lastLoginTime, successfulLogins, failedLogins)
+        val context = defaultContext ++ params ++
+          Map("account" -> account.toMap) ++
+          Map("properties" -> userProps.map(_.toMap(account, loc, _.substring("porter-user-".length)))) ++
+          Map("adminProps" -> adminProps.map(_.toMap(account, loc, _.substring("porter-admin-".length)))) ++
+          Map("actionUrl" -> settings.endpointBaseUrl.toRelative.toString())
+        val page = settings.userTemplate(context)
+        HttpResponse(entity = HttpEntity(html, page))
+      }
+    }
 
   private def renderRegistrationPage(fields: Map[String, String] = Map.empty, failed: List[String] = Nil) = {
     if (settings.registrationEnabled) {
@@ -196,7 +200,7 @@ trait HomeRoutes extends OpenIdDirectives with PageDirectives with AuthDirective
   }
 }
 
-object HomeRoutes {
+object ManageRoutes {
 
   case class Registration(name: String,
                           email: Option[String],

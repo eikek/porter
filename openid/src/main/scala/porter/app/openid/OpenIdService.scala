@@ -12,7 +12,7 @@ class OpenIdService(val porterRef: ActorRef, val assocActor: ActorRef, val setti
   with OpenIdActors
   with DiscoveryRoute
   with StaticRoute
-  with HomeRoutes
+  with ManageRoutes
   with EndpointRoute {
 
   implicit def dispatcher = context.dispatcher

@@ -1,14 +1,14 @@
 package porter.app.openid.routes
 
-import porter.model.{Property, Account}
+import porter.model.{PropertyList, Property, Account}
 import spray.http._
 import spray.httpx.marshalling.{ToResponseMarshallingContext, ToResponseMarshallable}
 import spray.http.HttpResponse
-import porter.model.Account
 import scala.Some
 import porter.app.openid.AssocActor.{DHParams, AssocToken, GetTokenResult}
 import porter.app.openid.common._
 import porter.util.Base64
+import java.util.{TimeZone, Locale}
 
 object Implicits {
 
@@ -51,11 +51,36 @@ object Implicits {
   }
 
   implicit class PropertyToMap(prop: Property[_]) {
-    def toMap(account: Account, label: String => String) = Map(
-      "label" -> label(prop.name),
-      "id" -> prop.name,
-      "value" -> prop.getRaw(account.props).getOrElse("")
-    )
+    def toMap(account: Account, locale:Locale, label: String => String) = {
+      val value = prop.getRaw(account.props).getOrElse("")
+      val map = Map(
+        "label" -> label(prop.name),
+        "id" -> prop.name,
+        "name" -> prop.name,
+        "value" -> value
+      )
+      def options(values: List[(String, String)]) =
+        for ((id, name) <- values)
+        yield Map("id" -> id, "name" -> name, "selected" -> (value == id))
+
+      if (prop == PropertyList.locale) {
+        val allLocales =
+          for (l <- Locale.getAvailableLocales)
+          yield l.toLanguageTag -> l.getDisplayName(locale)
+        map ++ Map("select" -> true, "values" -> options(allLocales.toList.sortBy(_._2)))
+      }
+      else if (prop == PropertyList.timezone) {
+        val tzs =
+          for (id <- TimeZone.getAvailableIDs) yield {
+            val tz = TimeZone.getTimeZone(id)
+            val name = tz.getDisplayName(locale) +" ("+id+")"
+            id -> name
+          }
+
+        map ++ Map("select" -> true, "values" -> options(tzs.toList.sortBy(_._2)))
+      }
+      else map ++ Map("value" -> value)
+    }
   }
 
   implicit class OptionToMap[A](opt: Option[A]) {

@@ -84,7 +84,16 @@
                 {{#properties}}
                     <div class="form-group">
                         <label for="{{id}}">{{label}}</label>
-                        <input type="text" class="form-control" id="{{id}}" name="{{id}}" placeholder="{{label}}" value="{{value}}">
+                        {{#select}}
+                            <select name="{{id}}" id="{{id}}" class="form-control">
+                                {{#values}}
+                                    <option value="{{id}}" {{#selected}}selected="selected"{{/selected}}>{{name}}</option>
+                                {{/values}}
+                            </select>
+                        {{/select}}
+                        {{^select}}
+                            <input type="text" class="form-control" id="{{id}}" name="{{id}}" placeholder="{{label}}" value="{{value}}">
+                        {{/select}}
                     </div>
                 {{/properties}}
                 <div class="form-group">
