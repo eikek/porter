@@ -18,6 +18,7 @@ class PasswordValidatorTest extends FunSuite with ShouldMatchers {
     checkpasswords("bcrypt", "password.0", Password(Bcrypt(10)))
     checkpasswords("scrypt", "password.0", Password(Scrypt()))
     checkpasswords("pbkdf2", "password.0", Password(Pbkdf2()))
+    checkpasswords("pbkdf2", "password.0", Password(Pbkdf2(4096, 256)))
     checkpasswords("sha1", "password.0", Password(Digest.sha1()))
     checkpasswords("md5", "password.0", Password(Digest.md5()))
     checkpasswords("sha512", "password.0", Password(Digest.sha512()))

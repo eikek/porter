@@ -144,19 +144,19 @@ object PasswordCrypt {
   object Pbkdf2 {
     val name = "pbkdf2-sha1"
 
-    def apply(n: Int = 54000 + intBelow(10000), salt: Vector[Byte] = randomSalt): PasswordCrypt = new PasswordCrypt {
+    def apply(n: Int = 32000 + intBelow(1000), len: Int = 512, salt: Vector[Byte] = randomSalt): PasswordCrypt = new PasswordCrypt {
       def apply(plain: String) = {
-        val len = 160
         val enc = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1")
           .generateSecret(new PBEKeySpec(plain.toCharArray, salt.toArray, n, len))
           .getEncoded
-        name +"$"+n+"$"+ Base64.encode(salt) +"$"+Base64.encode(enc)
+        name +"$"+n+"$"+len+"$"+ Base64.encode(salt) +"$"+Base64.encode(enc)
       }
     }
 
     def fromConfig(str: String): Option[PasswordCrypt] = str match {
       case `name` => Some(apply())
       case s => split(s, ':') match {
+        case `name`::sn::len::Nil => Try((sn.toInt, len.toInt)).toOption.map({ case (n, l) => apply(n, l) })
         case `name`::sn::Nil => Try(sn.toInt).toOption.map(apply(_))
         case _ => None
       }
@@ -164,9 +164,9 @@ object PasswordCrypt {
 
     object Verify {
       def unapply(encoded: String):Option[Verifier] = split(encoded) match {
-        case `name`::iter::salt::data::Nil =>
-          Try((iter.toInt, Base64.decode(salt).toVector)).map { case (n, s) =>
-            (plain: String) => Pbkdf2(n, s)(plain) == encoded
+        case `name`::iter::len::salt::data::Nil =>
+          Try((iter.toInt, len.toInt, Base64.decode(salt).toVector)).map { case (n, l, s) =>
+            (plain: String) => Pbkdf2(n, l, s)(plain) == encoded
           }.toOption
         case _ => None
       }
