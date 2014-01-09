@@ -2,6 +2,7 @@ package porter.client
 
 import porter.model._
 import porter.auth.AuthResult
+import scala.concurrent.duration.Duration
 
 object Messages {
   //nesting message objects in other objects yields compiler warnings like:
@@ -42,6 +43,7 @@ object Messages {
     case class DeleteGroup(realmId: Ident, group: Ident) extends MutableStoreMessage
     case class OperationFinished(result: Boolean) extends PorterMessage
     case class ChangePassword(realm: Ident, current: Credentials, plain: String)
+    case class UpdateAuthProps(realm: Ident, creds: Set[Credentials], success: Boolean) extends PorterMessage
   }
 
   object auth {
@@ -52,5 +54,8 @@ object Messages {
 
     case class Authorize(realm: Ident, account: Ident, perms: Iterable[String]) extends PorterMessage
     case class AuthorizeResp(realm: Ident, account: Ident, authorized: Boolean) extends PorterMessage
+
+    case class RetrieveServerNonce(valid: Option[Duration] = None) extends PorterMessage
+    case class RetrieveServerNonceResp(nonce: String) extends PorterMessage
   }
 }

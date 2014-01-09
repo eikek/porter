@@ -4,6 +4,8 @@ import porter.client.Messages.store._
 import porter.client.Messages.mutableStore._
 import porter.client.Messages.auth._
 import porter.auth.AuthResult
+import spray.json._
+import scala.concurrent.duration.Duration
 
 trait MessageJsonProtocol extends ModelJsonProtocol {
 
@@ -33,6 +35,17 @@ trait MessageJsonProtocol extends ModelJsonProtocol {
   implicit val authzFormat = jsonFormat3(Authorize)
   implicit val authzResponseFormat = jsonFormat3(AuthorizeResp)
 
+  implicit val updateAuthPropFormat = jsonFormat3(UpdateAuthProps)
+
+  implicit object DurationFormat extends JsonFormat[Duration] {
+    def write(obj: Duration) = JsString(obj.toString)
+    def read(json: JsValue) = json match {
+      case JsString(value) => Duration(value)
+      case x => deserializationError("Unable to get duration for string "+ x)
+    }
+  }
+  implicit val retrieveServerNonceFormat = jsonFormat1(RetrieveServerNonce)
+  implicit val retrieveServerNonceRespFormat = jsonFormat1(RetrieveServerNonceResp)
 }
 
 object MessageJsonProtocol extends MessageJsonProtocol

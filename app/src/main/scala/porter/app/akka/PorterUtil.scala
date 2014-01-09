@@ -9,7 +9,6 @@ import porter.app.akka.Porter.Messages.authc._
 import porter.app.akka.Porter.Messages.authz._
 import porter.app.akka.Porter.Messages.store._
 import porter.app.akka.Porter.Messages.mutableStore._
-import porter.app.akka.api.PorterMain.UpdateAuthProps
 
 /**
  * Utility functions combining different porter messages.

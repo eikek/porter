@@ -40,14 +40,30 @@ trait ModelJsonProtocol extends DefaultJsonProtocol {
     }
   }
 
+  implicit object DigestQopFormat extends JsonFormat[DigestQop] {
+    val dauthFormat = jsonFormat(DigestAuth, "cnonce", "nc")
+    val dauthintFormat = jsonFormat(DigestAuthInt, "cnonce", "nc", "requestmd5")
+    def write(obj: DigestQop) = obj match {
+      case da: DigestAuth => dauthFormat.write(da)
+      case da: DigestAuthInt => dauthintFormat.write(da)
+    }
+    def read(json: JsValue) =
+      Try(dauthintFormat.read(json)).getOrElse(dauthFormat.read(json))
+  }
+  implicit val digestCredentialsFormat = jsonFormat(DigestCredentials, "accountName", "method", "uri", "nonce", "response", "qop")
+
+
   implicit object CredentialsFormat extends RootJsonFormat[Credentials] {
     def write(obj: Credentials) = obj match {
       case pc: PasswordCredentials => passwordCredentialsFormat.write(pc)
       case dc: DerivedCredentials => derivedCredentialsFormat.write(dc)
+      case dc: DigestCredentials => digestCredentialsFormat.write(dc)
       case x => serializationError("Don't know how to convert credentials: " +x)
     }
     def read(json: JsValue) = {
-      val tryc = Try(passwordCredentialsFormat.read(json)).orElse(Try(derivedCredentialsFormat.read(json)))
+      val tryc = Try(passwordCredentialsFormat.read(json))
+        .orElse(Try(derivedCredentialsFormat.read(json)))
+        .orElse(Try(digestCredentialsFormat.read(json)))
       tryc match {
         case Success(c) => c
         case Failure(ex) => deserializationError("Unable to read Credentials from "+ json, ex)

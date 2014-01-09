@@ -8,12 +8,14 @@ import spray.routing.Directives._
 import spray.http.HttpHeaders.{`WWW-Authenticate`, Authorization}
 import akka.util.Timeout
 import scala.concurrent.ExecutionContext
-import porter.auth.{DigestValidator, AuthResult}
+import porter.auth.{Nonce, AuthResult}
 import scala.Some
 import porter.model.Account
 import scala.util.Success
 import spray.routing.AuthenticationFailedRejection.CredentialsRejected
 import porter.app.akka.PorterUtil
+import akka.actor.ActorRef
+import porter.client.Messages.auth.{RetrieveServerNonceResp, RetrieveServerNonce}
 
 trait PorterDirectives {
 
@@ -209,17 +211,23 @@ trait PorterDirectives {
    * A rejection that adds a `WWW-Authenticate` header to the response to request
    * http digest authentication from the client.
    *
+   * @param porterRef
    * @param cause
    * @param realm
    * @param uri
    * @return
    */
-  def httpDigestChallenge(cause: AuthenticationFailedRejection.Cause = CredentialsRejected, realm: String = "Protected Area", uri: Uri) = {
-    val params = Map(
-      "nonce" -> DigestValidator.generateNonce(),
-      "qop" -> "auth,auth-int"
-    )
-    AuthenticationFailedRejection(cause, `WWW-Authenticate`(HttpChallenge("Digest", realm, params)) :: Nil)
+  def sendHttpDigestChallenge(porterRef: ActorRef, cause: AuthenticationFailedRejection.Cause = CredentialsRejected, realm: String = "Protected Area", uri: Uri)
+                         (implicit ec: ExecutionContext, timeout: Timeout) = {
+    import akka.pattern.ask
+    val f = (porterRef ? RetrieveServerNonce).mapTo[RetrieveServerNonceResp]
+    onSuccess(f) { resp =>
+      val params = Map(
+        "nonce" -> resp.nonce,
+        "qop" -> "auth,auth-int"
+      )
+      reject(AuthenticationFailedRejection(cause, `WWW-Authenticate`(HttpChallenge("Digest", realm, params)) :: Nil))
+    }
   }
 
   /**

@@ -6,11 +6,9 @@ import scala.concurrent.ExecutionContext
 import akka.util.Timeout
 import porter.app.akka.Porter.Messages.authz._
 import porter.app.akka.Porter.Messages.authc._
-import porter.app.akka.Porter.Messages.mutableStore._
-import porter.app.akka.api.PorterMain.UpdateAuthProps
 import porter.auth.{OneSuccessfulVote, Decider}
 import porter.app.akka.PorterUtil
-import porter.client.Messages.auth.AuthAccount
+import porter.client.Messages.auth.{RetrieveServerNonceResp, RetrieveServerNonce, AuthAccount}
 
 class AuthService(porterRef: ActorRef, decider: Decider = OneSuccessfulVote)(implicit ec: ExecutionContext, to: Timeout) extends Directives {
   import PorterJsonProtocol._
@@ -28,7 +26,7 @@ class AuthService(porterRef: ActorRef, decider: Decider = OneSuccessfulVote)(imp
         }
       }
     } ~
-    path("api" / "policy") {
+    path("api" / "authz" / "policy") {
       post {
         handleWith { req: GetPolicy =>
           (porterRef ? req).mapTo[GetPolicyResp]
@@ -43,7 +41,7 @@ class AuthService(porterRef: ActorRef, decider: Decider = OneSuccessfulVote)(imp
         }
       }
     } ~
-    path("api" / "authcAccount") {
+    path("api" / "authc" / "account") {
       post {
         handleWith { req: Authenticate =>
           PorterUtil.authenticateAccount(porterRef, req.realmId, req.creds, decider)
@@ -52,11 +50,9 @@ class AuthService(porterRef: ActorRef, decider: Decider = OneSuccessfulVote)(imp
         }
       }
     } ~
-    path("api" / "updateAuthProps") {
-      post {
-        handleWith { req: UpdateAuthProps =>
-          (porterRef ? req).mapTo[OperationFinished]
-        }
+    path("api" / "authc" / "serverNonce") {
+      handleWith { req: RetrieveServerNonce =>
+        (porterRef ? req).mapTo[RetrieveServerNonceResp]
       }
     }
   }

@@ -70,6 +70,13 @@ class StoreService(porterRef: ActorRef, decider: Decider, crypt: PasswordCrypt)
             .recover({ case x => OperationFinished(result = false) })
         }
       } ~
+      path(accountPrefix / "updateAuthProps") {
+        post {
+          handleWith { req: UpdateAuthProps =>
+            (porterRef ? req).mapTo[OperationFinished]
+          }
+        }
+      } ~
       path(groupPrefix / Segment) { realm =>
         handleWith { group: Group =>
           (porterRef ? UpdateGroup(realm, group)).mapTo[OperationFinished]

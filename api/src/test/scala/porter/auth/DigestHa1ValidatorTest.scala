@@ -33,7 +33,7 @@ class DigestHa1ValidatorTest extends FunSuite with ShouldMatchers {
   }
 
   test("simple digest") {
-    val nonce = DigestValidator.generateNonce()
+    val nonce = Nonce.generateNonce()
     val response = clientResponse(ha1("john", "test"), nonce, None)
     val creds = DigestCredentials("john", method, uri, nonce, response)
 
@@ -44,7 +44,7 @@ class DigestHa1ValidatorTest extends FunSuite with ShouldMatchers {
   }
 
   test("digest with qop=auth") {
-    val nonce = DigestValidator.generateNonce()
+    val nonce = Nonce.generateNonce()
     val qop = DigestAuth(UUID.randomUUID().toString, "42")
     val response = clientResponse(ha1("john", "test"), nonce, Some(qop))
     val creds = DigestCredentials("john", method, uri, nonce, response, Some(qop))
@@ -57,7 +57,7 @@ class DigestHa1ValidatorTest extends FunSuite with ShouldMatchers {
 
   test("nonce expired") {
     import scala.concurrent.duration._
-    val nonce = DigestValidator.generateNonce(-1.millis)
+    val nonce = Nonce.generateNonce(-1.millis)
     val response = clientResponse(ha1("john", "test"), nonce, None)
     val creds = DigestCredentials("john", method, uri, nonce, response)
 

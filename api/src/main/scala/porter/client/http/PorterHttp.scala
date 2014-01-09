@@ -1,7 +1,7 @@
 package porter.client.http
 
 import java.net.InetSocketAddress
-import scala.concurrent.{Future, ExecutionContext}
+import scala.concurrent.ExecutionContext
 import porter.client.json.MessageJsonProtocol
 import porter.client.PorterClient
 import porter.client.Messages.store._
@@ -21,61 +21,25 @@ class PorterHttp(addr: InetSocketAddress) extends PorterClient {
   import spray.json._
   import MessageJsonProtocol._
 
-  private implicit class FutureUnmarshall(f: Future[String]) {
-    def convertTo[A](implicit ec: ExecutionContext, rf: RootJsonFormat[A]): Future[A] =
-      f.map(_.toJson.convertTo[A])
-  }
   private def post[A](path: String, data: A)(implicit ec: ExecutionContext, rfa: RootJsonFormat[A]) =
-    Http.post(addr, path, rfa.write(data).compactPrint)
+    Http.post(addr, path, data.toJson.compactPrint)
 
-
-  def authenticate = new AuthcCmd {
-    def apply(req: Authenticate)(implicit ec: ExecutionContext) = {
-      val path = "/api/authc"
-      post(path, req).convertTo[AuthenticateResp]
+  private def perform[A, B](path: String)(implicit rfa: RootJsonFormat[A], rfb: RootJsonFormat[B]) =
+    new Command[A, B] {
+      def apply(req: A)(implicit ec: ExecutionContext) = {
+        post(path, req).map(_.asJson.convertTo[B])
+      }
     }
-  }
 
-  def authenticateAccount = new AuthcAccountCmd {
-    def apply(req: Authenticate)(implicit ec: ExecutionContext) = {
-      val path = "/api/authcAccount"
-      post(path, req).convertTo[AuthAccount]
-    }
-  }
+  private def modifyCmd[A](path: String)(implicit rf: RootJsonFormat[A]) = perform[A, OperationFinished](path)
 
-  def authorize = new AuthzCmd {
-    def apply(req: Authorize)(implicit ec: ExecutionContext) = {
-      val path = "/api/authz"
-      post(path, req).convertTo[AuthorizeResp]
-    }
-  }
+  def authenticate = perform[Authenticate, AuthenticateResp]("/api/authc")
+  def authenticateAccount = perform[Authenticate, AuthAccount]("/api/authcAccount")
+  def authorize = perform[Authorize, AuthorizeResp]("/api/authz")
 
-  def findAccounts = new FindAccountCmd {
-    def apply(req: FindAccounts)(implicit ec: ExecutionContext) = {
-      val path = "/api/account/find"
-      post(path, req).convertTo[FindAccountsResp]
-    }
-  }
-
-  def findGroups = new FindGroupCmd {
-    def apply(req: FindGroups)(implicit ec: ExecutionContext) = {
-      val path = "/api/group/find"
-      post(path, req).convertTo[FindGroupsResp]
-    }
-  }
-
-  def findRealms = new FindRealmCmd {
-    def apply(req: FindRealms)(implicit ec: ExecutionContext) = {
-      val path = "/api/realm/find"
-      post(path, req).convertTo[FindRealmsResp]
-    }
-  }
-
-  private def modifyCmd[A](path: String)(implicit rf: RootJsonFormat[A]) = new Command[A, OperationFinished] {
-    def apply(req: A)(implicit ec: ExecutionContext) = {
-      post(path, req).convertTo[OperationFinished]
-    }
-  }
+  def findAccounts = perform[FindAccounts, FindAccountsResp]("/api/account/find")
+  def findGroups = perform[FindGroups, FindGroupsResp]("/api/group/find")
+  def findRealms = perform[FindRealms, FindRealmsResp]("/api/realm/find")
 
   def updateAccount = modifyCmd[UpdateAccount]("/api/account/update")
   def createNewAccount = modifyCmd[UpdateAccount]("/api/account/new")
@@ -85,4 +49,5 @@ class PorterHttp(addr: InetSocketAddress) extends PorterClient {
   def deleteGroup = modifyCmd[DeleteGroup]("/api/group/delete")
   def deleteRealm = modifyCmd[DeleteRealm]("/api/realm/delete")
   def changePassword = modifyCmd[ChangePassword]("/api/account/changePassword")
+  def updateAuthProps = modifyCmd[UpdateAuthProps]("/api/account/updateAuthProps")
 }

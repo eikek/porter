@@ -27,6 +27,7 @@ trait PorterClient {
   type DeleteGroupCmd = Command[DeleteGroup, OperationFinished]
   type DeleteRealmCmd = Command[DeleteRealm, OperationFinished]
   type ChangePasswordCmd = Command[ChangePassword, OperationFinished]
+  type UpdateAuthPropsCmd = Command[UpdateAuthProps, OperationFinished]
 
   def updateAccount: UpdateAccountCmd
   def createNewAccount: UpdateAccountCmd
@@ -36,6 +37,7 @@ trait PorterClient {
   def deleteGroup: DeleteGroupCmd
   def deleteRealm: DeleteRealmCmd
   def changePassword: ChangePasswordCmd
+  def updateAuthProps: UpdateAuthPropsCmd
 
   type AuthcCmd = Command[Authenticate, AuthenticateResp]
   type AuthcAccountCmd = Command[Authenticate, AuthAccount]
