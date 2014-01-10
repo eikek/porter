@@ -4,16 +4,12 @@ import java.util.concurrent.atomic.AtomicReference
 import scala.annotation.tailrec
 import scala.util.Try
 
-/**
- * @author Eike Kettner eike.kettner@gmail.com
- * @since 23.11.13 00:08
- */
 trait RuleFactory {
   import porter.model._
 
   def permissionFactory: PermissionFactory = customFactory.get() orElse RuleFactory.providedFactory
 
-  def createRule(rstr: String): Try[Rule] = RuleFactory.createRuleWith(permissionFactory)(rstr)
+  final def createRule(rstr: String): Try[Rule] = RuleFactory.createRuleWith(permissionFactory)(rstr)
 
   private val factories = new AtomicReference[Vector[PermissionFactory]](Vector())
   private val customFactory = new AtomicReference[PermissionFactory](RuleFactory.createFactory(factories.get()))
