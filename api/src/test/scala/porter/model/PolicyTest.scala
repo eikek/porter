@@ -2,18 +2,14 @@ package porter.model
 
 import org.scalatest.FunSuite
 import org.scalatest.matchers.ShouldMatchers
+import porter.auth.RuleFactory
 
-/**
- *
- * @since 22.11.13 19:27
- *
- */
 class PolicyTest extends FunSuite with ShouldMatchers {
 
   val policy = new Policy(Set(
     Permission("read:a:b:*"), //same as read:a:b
     Permission("read:z"),
-    Revocation(Permission("read:a:b:x"))
+    Permission("read:a:b:x").revoke
   ))
 
   test("grantsAll") {
@@ -32,5 +28,11 @@ class PolicyTest extends FunSuite with ShouldMatchers {
       fac("resource:read:/main/**")
     ))
     policy.rules should have size (1)
+  }
+
+  test("reduce policy and revocations") {
+    val fac = RuleFactory.providedFactory
+    Policy(Set(fac("resource:read:/a/b/**"), fac("resource:read:/a/**").revoke)).rules should have size (0)
+    Policy(Set(fac("a:b:*"), fac("a:x"), fac("a:x:1:n"), fac("a:x:1").revoke)).rules should have size (3)
   }
 }

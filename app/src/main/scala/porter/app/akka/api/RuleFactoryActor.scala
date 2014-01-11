@@ -55,7 +55,7 @@ object RuleFactoryActor {
   object messages {
     case class MakeRules(rules: Set[String]) extends PorterMessage
     case class MakeRulesResp(rules: Set[Rule]) extends PorterMessage {
-      lazy val (permissions, revocations) = partitionRules(rules)
+      lazy val (permissions, revocations) = Rules.partition(rules)
     }
   }
 

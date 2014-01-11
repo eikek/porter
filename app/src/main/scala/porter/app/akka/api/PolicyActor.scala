@@ -61,7 +61,7 @@ class PolicyActor(store: ActorRef, ruleFactory: ActorRef) extends Actor {
         this.rules = Some(r)
         if (policy.nonEmpty) self ! Done
       case Done =>
-        val (perms, rev) = partitionRules(rules.get)
+        val (perms, rev) = Rules.partition(rules.get)
         if (rev.nonEmpty) {
           client ! Status.Failure(new Exception("Cannot authorize revocations: "+rev))
         } else {

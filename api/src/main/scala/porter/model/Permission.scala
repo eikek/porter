@@ -1,13 +1,10 @@
 package porter.model
 
-/**
- * @author Eike Kettner eike.kettner@gmail.com
- * @since 21.11.13 20:29
- */
 trait Permission extends Serializable {
 
   def implies(other: Permission): Boolean
 
+  def revoke = Revocation(this)
 }
 
 object Permission {
@@ -24,7 +21,7 @@ object Permission {
   def apply(str: String) = DefaultPermission(str)
 
   /**
-   * Returns true if all permissions is "check" are covered by the permissions
+   * Returns true if all permissions in "check" are covered by the permissions
    * in "given".
    *
    *@param given

@@ -2,10 +2,6 @@ package porter.auth
 
 import porter.model.Ident
 
-/**
- * @author Eike Kettner eike.kettner@gmail.com
- * @since 22.11.13 19:16
- */
 @SerialVersionUID(20131122)
 sealed trait Vote extends Serializable {
   def toBoolean: Boolean

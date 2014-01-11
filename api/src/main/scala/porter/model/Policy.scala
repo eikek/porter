@@ -1,12 +1,9 @@
 package porter.model
 
-/**
- * @since 21.11.13 23:05
- */
 final class Policy(_rules: Set[Rule]) {
 
-  lazy val (permissions, revocations) = partitionRules(_rules) match {
-    case (p, r) => (Permission.reduce(p), Permission.reduce(r.map(_.perm)))
+  lazy val (permissions, revocations) = Rules.partition(Rules.reduce(_rules)) match {
+    case (p, r) => (p, r.map(_.perm))
   }
 
   lazy val rules = permissions.map(permRule) ++
@@ -36,6 +33,6 @@ object Policy {
 
   def apply(rules: Set[Rule]): Policy = new Policy(rules)
 
-  def unapply(p: Policy): Option[(Set[Permission], Set[Revocation])] =
-    Some((p.permissions, p.revocations.map(Revocation.apply)))
+  def unapply(p: Policy): Option[(Set[Permission], Set[Revocation])] = Rules.unapply(p.rules)
+
 }
