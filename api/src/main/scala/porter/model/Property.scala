@@ -1,13 +1,18 @@
 package porter.model
 
-trait Property[T] {
-  def name: String
+import porter.util.Base64
+
+trait Property[T] extends PropertyView[T] {
+  def set(value: T): Properties => Properties = setRaw(value.toString)
   def setRaw(value: String): Properties => Properties = _.updated(name, value)
   def getRaw(map: Properties): Option[String] = map.get(name)
-  def set(value: T): Properties => Properties = setRaw(value.toString)
-  def get(map: Properties): Option[T]
   def remove: Properties => Properties = _ - name
 }
+trait PropertyView[T] {
+  def name: String
+  def get(map: Properties): Option[T]
+}
+
 object Property {
   case class BoolProperty(name: String) extends Property[Boolean] {
     def get(map: Properties) = map.get(name).map(_.toBoolean)
@@ -47,5 +52,19 @@ object Property {
     def current = set(new java.util.Date())
     def getMillis(map: Properties) = get(map).map(_.getTime)
     def getString(map: Properties) = map.get(name)
+  }
+  case class ByteArrayProperty(name: String) extends Property[Vector[Byte]] {
+    override def set(value: Vector[Byte]) = setRaw(Base64.encode(value))
+    def get(map: Properties) = getRaw(map).map(Base64.decode).map(_.toVector)
+  }
+
+  case class Concat(name: String, separator: String, props: Iterable[PropertyView[String]]) extends PropertyView[String] {
+    def get(map: Properties) = {
+      val s = (StringBuilder.newBuilder /: props) { (sb, p) =>
+        p.get(map).map(v => sb.append(v).append(separator))
+        sb
+      }
+      if (s.isEmpty) None else Some(s.toString())
+    }
   }
 }

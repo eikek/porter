@@ -38,6 +38,8 @@ object PropertyList extends ObjectRegistry {
   val imtype = reg(StringProperty("porter-user-imtype"))
   val imid = reg(StringProperty("porter-user-imid"))
 
+  val fullName = Concat("porter-user-fullName", " ", firstName :: lastName :: Nil)
+
   def adminProps = all.filter(_.name startsWith "porter-admin")
   def userProps = all.filter(_.name startsWith "porter-user")
 }
