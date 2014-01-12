@@ -11,6 +11,7 @@ trait DiscoveryRoute extends OpenIdDirectives {
 
   import spray.routing.Directives._
   import scala.language.implicitConversions
+  import porter.app.openid.common._
 
   private implicit def xmlResponse(xml: NodeSeq): ToResponseMarshallable = new ToResponseMarshallable {
     val ct = ContentType(DiscoveryRoute.`application/xrds+xml`)
@@ -22,7 +23,8 @@ trait DiscoveryRoute extends OpenIdDirectives {
     <xrds:XRDS xmlns:xrds="xri://$xrds" xmlns="xri://$xrd*($v*2.0)">
     <XRD>
     <Service priority="0">
-    <Type>http://specs.openid.net/auth/2.0/server</Type>
+    <Type>{ openid20 +"/server" }</Type>
+    <Type>{ sreg10Ns }</Type>
     <URI>{settings.endpointUrl.toString()}</URI>
     </Service>
     </XRD>
@@ -33,7 +35,8 @@ trait DiscoveryRoute extends OpenIdDirectives {
     <xrds:XRDS xmlns:xrds="xri://$xrds" xmlns="xri://$xrd*($v*2.0)">
     <XRD>
     <Service priority="0">
-    <Type>http://specs.openid.net/auth/2.0/signon</Type>
+    <Type>{ openid20 +"/signon" }</Type>
+    <Type>{ sreg10Ns }</Type>
     <URI>{settings.endpointUrl.toString()}</URI>
     </Service>
     </XRD>

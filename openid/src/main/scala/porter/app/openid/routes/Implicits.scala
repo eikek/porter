@@ -41,55 +41,6 @@ object Implicits {
     }
   }
 
-  implicit class AccountToMap(account: Account) {
-    def toMap = Map(
-      "name" -> account.name.name,
-      "props" -> account.props,
-      "groups" -> account.groups.map(_.name).toList,
-      "secrets" -> account.secrets.map(_.name.name)
-    )
-  }
-
-  implicit class PropertyToMap(prop: Property[_]) {
-    def toMap(account: Account, locale:Locale, label: String => String) = {
-      val value = prop.getRaw(account.props).getOrElse("")
-      val map = Map(
-        "label" -> label(prop.name),
-        "id" -> prop.name,
-        "name" -> prop.name,
-        "value" -> value
-      )
-      def options(values: List[(String, String)]) =
-        for ((id, name) <- values)
-        yield Map("id" -> id, "name" -> name, "selected" -> (value == id))
-
-      if (prop == PropertyList.locale) {
-        val allLocales =
-          for (l <- Locale.getAvailableLocales)
-          yield l.toLanguageTag -> l.getDisplayName(locale)
-        map ++ Map("select" -> true, "values" -> options(allLocales.toList.sortBy(_._2)))
-      }
-      else if (prop == PropertyList.timezone) {
-        val tzs =
-          for (id <- TimeZone.getAvailableIDs) yield {
-            val tz = TimeZone.getTimeZone(id)
-            val name = tz.getDisplayName(locale) +" ("+id+")"
-            id -> name
-          }
-
-        map ++ Map("select" -> true, "values" -> options(tzs.toList.sortBy(_._2)))
-      }
-      else map ++ Map("value" -> value)
-    }
-  }
-
-  implicit class OptionToMap[A](opt: Option[A]) {
-    def toMap(f: A => Map[String, Any]) = opt match {
-      case Some(a) => f(a)
-      case _ => Map.empty[String, Any]
-    }
-  }
-
   implicit class GetTokenResponseMap(result: GetTokenResult) {
     def toParameterMap = {
       val standard = result.token match {

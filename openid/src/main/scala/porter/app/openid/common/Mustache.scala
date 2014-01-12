@@ -62,13 +62,13 @@ object Mustache {
       }
     }
     case class Block(name: String, inverse: Boolean, inner: Template) extends Template {
-      private val emptyValues = Set("", false, None, 0, null)
+      private val emptyValues = Set("", false, None, 0, null, Map(), List())
       private def createContext(context: Context, name: String): Seq[Context] = {
         context(name) match {
           case map: Map[_, _] => Seq(map.asInstanceOf[Map[String, Any]])
           case seq: Iterable[_] =>
             seq.headOption match {
-              case Some(h) if h.isInstanceOf[Map[_, _]] => seq.asInstanceOf[Seq[Context]]
+              case Some(h : Map[_, _]) => seq.asInstanceOf[Seq[Context]]
               case Some(h) => seq.map(e => Map("." -> e)).toList
               case _ => Seq.empty
             }

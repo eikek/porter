@@ -137,4 +137,18 @@ trait OpenIdDirectives {
       requestLocale | provide(Locale.getDefault)
     }
 
+  def sRegExtensionFields: Directive1[RequestedAttributes] =
+    for {
+      opt <- paramOpt(SRegKeys.optional.openid)
+      req <- paramOpt(SRegKeys.required.openid)
+      url <- paramOpt(SRegKeys.policy_url.openid)
+    } yield {
+      import porter.util._
+      val optnames = opt.map(s => split(s, ',').filter(SRegAttributes.allNames.contains)) getOrElse Nil
+      val reqnames = req.map(s => split(s, ',').filter(SRegAttributes.allNames.contains)) getOrElse Nil
+      RequestedAttributes(
+        optnames.map(s => Key("sreg."+s)),
+        reqnames.map(s => Key("sreg."+s)), url)
+    }
+
 }

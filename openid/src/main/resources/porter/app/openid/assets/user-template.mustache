@@ -83,16 +83,16 @@
                 <input type="hidden" name="porter.action" value="updateProperties"/>
                 {{#properties}}
                     <div class="form-group">
-                        <label for="{{id}}">{{label}}</label>
+                        <label for="{{name}}">{{label}}</label>
                         {{#select}}
-                            <select name="{{id}}" id="{{id}}" class="form-control">
+                            <select name="{{name}}" id="{{name}}" class="form-control">
                                 {{#values}}
                                     <option value="{{id}}" {{#selected}}selected="selected"{{/selected}}>{{name}}</option>
                                 {{/values}}
                             </select>
                         {{/select}}
                         {{^select}}
-                            <input type="text" class="form-control" id="{{id}}" name="{{id}}" placeholder="{{label}}" value="{{value}}">
+                            <input type="text" class="form-control" id="{{name}}" name="{{name}}" placeholder="{{label}}" value="{{value}}">
                         {{/select}}
                     </div>
                 {{/properties}}

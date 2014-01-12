@@ -6,12 +6,13 @@ import porter.model.{Account, Ident}
 import porter.app.openid.AssocActor.AssocToken
 import spray.http.Uri
 import porter.util.ObjectRegistry
+import porter.app.openid.common.MustacheContext.KeyedData
 
 package object common {
 
   type Supplier = () => Try[InputStream]
 
-  case class Key(name: String) {
+  case class Key(name: String) extends KeyedData(name) {
     val openid = s"openid.$name"
   }
   case class LocalId(realm: Ident, account: Ident)
@@ -19,6 +20,7 @@ package object common {
   case class Association(handle: String, token: AssocToken)
 
   val openid20 = "http://specs.openid.net/auth/2.0"
+  val sreg10Ns = "http://openid.net/sreg/1.0"
   val identitySelect = "http://specs.openid.net/auth/2.0/identifier_select"
 
   trait OpenIdRequest {
@@ -65,5 +67,32 @@ package object common {
     val setup_needed = register("setup_needed")
     val cancel = register("cancel")
     val check_authentication = register("check_authentication")
+  }
+
+  object SRegKeys extends ObjectRegistry {
+    type Elem = Key
+    val required = register(Key("sreg.required"))
+    val optional = register(Key("sreg.optional"))
+    val policy_url = register(Key("sreg.policy_url"))
+  }
+  object SRegAttributes extends ObjectRegistry {
+    type Elem = Key
+    val ns = register(Key("ns.sreg"))
+    val nickname = register(Key("sreg.nickname"))
+    val email = register(Key("sreg.email"))
+    val fullname = register(Key("sreg.fullname"))
+    val dob = register(Key("sreg.dob"))
+    val gender = register(Key("sreg.gender"))
+    val postcode = register(Key("sreg.postcode"))
+    val country = register(Key("sreg.country"))
+    val language = register(Key("sreg.language"))
+    val timezone = register(Key("sreg.timezone"))
+
+    lazy val allNames = all.map(_.name.substring("sreg.".length))
+  }
+
+  case class RequestedAttributes(optional: List[Key], required: List[Key], url: Option[String]) {
+    def isEmpty = optional.isEmpty && required.isEmpty
+    def nonEmpty = !isEmpty
   }
 }

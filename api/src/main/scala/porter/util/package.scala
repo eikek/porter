@@ -57,4 +57,15 @@ package object util {
       p
     }
   }
+
+  /**
+   * Splits the given string around the given separator char, returning
+   * a list without empty strings
+   * @param str
+   * @param sep
+   * @return
+   */
+  def split(str: String, sep: Char): List[String] =
+    str.split(sep).collect({ case s if s.trim.nonEmpty => s.trim }).toList
+
 }

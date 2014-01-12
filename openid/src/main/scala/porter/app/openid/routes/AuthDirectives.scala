@@ -6,10 +6,8 @@ import spray.routing._
 import spray.http.Uri
 import scala.io.Codec
 import porter.util.{Hash, Base64}
-import scala.util.Failure
 import scala.Some
 import porter.model.Account
-import scala.util.Success
 import porter.app.openid.AssocActor.AssocToken
 import porter.model.Property.BoolProperty
 import porter.app.client.spray.{CookieSettings, PorterContext, PorterDirectives}
@@ -25,12 +23,12 @@ trait AuthDirectives extends AssociationDirectives {
   import PorterDirectives.formCredentials
   import PorterDirectives.CredentialsConcat
 
-  private val successParams = Set(
+  private val successParams = (Set(
     Keys.ns, Keys.mode, Keys.op_endpoint, Keys.claimed_id, Keys.identity, Keys.return_to,
     Keys.response_nonce, Keys.invalidate_handle, Keys.assoc_handle, Keys.sig, Keys.signed
-  ).map(_.openid)
+  ) ++ SRegAttributes.all.toSet).map(_.openid)
   private val requiredSignedKeys: List[Key] = List(Keys.op_endpoint, Keys.return_to,
-    Keys.response_nonce, Keys.assoc_handle, Keys.claimed_id, Keys.identity)
+    Keys.response_nonce, Keys.assoc_handle, Keys.claimed_id, Keys.identity) ++ SRegAttributes.all
 
   private def porterContext(realm: Ident) = PorterContext(porterRef, realm, settings.decider)
   private def cookieSettings(maxAge: Option[Duration]) = {
@@ -40,17 +38,6 @@ trait AuthDirectives extends AssociationDirectives {
 
   def authcAccount(realm: Ident, creds: Set[Credentials])(implicit timeout: Timeout): Directive1[Account] =
     authenticateAccount(porterContext(realm), creds)
-
-  def authcToken(realm: Ident, creds: Set[Credentials])(implicit timeout: Timeout): Directive1[Authenticated] =
-    paramOpt(Keys.assoc_handle.openid).flatMap { handle =>
-      authcAccount(realm, creds).flatMap { account =>
-        onComplete(associationFuture(handle)).flatMap {
-          case Success(assoc) => provide(Authenticated(account, assoc))
-          case Failure(ex) => reject()
-          case _ => reject()
-        }
-      }
-    }
 
   def cookieCredentials: Directive1[Set[Credentials]] =
     PorterDirectives.cookieCredentials(settings.cookieKey, settings.cookieName)
@@ -75,6 +62,7 @@ trait AuthDirectives extends AssociationDirectives {
         else Uri.Path("/"+ realm.name +"/"+ auth.account.name.name)
       val id = settings.endpointBaseUrl.withPath(path).toString()
       val incl = params.filter { case (k, v) => successParams contains k }  ++ Map(
+        SRegAttributes.ns.openid -> sreg10Ns,
         Keys.mode.openid -> "id_res",
         Keys.realm.openid -> params.get(Keys.realm.openid).getOrElse(""),
         Keys.response_nonce.openid -> nextNonce,

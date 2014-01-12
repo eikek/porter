@@ -61,12 +61,9 @@ object PasswordCrypt {
     random.nextBytes(salt)
     salt.toVector
   }
-  private def split(str: String, c: Char = '$') =
-    str.split(c).collect({ case s if s.trim.nonEmpty => s.trim }).toList
-
 
   type Verifier = String => Boolean
-
+  import porter.util._
 
   def randomCrypt = intBelow(4) match {
     case 0 => Bcrypt()
@@ -163,7 +160,7 @@ object PasswordCrypt {
     }
 
     object Verify {
-      def unapply(encoded: String):Option[Verifier] = split(encoded) match {
+      def unapply(encoded: String):Option[Verifier] = split(encoded, '$') match {
         case `name`::iter::len::salt::data::Nil =>
           Try((iter.toInt, len.toInt, Base64.decode(salt).toVector)).map { case (n, l, s) =>
             (plain: String) => Pbkdf2(n, l, s)(plain) == encoded
@@ -200,7 +197,7 @@ object PasswordCrypt {
     }
 
     object Verify {
-      def unapply(encoded: String): Option[Verifier] = split(encoded) match {
+      def unapply(encoded: String): Option[Verifier] = split(encoded, '$') match {
         case `name`::algo::iter::salt::data::Nil =>
           Try((algo, iter.toInt, Base64.decode(salt).toVector)).map { case (a, n, s) =>
             (plain: String) => Digest(a, n, s)(plain) == encoded

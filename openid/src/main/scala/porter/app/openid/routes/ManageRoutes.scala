@@ -14,6 +14,7 @@ import porter.app.openid.OpenIdServiceSettings
 import porter.app.akka.api.StoreActor.messages.{FindAccountsResp, FindAccounts}
 import porter.app.akka.PorterUtil
 import java.util.Locale
+import porter.app.openid.common.MustacheContext
 
 trait ManageRoutes extends OpenIdDirectives with PageDirectives with AuthDirectives {
   self: OpenIdActors =>
@@ -96,35 +97,39 @@ trait ManageRoutes extends OpenIdDirectives with PageDirectives with AuthDirecti
       }
   }
 
-  private def renderUserPage(account: Account, params: Map[String, Any] = Map.empty) =
+  private def renderUserPage(account: Account, params: Map[String, Any] = Map.empty) = {
+    import MustacheContext._
+    import Templating._
+    import PropertyList._
     localeWithDefault(Some(account)) { loc =>
       complete {
-        println("Locale: "+ loc)
-        import PropertyList._
-        import Implicits._
-        val adminProps = List(lastLoginTime, successfulLogins, failedLogins)
-        val context = defaultContext ++ params ++
-          Map("account" -> account.toMap) ++
-          Map("properties" -> userProps.map(_.toMap(account, loc, _.substring("porter-user-".length)))) ++
-          Map("adminProps" -> adminProps.map(_.toMap(account, loc, _.substring("porter-admin-".length)))) ++
-          Map("actionUrl" -> settings.endpointBaseUrl.toRelative.toString())
-        val page = settings.userTemplate(context)
+        val adminFields = List(lastLoginTime, successfulLogins, failedLogins)
+          .map(p => PropertyField(p, p.name.substring(13), account, loc))
+        val userFields = userProps.map(p => PropertyField(p, p.name.substring(12), account, loc)).toList
+        val data = Data.appendRaw(params)
+          .andThen(KeyName.properties.put(userFields))
+          .andThen(KeyName.adminProps.put(adminFields))
+          .andThen(KeyName.account.put(account))
+          .andThen(KeyName.actionUrl.put(settings.endpointBaseUrl.toRelative))
+
+        val page = settings.userTemplate(data(buildInfoMap))
         HttpResponse(entity = HttpEntity(html, page))
       }
     }
+  }
 
   private def renderRegistrationPage(fields: Map[String, String] = Map.empty, failed: List[String] = Nil) = {
+    import MustacheContext._
+    import Templating._
     if (settings.registrationEnabled) {
-      val context = defaultContext ++ Map(
-        "actionUrl" -> settings.endpointBaseUrl.toRelative.toString(),
-        "loginUrl" -> settings.endpointBaseUrl.toRelative.toString(),
-        "withEmail" -> settings.registrationRequiresEmail,
-        "withKey" -> settings.registrationKey.getOrElse(""),
-        "registerFailed" -> failed.nonEmpty,
-        "registerFailedReasons" -> failed,
-        "fields" -> fields
-      )
-      val page = settings.registerTemplate(context)
+      val data = KeyName.actionUrl.put(settings.endpointBaseUrl.toRelative)
+        .andThen(KeyName.loginUrl.put(settings.endpointBaseUrl.toRelative))
+        .andThen(KeyName.withEmail.put(settings.registrationRequiresEmail))
+        .andThen(KeyName.withKey.put(settings.registrationKey))
+        .andThen(KeyName.registerFailed.put(failed.nonEmpty))
+        .andThen(KeyName.registerFailedReasons.put(failed))
+        .andThen(KeyName.fields.putRaw(fields))
+      val page = settings.registerTemplate(data(buildInfoMap))
       complete(HttpResponse(entity = HttpEntity(html, page)))
     } else {
       renderLoginPage(settings.endpointBaseUrl, failed = false)

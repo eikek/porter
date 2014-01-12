@@ -51,6 +51,8 @@ class MustacheTest extends FunSuite with ShouldMatchers {
     s1 should be ("Hallo, Unknown.")
     val s2 = template(Map("name" -> "John"))
     s2 should be ("Hallo, John.")
+    val s3 = template(Map("name" -> List()))
+    s3 should be ("Hallo, Unknown.")
   }
 
   test("empty blocks") {
