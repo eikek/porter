@@ -10,13 +10,16 @@ import porter.app.akka.PorterUtil
 import porter.model._
 import porter.auth.Decider
 import spray.httpx.SprayJsonSupport
+import porter.app.client.PorterAkkaClient
 
-class StoreService(porterRef: ActorRef, decider: Decider, crypt: PasswordCrypt)
+class StoreService(client: PorterAkkaClient)
                   (implicit ec: ExecutionContext, to: Timeout) extends Directives with SprayJsonSupport {
 
   import PorterJsonProtocol._
   import akka.pattern.ask
 
+  implicit private val timeout = to.duration
+  private val porterRef = client.porterRef
   private val accountPrefix = "api" / "account"
   private val groupPrefix = "api" / "group"
   private val realmPrefix = "api" / "realm"
@@ -43,109 +46,103 @@ class StoreService(porterRef: ActorRef, decider: Decider, crypt: PasswordCrypt)
     delete {
       path(accountId) { (realm, name) =>
         complete {
-          (porterRef ? DeleteAccount(realm, name)).mapTo[OperationFinished]
+          client.deleteAccount(DeleteAccount(realm, name))
         }
       } ~
       path(groupId) { (realm, name) =>
         complete {
-          (porterRef ? DeleteGroup(realm, name)).mapTo[OperationFinished]
+          client.deleteGroup(DeleteGroup(realm, name))
         }
       } ~
       path(realmId) { realm =>
         complete {
-          (porterRef ? DeleteRealm(realm)).mapTo[OperationFinished]
+          client.deleteRealm(DeleteRealm(realm))
         }
       }
     } ~
     put {
       path(accountPrefix / Segment) { realm =>
         handleWith { acc: Account =>
-          (porterRef ? UpdateAccount(realm, acc)).mapTo[OperationFinished]
+          client.updateAccount(UpdateAccount(realm, acc))
         }
       } ~
       path(accountPrefix / "new" / Segment) { realm =>
         handleWith { acc: Account =>
-          PorterUtil.createNewAccount(porterRef, realm, acc)
-            .map(_ => OperationFinished(result = true))
-            .recover({ case x => OperationFinished(result = false) })
+          client.createNewAccount(UpdateAccount(realm, acc))
         }
       } ~
       path(accountPrefix / "updateAuthProps") {
         post {
           handleWith { req: UpdateAuthProps =>
-            (porterRef ? req).mapTo[OperationFinished]
+            client.updateAuthProps(req)
           }
         }
       } ~
       path(groupPrefix / Segment) { realm =>
         handleWith { group: Group =>
-          (porterRef ? UpdateGroup(realm, group)).mapTo[OperationFinished]
+          client.updateGroup(UpdateGroup(realm, group))
         }
       } ~
       path(realmPrefix) {
         handleWith { realm: Realm =>
-          (porterRef ? UpdateRealm(realm)).mapTo[OperationFinished]
+          client.updateRealm(UpdateRealm(realm))
         }
       }
     } ~
     post {
       path(accountPrefix / "find") {
         handleWith { req: FindAccounts =>
-          (porterRef ? req).mapTo[FindAccountsResp]
+          client.findAccounts(req)
         }
       } ~
       path(accountPrefix / "update") {
         handleWith { req: UpdateAccount =>
-          (porterRef ? req).mapTo[OperationFinished]
+          client.updateAccount(req)
         }
       } ~
       path(accountPrefix / "delete") {
         handleWith { req: DeleteAccount =>
-          (porterRef ? req).mapTo[OperationFinished]
+          client.deleteAccount(req)
         }
       } ~
       path(accountPrefix / "new") {
         handleWith { req: UpdateAccount =>
-          PorterUtil.createNewAccount(porterRef, req.realmId, req.account)
-            .map(_ => OperationFinished(result = true))
-            .recover({ case x => OperationFinished(result = false) })
+          client.createNewAccount(req)
         }
       } ~
       path(accountPrefix / "changePassword") {
         handleWith { req: ChangePassword =>
-          PorterUtil.changePassword(porterRef, req.realm, req.current, req.plain, crypt, decider)
-            .map(_ => OperationFinished(result = true))
-            .recover({ case x => OperationFinished(result = false)})
+          client.changePassword(req)
         }
       } ~
       path(groupPrefix / "find") {
         handleWith { req: FindGroups =>
-          (porterRef ? req).mapTo[FindGroupsResp]
+          client.findGroups(req)
         }
       } ~
       path(groupPrefix / "update") {
         handleWith { req: UpdateGroup =>
-          (porterRef ? req).mapTo[OperationFinished]
+          client.updateGroup(req)
         }
       } ~
       path(groupPrefix / "delete") {
         handleWith { req: DeleteGroup =>
-          (porterRef ? req).mapTo[OperationFinished]
+          client.deleteGroup(req)
         }
       } ~
       path(realmPrefix / "find") {
         handleWith { req: FindRealms =>
-          (porterRef ? req).mapTo[FindRealmsResp]
+          client.findRealms(req)
         }
       } ~
       path(realmPrefix / "update") {
         handleWith { req: UpdateRealm =>
-          (porterRef ? req).mapTo[OperationFinished]
+          client.updateRealm(req)
         }
       } ~
       path(realmPrefix / "delete") {
         handleWith { req: DeleteRealm =>
-          (porterRef ? req).mapTo[OperationFinished]
+          client.deleteRealm(req)
         }
       }
     }
@@ -154,5 +151,6 @@ class StoreService(porterRef: ActorRef, decider: Decider, crypt: PasswordCrypt)
 
 object StoreService {
   def apply(porterRef: ActorRef, decider: Decider, crypt: PasswordCrypt)
-           (implicit ec: ExecutionContext, to: Timeout): StoreService = new StoreService(porterRef, decider, crypt)
+           (implicit ec: ExecutionContext, to: Timeout): StoreService =
+    new StoreService(new PorterAkkaClient(porterRef, decider, crypt))
 }

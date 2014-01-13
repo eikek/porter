@@ -8,8 +8,7 @@ import spray.routing.Directives._
 import spray.http.HttpHeaders.{`WWW-Authenticate`, Authorization}
 import akka.util.Timeout
 import scala.concurrent.ExecutionContext
-import porter.auth.{Nonce, AuthResult}
-import scala.Some
+import porter.auth.AuthResult
 import porter.model.Account
 import scala.util.Success
 import spray.routing.AuthenticationFailedRejection.CredentialsRejected

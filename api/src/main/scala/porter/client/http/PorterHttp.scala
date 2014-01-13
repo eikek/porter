@@ -7,6 +7,7 @@ import porter.client.PorterClient
 import porter.client.Messages.store._
 import porter.client.Messages.mutableStore._
 import porter.client.Messages.auth._
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * Simple rest client providing basic porter functions. Note that "spray-json" dependency is
@@ -21,12 +22,12 @@ class PorterHttp(addr: InetSocketAddress) extends PorterClient {
   import spray.json._
   import MessageJsonProtocol._
 
-  private def post[A](path: String, data: A)(implicit ec: ExecutionContext, rfa: RootJsonFormat[A]) =
+  private def post[A](path: String, data: A)(implicit ec: ExecutionContext, timeout: FiniteDuration, rfa: RootJsonFormat[A]) =
     Http.post(addr, path, data.toJson.compactPrint)
 
   private def perform[A, B](path: String)(implicit rfa: RootJsonFormat[A], rfb: RootJsonFormat[B]) =
     new Command[A, B] {
-      def apply(req: A)(implicit ec: ExecutionContext) = {
+      def apply(req: A)(implicit ec: ExecutionContext, timeout: FiniteDuration) = {
         post(path, req).map(_.asJson.convertTo[B])
       }
     }
@@ -36,6 +37,7 @@ class PorterHttp(addr: InetSocketAddress) extends PorterClient {
   def authenticate = perform[Authenticate, AuthenticateResp]("/api/authc")
   def authenticateAccount = perform[Authenticate, AuthAccount]("/api/authcAccount")
   def authorize = perform[Authorize, AuthorizeResp]("/api/authz")
+  def retrieveNonce = perform[RetrieveServerNonce, RetrieveServerNonceResp]("/api/authc/serverNonce")
 
   def findAccounts = perform[FindAccounts, FindAccountsResp]("/api/account/find")
   def findGroups = perform[FindGroups, FindGroupsResp]("/api/group/find")

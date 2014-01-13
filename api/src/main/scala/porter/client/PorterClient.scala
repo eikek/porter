@@ -1,6 +1,7 @@
 package porter.client
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration.FiniteDuration
 
 trait PorterClient {
 
@@ -9,7 +10,7 @@ trait PorterClient {
   import Messages.auth._
 
   trait Command[A, B] {
-    def apply(req: A)(implicit ec: ExecutionContext): Future[B]
+    def apply(req: A)(implicit ec: ExecutionContext, timeout: FiniteDuration): Future[B]
   }
 
   type FindAccountCmd = Command[FindAccounts, FindAccountsResp]
@@ -42,8 +43,10 @@ trait PorterClient {
   type AuthcCmd = Command[Authenticate, AuthenticateResp]
   type AuthcAccountCmd = Command[Authenticate, AuthAccount]
   type AuthzCmd = Command[Authorize, AuthorizeResp]
+  type ServerNonceCmd = Command[RetrieveServerNonce, RetrieveServerNonceResp]
 
   def authenticate: AuthcCmd
   def authenticateAccount: AuthcAccountCmd
   def authorize: AuthzCmd
+  def retrieveNonce: ServerNonceCmd
 }

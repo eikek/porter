@@ -9,11 +9,15 @@ import porter.app.akka.Porter.Messages.authc._
 import porter.auth.{OneSuccessfulVote, Decider}
 import porter.app.akka.PorterUtil
 import porter.client.Messages.auth.{RetrieveServerNonceResp, RetrieveServerNonce, AuthAccount}
+import porter.app.client.PorterAkkaClient
+import porter.model.PasswordCrypt
 
-class AuthService(porterRef: ActorRef, decider: Decider = OneSuccessfulVote)(implicit ec: ExecutionContext, to: Timeout) extends Directives {
+class AuthService(client: PorterAkkaClient)(implicit ec: ExecutionContext, to: Timeout) extends Directives {
   import PorterJsonProtocol._
   import spray.httpx.SprayJsonSupport._
   import akka.pattern.ask
+
+  private implicit val timeout = to.duration
 
   def ruleList(policy: porter.model.Policy): List[String] =
     policy.permissions.map(_.toString).toList ::: policy.revocations.map(_.toString).toList
@@ -22,14 +26,14 @@ class AuthService(porterRef: ActorRef, decider: Decider = OneSuccessfulVote)(imp
     path("api" / "authz") {
       post {
         handleWith { req: Authorize =>
-          (porterRef ? req).mapTo[AuthorizeResp]
+          client.authorize(req)
         }
       }
     } ~
     path("api" / "authz" / "policy") {
       post {
         handleWith { req: GetPolicy =>
-          (porterRef ? req).mapTo[GetPolicyResp]
+          (client.porterRef ? req).mapTo[GetPolicyResp]
             .map(gpr => JsPolicyResp(gpr.account, ruleList(gpr.policy)))
         }
       }
@@ -37,22 +41,20 @@ class AuthService(porterRef: ActorRef, decider: Decider = OneSuccessfulVote)(imp
     path("api" / "authc") {
       post {
         handleWith { req: Authenticate =>
-          (porterRef ? req).mapTo[AuthenticateResp]
+          client.authenticate(req)
         }
       }
     } ~
     path("api" / "authc" / "account") {
       post {
         handleWith { req: Authenticate =>
-          PorterUtil.authenticateAccount(porterRef, req.realmId, req.creds, decider)
-            .map(t => AuthAccount(success = true, Some(t._2)))
-            .recover({ case x => AuthAccount(success = false, None) })
+          client.authenticateAccount(req)
         }
       }
     } ~
     path("api" / "authc" / "serverNonce") {
       handleWith { req: RetrieveServerNonce =>
-        (porterRef ? req).mapTo[RetrieveServerNonceResp]
+        client.retrieveNonce(req)
       }
     }
   }
@@ -60,5 +62,6 @@ class AuthService(porterRef: ActorRef, decider: Decider = OneSuccessfulVote)(imp
 
 object AuthService {
   def apply(porter: ActorRef, decider: Decider = OneSuccessfulVote)
-           (implicit ec: ExecutionContext, to: Timeout): AuthService = new AuthService(porter)
+           (implicit ec: ExecutionContext, to: Timeout): AuthService =
+    new AuthService(new PorterAkkaClient(porter, decider, PasswordCrypt.randomCrypt))
 }
