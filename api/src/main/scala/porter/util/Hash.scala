@@ -24,7 +24,7 @@ object Hash {
 
   private def stringDigest(digest: Vector[Byte] => Vector[Byte])(str: String) = {
     val bytes = digest(str.getBytes(Codec.UTF8.charSet).toVector)
-    DatatypeConverter.printHexBinary(bytes.toArray).toLowerCase
+    toHexBinary(bytes)
   }
   
   def digest(algorithm: String)(message: Vector[Byte]) = {
@@ -32,4 +32,6 @@ object Hash {
     md.update(message.toArray)
     md.digest().toVector
   }
+  def toHexBinary(bytes: Seq[Byte]): String =
+    DatatypeConverter.printHexBinary(bytes.toArray).toLowerCase
 }
