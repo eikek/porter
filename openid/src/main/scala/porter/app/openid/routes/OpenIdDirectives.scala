@@ -133,8 +133,9 @@ trait OpenIdDirectives {
   }
 
   def localeWithDefault(acc: Option[Account] = None): Directive1[Locale] =
-    acc.map(accountLocale).getOrElse {
-      requestLocale | provide(Locale.getDefault)
+    acc match {
+      case Some (a) => accountLocale(a) | requestLocale | provide(Locale.getDefault)
+      case _ => requestLocale | provide(Locale.getDefault)
     }
 
   def sRegExtensionFields: Directive1[RequestedAttributes] =

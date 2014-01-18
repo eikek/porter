@@ -20,17 +20,19 @@
             <a href="/?porter.action=logout">Logout</a>
         </span>
     </div>
-    <h2>{{#account}}{{name}}'s{{/account}} account</h2>
+    <h2><img src="{{avatarUrl}}" class="img-responsive img-thumbnail"> {{#account}}{{name}}'s{{/account}} account</h2>
     {{#infoMessage}}
         <p class="alert alert-{{level}}">{{message}}</p>
     {{/infoMessage}}
     <div class="row">
-        <dl class="dl-horizontal">
-            {{#adminProps}}
-                <dt>{{label}}:</dt>
-                <dd>{{value}}</dd>
-            {{/adminProps}}
-        </dl>
+        <div class="col-md-6">
+            <dl class="dl">
+                {{#adminProps}}
+                    <dt>{{label}}:</dt>
+                    <dd>{{value}}</dd>
+                {{/adminProps}}
+            </dl>
+        </div>
     </div>
     <div class="row">
         <div class="col-md-6">
@@ -78,7 +80,7 @@
             </form>
         </div>
         <div class="col-md-6">
-            <form role="form" action="{{actionUrl}}" method="post">
+            <form role="form" action="{{actionUrl}}" method="post" enctype="multipart/form-data">
                 <h4>Account Properties</h4>
                 <input type="hidden" name="porter.action" value="updateProperties"/>
                 {{#properties}}
@@ -92,7 +94,7 @@
                             </select>
                         {{/select}}
                         {{^select}}
-                            <input type="text" class="form-control" id="{{name}}" name="{{name}}" placeholder="{{label}}" value="{{value}}">
+                            <input type="{{type}}" class="form-control" id="{{name}}" name="{{name}}" placeholder="{{label}}" value="{{value}}">
                         {{/select}}
                     </div>
                 {{/properties}}

@@ -304,6 +304,13 @@ configuration.
 
 Authorization cannot be performed using openid.
 
+The `openid` module provides a simple web page to manage your account. It
+allows to change some basic properties, the password and to upload an avatar
+image. The avatar image can be requested from the url, which is by default
+`/openid/avatar/<account name>?size=80`. The additional size attribtue can
+be used to scale the image. If no avatar image is available for an account
+a random image is generated, much like an [identicon](https://github.com/donpark/identicon)
+but adding some math functions to emulate a [harmonograph](https://en.wikipedia.org/wiki/Harmonograph).
 
 ### Embedding
 

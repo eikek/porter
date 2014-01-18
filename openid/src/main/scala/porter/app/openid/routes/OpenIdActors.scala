@@ -17,4 +17,5 @@ trait OpenIdActors {
 
   def assocActor: ActorRef
   def porterRef: ActorRef
+  def avatarRef: ActorRef
 }

@@ -53,9 +53,17 @@ object Property {
     def getMillis(map: Properties) = get(map).map(_.getTime)
     def getString(map: Properties) = map.get(name)
   }
-  case class ByteArrayProperty(name: String) extends Property[Vector[Byte]] {
-    override def set(value: Vector[Byte]) = setRaw(Base64.encode(value))
-    def get(map: Properties) = getRaw(map).map(Base64.decode).map(_.toVector)
+  case class BinaryValue(contentType: String, data: Array[Byte])
+  case class BinaryProperty(name: String) extends Property[BinaryValue] {
+    override def set(value: BinaryValue) = setRaw(value.contentType+":"+Base64.encode(value.data))
+    def get(map: Properties) = {
+      getRaw(map).flatMap { raw =>
+        porter.util.split(raw, ':') match {
+          case ct :: data :: Nil => Some(BinaryValue(ct, Base64.decode(data).toArray))
+          case _ => None
+        }
+      }
+    }
   }
 
   case class Concat(name: String, separator: String, props: Iterable[PropertyView[String]]) extends PropertyView[String] {

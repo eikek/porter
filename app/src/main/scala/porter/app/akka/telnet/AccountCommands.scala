@@ -71,7 +71,7 @@ object AccountCommands extends Commands {
         list <- (porter ? GetAllAccounts(r.id)).mapTo[FindAccountsResp].map(_.accounts)
       } yield {
         val groups = (a: Account) => a.groups.map(_.name).mkString("(", ",", ")")
-        val props = (a: Account) => a.props.map({case (k,v) => k +"="+v}).mkString("   ", "\n   ", "")
+        val props = (a: Account) => propsToString(a.props, "   ", "\n   ", "")
         list.map(a => s"${a.name.name} ${groups(a)}\n${props(a)}")
       }
       in <<< result

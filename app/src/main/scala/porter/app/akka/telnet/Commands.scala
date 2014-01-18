@@ -30,4 +30,9 @@ trait Commands {
   private def notFound: Command = {
     case in@Input(msg, _, _, _) => in << s"Command '$msg' not found"
   }
+
+  protected def propsToString(props: porter.model.Properties, start: String, sep: String, end: String): String = {
+    def cutString(str: String) = if (str.length > 80) str.substring(0, 77)+"..." else str
+    props.map({case (k,v) => k +"="+ cutString(v) }).mkString(start, sep, end)
+  }
 }

@@ -30,6 +30,7 @@ trait Templating extends MustacheContext.BasicConverter {
     val registerFailed = KeyedData("registerFailed")
     val registerFailedReasons = KeyedData("registerFailedReasons")
     val fields = KeyedData("fields")
+    val avatarUrl = KeyedData("avatarUrl")
   }
 
   implicit object AccountConv extends MapConverter[Account] {
@@ -49,8 +50,17 @@ trait Templating extends MustacheContext.BasicConverter {
       Map(
         "name" -> obj.name,
         "label" -> obj.label,
-        "value" -> obj.value
+        "value" -> obj.value,
+        "type" -> "text"
       )
+    }
+  }
+
+  case class FileField(name: String, label: String)
+  implicit object FileFieldConv extends MapConverter[FileField] {
+    def convert(obj: Templating.this.type#FileField) = {
+      val map = TextField(obj.name, obj.label, None).toMap
+      map.updated("type", "file")
     }
   }
 
@@ -106,6 +116,8 @@ trait Templating extends MustacheContext.BasicConverter {
           LocaleField(obj.prop.name, obj.label, value, obj.locale).toMap
         case PropertyList.timezone =>
           TimezoneField(obj.prop.name, obj.label, value, obj.locale).toMap
+        case PropertyList.avatar =>
+          FileField(obj.prop.name, obj.label).toMap
         case _ =>
           TextField(obj.prop.name, obj.label, value).toMap
       }

@@ -2,7 +2,7 @@ package porter.app.openid
 
 import porter.model.Ident
 import spray.http.Uri
-import java.nio.file.Files
+import java.nio.file.{Path, Files}
 import scala.util.Try
 import porter.app.openid.common.{Mustache, Supplier}
 import porter.model.PasswordCrypt
@@ -32,6 +32,9 @@ trait OpenIdServiceSettings {
   def registrationEnabled: Boolean
   def registrationRequiresEmail: Boolean
   def registrationKey: Option[String]
+
+  def avatarCacheDir: Option[Path]
+  def avatarCacheDirSize: Int
 
   private def loadTemplateFile(name: String): Option[Supplier] = {
     val tfile = templateDir.resolve(name)

@@ -59,12 +59,23 @@ object HarmoniconPlay extends App {
     cb.setRenderer(new MyRenderer)
     cb
   }
+  val rangeField = {
+    val cb = new JComboBox[Int]()
+    cb.setModel(new DefaultComboBoxModel[Int]() {
+      addElement(3); addElement(5); addElement(10); addElement(15); addElement(20)
+      addElement(25); addElement(30); addElement(40); addElement(50); addElement(80)
+    })
+    cb.setSelectedItem(20)
+    cb
+  }
 
   val button = new JButton("OK")
   controls.add(new JLabel("Name: "))
   controls.add(nameField)
   controls.add(new JLabel("Size: "))
   controls.add(sizeField)
+  controls.add(new JLabel("Range: "))
+  controls.add(rangeField)
   controls.add(new JLabel("Hash: "))
   controls.add(hashCombo)
   controls.add(button)
@@ -79,7 +90,8 @@ object HarmoniconPlay extends App {
     def actionPerformed(e: ActionEvent) = {
       val size = Try(Integer.parseInt(sizeField.getText)).getOrElse(100)
       val hash = hashCombo.getSelectedItem.asInstanceOf[HashFun]
-      val icon = new AvatarPanel(nameField.getText, size, hash)
+      val range = rangeField.getSelectedItem.asInstanceOf[Int]
+      val icon = new AvatarPanel(nameField.getText, size, range, hash)
       icons.add(icon, 0)
       frame.getContentPane.validate()
     }
@@ -87,10 +99,10 @@ object HarmoniconPlay extends App {
 
   frame.setVisible(true)
 
-  class AvatarPanel(name: String, size: Int, f: HashFun) extends JPanel with Scrollable {
+  class AvatarPanel(name: String, size: Int, range: Int, f: HashFun) extends JPanel with Scrollable {
     self =>
     val avatarIn = f(name.trim.toLowerCase)
-    val avatar = Harmonicon.fromBytes(avatarIn, Timespan(), ImageSettings(size, Color.DARK_GRAY))
+    val avatar = Harmonicon.fromBytes(avatarIn, Timespan(range), ImageSettings(size, Color.DARK_GRAY))
     setPreferredSize(new Dimension(size, size))
     setSize(getPreferredSize)
     setToolTipText(name)

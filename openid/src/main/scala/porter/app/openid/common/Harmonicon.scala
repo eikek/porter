@@ -25,10 +25,10 @@ import scala.List
 object Harmonicon {
 
   case class ImageSettings(size: Int = 100, bcolor: Color = Color.WHITE, fcolor: Option[Color] = None, stroke: Stroke = new BasicStroke(0.6f))
-  def apply(name: String, time: Timespan = Timespan(), settings: ImageSettings = ImageSettings()): Image = {
+  def apply(name: String, time: Timespan = Timespan(), settings: ImageSettings = ImageSettings()): BufferedImage = {
     fromBytes(name.getBytes.toVector, time, settings)
   }
-  def fromBytes(bytes: Vector[Byte], time: Timespan = Timespan(), settings: ImageSettings = ImageSettings()): Image = {
+  def fromBytes(bytes: Vector[Byte], time: Timespan = Timespan(), settings: ImageSettings = ImageSettings()): BufferedImage = {
     import java.awt._
 
     def colorDistance(c1: Color, c2: Color): Double = {
@@ -79,7 +79,7 @@ object Harmonicon {
   def makeCoors(time: Timespan, px: PendulumC, py: PendulumC) =
     time.stream.map { t => (px.getCoor(t), py.getCoor(t)) }
 
-  case class Timespan(max: Double = 30, step: Double = 0.001) {
+  case class Timespan(max: Double = 20, step: Double = 0.001) {
     require(max > 0, "max argument must be positive")
     require(step > 0, "step argument must be positive")
     def stream: Stream[Double] = {

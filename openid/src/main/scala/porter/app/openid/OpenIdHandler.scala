@@ -6,13 +6,15 @@ import akka.actor.Terminated
 import scala.concurrent.{Future, ExecutionContext}
 import akka.util.Timeout
 import akka.io.{IO, Tcp}
+import porter.app.openid.CacheDirActor.CacheDirOpts
 
 class OpenIdHandler(porter: ActorRef, settings: OpenIdServiceSettings) extends Actor with ActorLogging {
   import OpenIdHandler._
   var connections = 0
 
   val assocActor = context.actorOf(AssocActor())
-  val serviceProps = OpenIdService(porter, assocActor, settings)
+  val avatarActor = context.actorOf(AvatarActor(porter, settings.avatarCacheDir.map(dir => CacheDirOpts(dir, settings.avatarCacheDirSize))))
+  val serviceProps = OpenIdService(porter, assocActor, avatarActor, settings)
 
   def receive = {
     case Http.Bound(addr) =>

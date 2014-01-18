@@ -42,7 +42,7 @@ object GroupCommands extends Commands {
         groups map { g =>
           val gname = g.name.name
           val rules = g.rules.mkString("\n  ", "\n  ", "\n")
-          val props = g.props.map(p => p._1+"="+p._2).mkString("  |", "\n  |", "")
+          val props = propsToString(g.props, "  |", "\n  |", "")
           s"$gname: $rules$props"
         }
       }

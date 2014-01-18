@@ -15,6 +15,7 @@ import porter.app.akka.api.StoreActor.messages.{FindAccountsResp, FindAccounts}
 import porter.app.akka.PorterUtil
 import java.util.Locale
 import porter.app.openid.common.MustacheContext
+import porter.model.Property.{BinaryValue, BinaryProperty}
 
 trait ManageRoutes extends OpenIdDirectives with PageDirectives with AuthDirectives {
   self: OpenIdActors =>
@@ -28,6 +29,7 @@ trait ManageRoutes extends OpenIdDirectives with PageDirectives with AuthDirecti
 
   private val porterContext = PorterContext(porterRef, settings.defaultRealm, settings.decider)
   private def PorterAuth = PorterAuthenticator(porterContext, settings.cookieKey, settings.cookieName)
+  private def avatarUrl(account: Account) = settings.openIdUrl.withPath(settings.openIdUrl.path / "avatar" / account.name.name).withQuery("size" -> "80").toRelative
 
   private def changePwFuture(cpw: ChangePassword) =
     PorterUtil.changePassword(porterRef, cpw.realm, cpw.current, cpw.plain, settings.passwordCrypt, settings.decider)
@@ -61,16 +63,12 @@ trait ManageRoutes extends OpenIdDirectives with PageDirectives with AuthDirecti
       renderUserPage(nacc, message("success", "Decision cache cleared."))
 
     case ("updateProperties", acc) =>
-      formFields { values =>
-        val props = PropertyList.userProps.partition(p => values.get(p.name).exists(_.trim.nonEmpty)) match {
-          case (add, remove) => add.map(p => p.setRaw(values(p.name))) ++ remove.map(p => p.remove)
-        }
-        if (props.isEmpty) {
-          renderUserPage(acc, message("info", "Nothing to save."))
-        } else {
-          val nacc = acc.updatedProps(props.reduce(_ andThen _))
-          porterRef ! UpdateAccount(settings.defaultRealm, nacc)
-          renderUserPage(nacc, message("success", "Account saved."))
+      entity(as[MultipartFormData]) { data =>
+        val nacc = acc.updatedProps(updateProperties(data))
+        val upd = UpdateAccount(settings.defaultRealm, nacc)
+        onComplete((porterRef ? upd).mapTo[OperationFinished]) {
+          case Success(OperationFinished(true)) => renderUserPage(nacc, message("success", "Account saved ;-)."))
+          case _ => renderUserPage(acc, message("danger", "Error saving account."))
         }
       }
     case ("removeAccount", acc) =>
@@ -97,23 +95,43 @@ trait ManageRoutes extends OpenIdDirectives with PageDirectives with AuthDirecti
       }
   }
 
+  private def updateProperties(data: MultipartFormData): Properties => Properties = {
+    val (add, remove) = PropertyList.userProps.partition(p => data.get(p.name).exists(_.entity.nonEmpty))
+    val fadds = add.map {
+      case PropertyList.avatar =>
+        data.get(PropertyList.avatar.name) match {
+          case Some(bp@BodyPart(entity, header)) =>
+            PropertyList.avatar.set(BinaryValue("image/jpg", entity.data.toByteArray))
+          case _ => identity[Properties]_
+        }
+      case prop =>
+        data.get(prop.name).map(bp => prop.setRaw(bp.entity.asString)).getOrElse(identity[Properties]_)
+    }
+    val fremoves = remove.filterNot(_ == PropertyList.avatar).map(p => p.remove)
+    (fadds ++ fremoves).reduce(_ andThen _)
+  }
+
   private def renderUserPage(account: Account, params: Map[String, Any] = Map.empty) = {
-    import MustacheContext._
-    import Templating._
-    import PropertyList._
+    def createPage(loc: Locale) = {
+      import MustacheContext._
+      import Templating._
+      import PropertyList._
+      val adminFields = List(lastLoginTime, successfulLogins, failedLogins)
+        .map(p => PropertyField(p, p.name.substring(13), account, loc))
+      val userFields = userProps.map(p => PropertyField(p, p.name.substring(12), account, loc)).toList
+      val data = Data.appendRaw(params)
+        .andThen(KeyName.properties.put(userFields))
+        .andThen(KeyName.adminProps.put(adminFields))
+        .andThen(KeyName.account.put(account))
+        .andThen(KeyName.actionUrl.put(settings.endpointBaseUrl.toRelative))
+        .andThen(KeyName.avatarUrl.put(avatarUrl(account)))
+
+      settings.userTemplate(data(buildInfoMap))
+    }
+
     localeWithDefault(Some(account)) { loc =>
       complete {
-        val adminFields = List(lastLoginTime, successfulLogins, failedLogins)
-          .map(p => PropertyField(p, p.name.substring(13), account, loc))
-        val userFields = userProps.map(p => PropertyField(p, p.name.substring(12), account, loc)).toList
-        val data = Data.appendRaw(params)
-          .andThen(KeyName.properties.put(userFields))
-          .andThen(KeyName.adminProps.put(adminFields))
-          .andThen(KeyName.account.put(account))
-          .andThen(KeyName.actionUrl.put(settings.endpointBaseUrl.toRelative))
-
-        val page = settings.userTemplate(data(buildInfoMap))
-        HttpResponse(entity = HttpEntity(html, page))
+        HttpResponse(entity = HttpEntity(html, createPage(Locale.getDefault)))
       }
     }
   }

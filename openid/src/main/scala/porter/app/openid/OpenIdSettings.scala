@@ -2,7 +2,7 @@ package porter.app.openid
 
 import com.typesafe.config.Config
 import scala.util.Try
-import java.nio.file.Paths
+import java.nio.file.{Path, Paths}
 import akka.actor._
 import porter.util.{AES, Base64}
 import spray.http.Uri
@@ -39,6 +39,9 @@ class OpenIdSettings(cfg: Config, da: DynamicAccess) extends Extension with Open
   val registrationEnabled = cfg.getBoolean("registration-enabled")
   val registrationRequiresEmail = cfg.getBoolean("registration-requires-email")
   val registrationKey = Try(cfg.getString("registration-invitation-key")).toOption.filter(_.trim.nonEmpty)
+
+  val avatarCacheDir: Option[Path] = Try(cfg.getString("avatar-cache-dir")).toOption.filter(_.trim.nonEmpty).map(Paths.get(_))
+  val avatarCacheDirSize: Int = Try(cfg.getString("avatar-cache-dir-size").toInt).toOption.getOrElse(20)
 }
 
 object OpenIdSettings extends ExtensionId[OpenIdSettings] with ExtensionIdProvider {

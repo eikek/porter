@@ -28,6 +28,7 @@ object PropertyList extends ObjectRegistry {
 
   val firstName = reg(StringProperty("porter-user-firstName"))
   val lastName = reg(StringProperty("porter-user-lastName"))
+  val avatar = reg(BinaryProperty("porter-user-avatar"))
   val birthday = reg(StringProperty("porter-user-birthday"))
   val locale = reg(StringProperty("porter-user-locale"))
   val timezone = reg(StringProperty("porter-user-timezone"))
