@@ -38,6 +38,14 @@ Porter is divided into three parts:
 The `dist` module packs all three together and creates a deployable
 artifact -- a zip file containing the complete application.
 
+## Build
+
+Use [sbt](http://scala-sbt.org) to build:
+
+    sbt dist
+
+compiles everything and puts the final zip file in `dist/target`.
+
 ## Concepts
 
 The _realm_ here is a name for a distinct set of _accounts_ and
@@ -311,6 +319,16 @@ image. The avatar image can be requested from the url, which is by default
 be used to scale the image. If no avatar image is available for an account
 a random image is generated, much like an [identicon](https://github.com/donpark/identicon)
 but adding some math functions to emulate a [harmonograph](https://en.wikipedia.org/wiki/Harmonograph).
+
+When authenticating via OpenId, you need to know your OpenId identifier. With
+default settings, this is the url `http://localhost:8888/<accountname>`. There
+is one little quirk: The `accountname` must be different from "openid", since
+the path prefix `/openid` is reserved for the OpenId endpoint. All pages are
+provided via mustache templates. You can create your own in a sub directory
+inside the installation directory which is `static` by default, but can be
+overriden in the settings. If you only want to override some css, put a file
+`custom.css` in that directory as this will be picked up before the default
+`custom.css`.
 
 ### Embedding
 

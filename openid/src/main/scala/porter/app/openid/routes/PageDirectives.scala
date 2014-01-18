@@ -14,7 +14,6 @@ trait PageDirectives extends OpenIdDirectives with AuthDirectives {
   import PageDirectives._
 
   private def loginPage(params: Map[String, String], lid: Option[LocalId], endpointUrl: Uri, failed: Boolean) = {
-    import MustacheContext._
     import Templating._
     val data = Keys.realm.put(params.get(Keys.realm.openid))
       .andThen(Keys.identity.put(params.get(Keys.identity.openid)))
@@ -24,7 +23,7 @@ trait PageDirectives extends OpenIdDirectives with AuthDirectives {
       .andThen(KeyName.params.putPairList(params))
       .andThen(KeyName.registerUrl.putIf(settings.registrationEnabled, settings.endpointBaseUrl.toRelative.toString()+"?register"))
 
-    val context = data(buildInfoMap)
+    val context = data(defaultContext(settings))
     settings.loginTemplate(context)
   }
 
@@ -40,14 +39,13 @@ trait PageDirectives extends OpenIdDirectives with AuthDirectives {
       .andThen(KeyName.params.putPairList(params ++ returnto.query.toMap))
       .andThen(Data.append(attr))
 
-    val context = data(buildInfoMap.toMap)
+    val context = data(defaultContext(settings))
     settings.continueTemplate(context)
   }
 
   private def errorPage(params: Map[String, String]) = {
-    import MustacheContext._
     import Templating._
-    val context = KeyName.params.putPairList(params)(buildInfoMap)
+    val context = KeyName.params.putPairList(params)(defaultContext(settings))
     settings.errorTemplate(context.toMap)
   }
 

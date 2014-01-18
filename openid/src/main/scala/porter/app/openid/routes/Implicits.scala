@@ -21,7 +21,7 @@ object Implicits {
     }
   }
 
-  implicit class RealmVerify(uri: Uri) {
+  implicit class UriAdds(uri: Uri) {
 
     def matchesRealm(openIdRealm: String): Boolean = {
       val realm = Uri(openIdRealm)
@@ -39,6 +39,9 @@ object Implicits {
         }
       scheme && port && path && nofragm && domain
     }
+
+    def appendPath(path: String): Uri =
+      uri.withPath(uri.path + path)
   }
 
   implicit class GetTokenResponseMap(result: GetTokenResult) {

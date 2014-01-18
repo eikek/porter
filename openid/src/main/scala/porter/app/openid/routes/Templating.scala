@@ -11,6 +11,7 @@ import porter.app.openid.common.LocalId
 import spray.http.Uri
 import MustacheContext._
 import porter.app.openid.routes.manage.Message
+import porter.app.openid.OpenIdServiceSettings
 
 trait Templating extends MustacheContext.BasicConverter {
 
@@ -33,6 +34,7 @@ trait Templating extends MustacheContext.BasicConverter {
     val fields = KeyedData("fields")
     val avatarUrl = KeyedData("avatarUrl")
     val infoMessage = KeyedData("infoMessage")
+    val staticResourcesPath = KeyedData("staticResourcesPath")
   }
 
   implicit object AccountConv extends MapConverter[Account] {
@@ -181,6 +183,13 @@ trait Templating extends MustacheContext.BasicConverter {
         "messageItems" -> obj.items
       )
     }
+  }
+
+
+  def defaultContext(settings: OpenIdServiceSettings) = {
+    import Implicits._
+    val ctx = KeyName.staticResourcesPath.put(settings.openIdUrl.toRelative.appendPath("/statics"))
+    ctx(MustacheContext.buildInfoMap)
   }
 }
 

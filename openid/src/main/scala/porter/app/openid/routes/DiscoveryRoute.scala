@@ -46,12 +46,11 @@ trait DiscoveryRoute extends OpenIdDirectives {
     path(Segment ~ PathEnd) { id =>
       complete(xrdsSignon(id))
     } ~
-    path(Segment / Segment ~ PathEnd) { (r, u) =>
-      if (r == "openid") reject()
-      else complete(xrdsSignon(u))
-    } ~
     path("openid" / "login") {
       complete(xrdsServer)
+    } ~
+    path(Segment / Segment ~ PathEnd) { (r, u) =>
+      complete(xrdsSignon(u))
     }
   }
 }

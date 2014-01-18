@@ -12,7 +12,7 @@ class OpenIdSettings(cfg: Config, da: DynamicAccess) extends Extension with Open
   import collection.JavaConverters._
 
   val bindingHost = Try(cfg.getString("host")).getOrElse("localhost")
-  val bindinPort = Try(cfg.getInt("port")).getOrElse(8888)
+  val bindingPort = Try(cfg.getInt("port")).getOrElse(8888)
 
   val passwordCrypt = {
     val config = cfg.getString("password-crypt")
@@ -34,7 +34,10 @@ class OpenIdSettings(cfg: Config, da: DynamicAccess) extends Extension with Open
 
   val defaultRealm = Ident(Try(cfg.getString("default-realm")).getOrElse("default"))
 
-  val endpointBaseUrl = Try(cfg.getString("endpoint-base-url")).map(Uri.apply).getOrElse(Uri(s"http://$bindingHost:$bindinPort"))
+  val endpointBaseUrl = Try(cfg.getString("endpoint-base-url")).map(Uri.apply).getOrElse {
+    val host = if (bindingHost == "0.0.0.0") "localhost" else bindingHost
+    Uri(s"http://$host:$bindingPort")
+  }
 
   val registrationEnabled = cfg.getBoolean("registration-enabled")
   val registrationRequiresEmail = cfg.getBoolean("registration-requires-email")

@@ -73,7 +73,7 @@ trait ManageRoutes extends OpenIdDirectives with PageDirectives with AuthDirecti
         .andThen(KeyName.actionUrl.put(settings.endpointBaseUrl.toRelative))
         .andThen(KeyName.avatarUrl.put(avatarUrl(account)))
 
-      settings.userTemplate(data(buildInfoMap))
+      settings.userTemplate(data(defaultContext(settings)))
     }
 
     localeWithDefault(Some(account)) { loc =>
@@ -84,7 +84,6 @@ trait ManageRoutes extends OpenIdDirectives with PageDirectives with AuthDirecti
   }
 
   def renderRegistrationPage(fields: Map[String, String] = Map.empty, failed: List[String] = Nil) = {
-    import MustacheContext._
     import Templating._
     val data = KeyName.actionUrl.put(settings.endpointBaseUrl.toRelative)
       .andThen(KeyName.loginUrl.put(settings.endpointBaseUrl.toRelative))
@@ -93,7 +92,7 @@ trait ManageRoutes extends OpenIdDirectives with PageDirectives with AuthDirecti
       .andThen(KeyName.registerFailed.put(failed.nonEmpty))
       .andThen(KeyName.registerFailedReasons.put(failed))
       .andThen(KeyName.fields.putRaw(fields))
-    val page = settings.registerTemplate(data(buildInfoMap))
+    val page = settings.registerTemplate(data(defaultContext(settings)))
     complete(HttpResponse(entity = HttpEntity(html, page)))
   }
 }

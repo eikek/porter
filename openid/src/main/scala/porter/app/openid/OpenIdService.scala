@@ -19,10 +19,10 @@ class OpenIdService(val porterRef: ActorRef, val assocActor: ActorRef, val avata
 
   implicit def dispatcher = context.dispatcher
   implicit val timeout = Timeout(3000)
-  implicit val system = context.system
+  implicit val refFactory = context
 
   def receive = runRoute {
-    discovery ~ checkRoute ~ homeRoute ~ avatarRoute ~  staticRoute
+    checkRoute ~ homeRoute ~ avatarRoute ~ staticRoute ~ discovery
   }
 
   override def onConnectionClosed(ev: ConnectionClosed) = context.stop(self)

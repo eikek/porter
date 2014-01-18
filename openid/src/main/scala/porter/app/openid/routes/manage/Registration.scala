@@ -67,6 +67,7 @@ object Registration {
       else {
         List(
           if (Ident.fromString(name).isDefined) "" else "Account name is invalid.",
+          if (Ident.fromString(name) != Some(Ident("openid"))) "" else "The account name 'openid' cannot be used.",
           if (password1.trim.nonEmpty && password1 == password2) "" else "Password is required and both must match.",
           if (settings.registrationKey == key) "" else "Registration key is invalid.",
           if (!settings.registrationRequiresEmail || email.exists(_.indexOf('@') > 0)) "" else "Valid email is required."
