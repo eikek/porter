@@ -67,7 +67,7 @@ trait ManageRoutes extends OpenIdDirectives with PageDirectives with AuthDirecti
         val nacc = acc.updatedProps(updateProperties(data))
         val upd = UpdateAccount(settings.defaultRealm, nacc)
         onComplete((porterRef ? upd).mapTo[OperationFinished]) {
-          case Success(OperationFinished(true)) => renderUserPage(nacc, message("success", "Account saved ;-)."))
+          case Success(OperationFinished(true)) => renderUserPage(nacc, message("success", "Account saved."))
           case _ => renderUserPage(acc, message("danger", "Error saving account."))
         }
       }
@@ -92,6 +92,13 @@ trait ManageRoutes extends OpenIdDirectives with PageDirectives with AuthDirecti
         } else {
           renderUserPage(acc, message("info", "Please enable the check box to allow deletion."))
         }
+      }
+    case ("deleteAvatar", acc) =>
+      val nacc = acc.updatedProps(PropertyList.avatar.remove)
+      val upd = UpdateAccount(settings.defaultRealm, nacc)
+      onComplete((porterRef ? upd).mapTo[OperationFinished]) {
+        case Success(OperationFinished(true)) => renderUserPage(nacc, message("success", "Account saved."))
+        case _ => renderUserPage(acc, message("danger", "Error saving account."))
       }
   }
 

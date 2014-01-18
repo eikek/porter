@@ -80,8 +80,11 @@
             </form>
         </div>
         <div class="col-md-6">
+            <h4>Account Properties</h4>
+            <div>
+                <a href="{{actionUrl}}?porter.action=deleteAvatar" class="btn btn-warning btn-block">Delete Avatar Image</a>
+            </div>
             <form role="form" action="{{actionUrl}}" method="post" enctype="multipart/form-data">
-                <h4>Account Properties</h4>
                 <input type="hidden" name="porter.action" value="updateProperties"/>
                 {{#properties}}
                     <div class="form-group">
