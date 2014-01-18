@@ -10,6 +10,7 @@ import porter.app.openid.common.RequestedAttributes
 import porter.app.openid.common.LocalId
 import spray.http.Uri
 import MustacheContext._
+import porter.app.openid.routes.manage.Message
 
 trait Templating extends MustacheContext.BasicConverter {
 
@@ -31,6 +32,7 @@ trait Templating extends MustacheContext.BasicConverter {
     val registerFailedReasons = KeyedData("registerFailedReasons")
     val fields = KeyedData("fields")
     val avatarUrl = KeyedData("avatarUrl")
+    val infoMessage = KeyedData("infoMessage")
   }
 
   implicit object AccountConv extends MapConverter[Account] {
@@ -168,6 +170,17 @@ trait Templating extends MustacheContext.BasicConverter {
 
   implicit object UriConv extends ValueConverter[Uri] {
     def convert(obj: Uri) = obj.toString()
+  }
+
+  implicit object MessageConv extends MapConverter[Message] {
+    def convert(obj: Message) = {
+      if (obj.isEmpty) null
+      else Map(
+        "level" -> obj.level,
+        "message" -> obj.text,
+        "messageItems" -> obj.items
+      )
+    }
   }
 }
 

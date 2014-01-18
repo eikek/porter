@@ -6,6 +6,7 @@ import porter.app.openid.routes._
 import akka.util.Timeout
 import spray.http._
 import akka.io.Tcp.ConnectionClosed
+import porter.app.openid.routes.manage.ManageRoutes
 
 class OpenIdService(val porterRef: ActorRef, val assocActor: ActorRef, val avatarRef: ActorRef, val settings: OpenIdServiceSettings) extends HttpServiceActor
   with ActorLogging
