@@ -42,6 +42,7 @@ class OpenIdSettings(cfg: Config, da: DynamicAccess) extends Extension with Open
 
   val avatarCacheDir: Option[Path] = Try(cfg.getString("avatar-cache-dir")).toOption.filter(_.trim.nonEmpty).map(Paths.get(_))
   val avatarCacheDirSize: Int = Try(cfg.getString("avatar-cache-dir-size").toInt).toOption.getOrElse(20)
+  val avatarMaxUploadSize: Int = cfg.getInt("avatar-max-upload-size")
 }
 
 object OpenIdSettings extends ExtensionId[OpenIdSettings] with ExtensionIdProvider {

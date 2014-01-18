@@ -37,6 +37,9 @@ trait ManageRoutes extends OpenIdDirectives with PageDirectives with AuthDirecti
   private def message(level: String = "info", msg: String) = Map("infoMessage" -> Map(
     "level" -> level, "message" -> msg
   ))
+  private def messageItems(level: String = "info", msg: String, items: List[String]) = Map("infoMessage" -> Map(
+    "level" -> level, "message" -> msg, "messageItems" -> items
+  ))
 
   private lazy val actions: Action = {
     case ("changeSecret", acc) =>
@@ -64,11 +67,16 @@ trait ManageRoutes extends OpenIdDirectives with PageDirectives with AuthDirecti
 
     case ("updateProperties", acc) =>
       entity(as[MultipartFormData]) { data =>
-        val nacc = acc.updatedProps(updateProperties(data))
-        val upd = UpdateAccount(settings.defaultRealm, nacc)
-        onComplete((porterRef ? upd).mapTo[OperationFinished]) {
-          case Success(OperationFinished(true)) => renderUserPage(nacc, message("success", "Account saved."))
-          case _ => renderUserPage(acc, message("danger", "Error saving account."))
+        updateProperties(data) match {
+          case Right(fun) =>
+            val nacc = acc.updatedProps(fun)
+            val upd = UpdateAccount(settings.defaultRealm, nacc)
+            onComplete((porterRef ? upd).mapTo[OperationFinished]) {
+              case Success(OperationFinished(true)) => renderUserPage(nacc, message("success", "Account saved."))
+              case _ => renderUserPage(acc, message("danger", "Error saving account."))
+            }
+          case Left(msgs) =>
+            renderUserPage(acc, messageItems("danger", "Invalid property values.", msgs))
         }
       }
     case ("removeAccount", acc) =>
@@ -102,20 +110,48 @@ trait ManageRoutes extends OpenIdDirectives with PageDirectives with AuthDirecti
       }
   }
 
-  private def updateProperties(data: MultipartFormData): Properties => Properties = {
-    val (add, remove) = PropertyList.userProps.partition(p => data.get(p.name).exists(_.entity.nonEmpty))
-    val fadds = add.map {
+  private def validateProperties(props: Seq[Property[_]], data: MultipartFormData): List[String] = {
+    val birthdate = """(\d{4}\-\d{2}\-\d{2})""".r
+    props.map {
       case PropertyList.avatar =>
-        data.get(PropertyList.avatar.name) match {
-          case Some(bp@BodyPart(entity, header)) =>
-            PropertyList.avatar.set(BinaryValue("image/jpg", entity.data.toByteArray))
-          case _ => identity[Properties]_
+        val len = data.get(PropertyList.avatar.name).get.entity.data.length
+        if (len > settings.avatarMaxUploadSize * 1024) s"Image is too large, only ${settings.avatarMaxUploadSize}kb are allowed."
+        else ""
+      case PropertyList.birthday =>
+        val in = data.get(PropertyList.birthday.name).get.entity.asString
+        in match {
+          case birthdate(_) => ""
+          case _ => s"Invalid birthdate string '$in'. Use pattern 'yyyy-mm-dd'"
         }
-      case prop =>
-        data.get(prop.name).map(bp => prop.setRaw(bp.entity.asString)).getOrElse(identity[Properties]_)
+      case PropertyList.email =>
+        val in = data.get(PropertyList.email.name).get.entity.asString
+        if (in.indexOf('@') < 0) s"'$in' does not seem to be a valid email"
+        else ""
+      case _ => ""
+    }.filter(_.nonEmpty).toList
+  }
+
+  private def updateProperties(data: MultipartFormData): Either[List[String], Properties => Properties] = {
+    val (add, remove) = PropertyList.userProps.partition(p => data.get(p.name).exists(_.entity.nonEmpty))
+    validateProperties(add, data) match {
+      case Nil =>
+        val fadds = add.map {
+          case PropertyList.avatar =>
+            data.get(PropertyList.avatar.name) match {
+              case Some(bp@BodyPart(entity, header)) =>
+                val ct = header.collect{ case HttpHeaders.`Content-Type`(c) =>  c.toString() }
+                  .headOption getOrElse "image/jpg"
+                PropertyList.avatar.set(BinaryValue(ct, entity.data.toByteArray))
+              case _ => identity[Properties]_
+            }
+          case prop =>
+            data.get(prop.name).map(bp => prop.setRaw(bp.entity.asString)).getOrElse(identity[Properties]_)
+        }
+        val fremoves = remove.filterNot(_ == PropertyList.avatar).map(p => p.remove)
+        Right((fadds ++ fremoves).reduce(_ andThen _))
+
+      case msgs => Left(msgs)
     }
-    val fremoves = remove.filterNot(_ == PropertyList.avatar).map(p => p.remove)
-    (fadds ++ fremoves).reduce(_ andThen _)
   }
 
   private def renderUserPage(account: Account, params: Map[String, Any] = Map.empty) = {

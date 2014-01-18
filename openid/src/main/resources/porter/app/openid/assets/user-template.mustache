@@ -22,7 +22,14 @@
     </div>
     <h2><img src="{{avatarUrl}}" class="img-responsive img-thumbnail"> {{#account}}{{name}}'s{{/account}} account</h2>
     {{#infoMessage}}
-        <p class="alert alert-{{level}}">{{message}}</p>
+        <div class="alert alert-{{level}}">
+            <p>{{message}}</p>
+            <ul>
+                {{#messageItems}}
+                    <li>{{.}}</li>
+                {{/messageItems}}
+            </ul>
+        </div>
     {{/infoMessage}}
     <div class="row">
         <div class="col-md-6">

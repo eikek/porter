@@ -35,6 +35,7 @@ trait OpenIdServiceSettings {
 
   def avatarCacheDir: Option[Path]
   def avatarCacheDirSize: Int
+  def avatarMaxUploadSize: Int
 
   private def loadTemplateFile(name: String): Option[Supplier] = {
     val tfile = templateDir.resolve(name)
