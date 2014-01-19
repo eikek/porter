@@ -35,8 +35,10 @@ trait MessageJsonProtocol extends ModelJsonProtocol {
   implicit val findRealmsRespFormat = jsonFormat1(FindRealmsResp)
 
   implicit val operationFinishedFormat = jsonFormat1(OperationFinished)
+  implicit val getAllAccountsFormat = jsonFormat(GetAllAccounts, "realm")
   implicit val updateAccountFormat = jsonFormat(UpdateAccount, "realm", "account")
   implicit val deleteAccountFormat = jsonFormat(DeleteAccount, "realm", "account")
+  implicit val getAllGroupsFormat = jsonFormat(GetAllGroups, "realm")
   implicit val updateGroupFormat = jsonFormat(UpdateGroup, "realm", "group")
   implicit val deleteGroupFormat = jsonFormat(DeleteGroup, "realm", "group")
   implicit val updateRealmFormat = jsonFormat(UpdateRealm, "realm")

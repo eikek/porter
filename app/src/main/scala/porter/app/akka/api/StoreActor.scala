@@ -152,16 +152,18 @@ object StoreActor {
     val FindRealmsResp = porter.client.Messages.store.FindRealmsResp
     case object GetAllRealms extends StoreMessage
 
+    case class FindAccountsFor(realm: Ident, creds: Set[Credentials]) extends StoreMessage
     val FindAccounts = porter.client.Messages.store.FindAccounts
     type FindAccounts = porter.client.Messages.store.FindAccounts
-    case class FindAccountsFor(realm: Ident, creds: Set[Credentials]) extends StoreMessage
-    case class GetAllAccounts(realm: Ident) extends StoreMessage
+    val GetAllAccounts = porter.client.Messages.store.GetAllAccounts
+    type GetAllAccounts = porter.client.Messages.store.GetAllAccounts
     type FindAccountsResp = porter.client.Messages.store.FindAccountsResp
     val FindAccountsResp = porter.client.Messages.store.FindAccountsResp
 
     type FindGroups = porter.client.Messages.store.FindGroups
     val FindGroups = porter.client.Messages.store.FindGroups
-    case class GetAllGroups(realm: Ident) extends StoreMessage
+    val GetAllGroups = porter.client.Messages.store.GetAllGroups
+    type GetAllGroups = porter.client.Messages.store.GetAllGroups
     type FindGroupsResp = porter.client.Messages.store.FindGroupsResp
     val FindGroupsResp = porter.client.Messages.store.FindGroupsResp
   }

@@ -18,6 +18,7 @@ package porter.client
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.FiniteDuration
+import porter.model.Ident
 
 trait PorterClient {
 
@@ -36,6 +37,8 @@ trait PorterClient {
   def findAccounts: FindAccountCmd
   def findGroups: FindGroupCmd
   def findRealms: FindRealmCmd
+  def listAccounts: Command[GetAllAccounts, FindAccountsResp]
+  def listGroups: Command[GetAllGroups, FindGroupsResp]
 
   type UpdateAccountCmd = Command[UpdateAccount, OperationFinished]
   type UpdateGroupCmd = Command[UpdateGroup, OperationFinished]

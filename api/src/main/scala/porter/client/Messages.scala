@@ -36,7 +36,9 @@ object Messages {
 
     case class FindAccounts(realm: Ident, names: Set[Ident]) extends StoreMessage
     case class FindAccountsResp(accounts: Set[Account]) extends StoreMessage
+    case class GetAllAccounts(realm: Ident) extends StoreMessage
 
+    case class GetAllGroups(realm: Ident) extends StoreMessage
     case class FindGroups(realm: Ident, names: Set[Ident]) extends StoreMessage
     case class FindGroupsResp(groups: Set[Group]) extends StoreMessage
 

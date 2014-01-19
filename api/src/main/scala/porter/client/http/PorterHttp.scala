@@ -55,7 +55,10 @@ class PorterHttp(addr: InetSocketAddress) extends PorterClient {
   def authorize = perform[Authorize, AuthorizeResp]("/api/authz")
   def retrieveNonce = perform[RetrieveServerNonce, RetrieveServerNonceResp]("/api/authc/serverNonce")
 
+
+  def listAccounts = perform[GetAllAccounts, FindAccountsResp]("/api/account/all")
   def findAccounts = perform[FindAccounts, FindAccountsResp]("/api/account/find")
+  def listGroups = perform[GetAllGroups, FindGroupsResp]("/api/group/all")
   def findGroups = perform[FindGroups, FindGroupsResp]("/api/group/find")
   def findRealms = perform[FindRealms, FindRealmsResp]("/api/realm/find")
 

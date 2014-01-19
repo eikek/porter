@@ -59,7 +59,10 @@ class PorterAkkaClient(val porterRef: ActorRef, val decider: Decider, val crypt:
   def authorize = exec[Authorize, AuthorizeResp]
   def retrieveNonce = exec[RetrieveServerNonce, RetrieveServerNonceResp]
 
+
+  def listAccounts = exec[GetAllAccounts, FindAccountsResp]
   def findAccounts = exec[FindAccounts, FindAccountsResp]
+  def listGroups = exec[GetAllGroups, FindGroupsResp]
   def findGroups = exec[FindGroups, FindGroupsResp]
   def findRealms = exec[FindRealms, FindRealmsResp]
 

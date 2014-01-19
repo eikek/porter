@@ -50,9 +50,19 @@ class StoreService(client: PorterAkkaClient)
           PorterUtil.findAccount(porterRef, realm, name)
         }
       } ~
+      path(accountPrefix / "all" / Segment) { realm =>
+        complete {
+          client.listAccounts(GetAllAccounts(realm))
+        }
+      } ~
       path(groupId) { (realm, name) =>
         complete {
           PorterUtil.findGroup(porterRef, realm, name)
+        }
+      } ~
+      path(groupPrefix / "all" / Segment) { realm =>
+        complete {
+          client.listGroups(GetAllGroups(realm))
         }
       } ~
       path(realmId) { realm =>
@@ -131,6 +141,11 @@ class StoreService(client: PorterAkkaClient)
           client.changePassword(req)
         }
       } ~
+      path(accountPrefix / "all") {
+        handleWith { req: GetAllAccounts =>
+          client.listAccounts(req)
+        }
+      } ~
       path(groupPrefix / "find") {
         handleWith { req: FindGroups =>
           client.findGroups(req)
@@ -144,6 +159,11 @@ class StoreService(client: PorterAkkaClient)
       path(groupPrefix / "delete") {
         handleWith { req: DeleteGroup =>
           client.deleteGroup(req)
+        }
+      } ~
+      path(groupPrefix / "all") {
+        handleWith { req: GetAllGroups =>
+          client.listGroups(req)
         }
       } ~
       path(realmPrefix / "find") {
