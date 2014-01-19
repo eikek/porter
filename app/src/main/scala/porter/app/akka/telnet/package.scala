@@ -78,6 +78,9 @@ package object telnet {
     def token_=(t: String) { session.token = t }
     def token = session.token
 
+    def <~ (m: String) {
+      conn ! tcp(m)
+    }
     def << (m: String) {
       conn ! prompt(m, session.realm)
     }

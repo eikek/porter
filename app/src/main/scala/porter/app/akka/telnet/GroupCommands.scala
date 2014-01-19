@@ -46,19 +46,20 @@ object GroupCommands extends Commands {
       Permission.union, Revocation.union), manageRules("remove", Permission.diff, Revocation.diff))
 
   def listall(implicit executor: ExecutionContext, to: Timeout): Command = {
-    case in@Input(msg, conn, porter, _) if msg == "lg" =>
-      val result = for {
+    case in@Input(msg, conn, porter, _) if msg startsWith "lg" =>
+      val filter = if (msg == "lg") (s: String) => true else (s: String) => Glob.matches(msg.substring(3), s)
+      for {
         r <- in.realmFuture
         groups <- (porter ? GetAllGroups(r.id)).mapTo[FindGroupsResp].map(_.groups)
       } yield {
-        groups map { g =>
+        for (g <- groups; if filter(g.name.name)) {
           val gname = g.name.name
           val rules = g.rules.mkString("\n  ", "\n  ", "\n")
           val props = propsToString(g.props, "  |", "\n  |", "")
-          s"$gname: $rules$props"
+          in <~ s"$gname: $rules$props"
         }
+        in << ""
       }
-      in <<< result
   }
 
   def update(implicit executor: ExecutionContext, to: Timeout): Command = new Form {
