@@ -37,13 +37,14 @@ object AccountCommands extends Commands {
       |                         if no account with the given name exists
       |delete account <name>    delete an account with the given name
       |la                       list all accounts
-      |change pass              set a new password for an account
+      |change pass              set a new (plain) password for an account
+      |set pass                 sets a new crypted password for an account
       |add groups               add new groups to an account
       |remove groups            remove groups from an account
     """.stripMargin
 
   def make(implicit executor: ExecutionContext, to: Timeout) =
-    List(update, listall, delete, changePassword,
+    List(update, listall, delete, changePassword, setPassword,
       manageGroups("add", (a, b) => a++b), manageGroups("remove", (a, b) => a -- b))
 
   def update(implicit executor: ExecutionContext, to: Timeout): Command = new Form {
@@ -125,6 +126,31 @@ object AccountCommands extends Commands {
       in.withRealm { realm =>
         val f = PorterUtil.updateAccount(in.porter, realm.id, login, _.changeSecret(Password(crypt)(passw)))
         in << f.map(or => s"Password changed: ${or.result}")
+      }
+    }
+  }
+
+  def setPassword(implicit ec: ExecutionContext, to: Timeout): Command = new Form {
+    def fields = List("login", "password")
+
+    def show = {
+      case in@Input(msg, conn, _, sess) if msg == "set pass" =>
+        in.withRealm { r =>
+          conn ! tcp("Enter the login name and the crypted password.\n")
+        }
+        sess.realm.isDefined
+    }
+
+    def validateConvert = {
+      case (key, value) if key == "login" => Try(Ident(value))
+    }
+
+    def onComplete(in: Input) = {
+      val login = in.session[Ident]("login")
+      val passw = in.session[String]("password")
+      in.withRealm { realm =>
+        val f = PorterUtil.updateAccount(in.porter, realm.id, login, _.changeSecret(Password.crypted(passw)))
+        in << f.map(or => s"Password set: ${or.result}")
       }
     }
   }
