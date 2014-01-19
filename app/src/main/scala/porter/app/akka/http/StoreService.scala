@@ -136,9 +136,9 @@ class StoreService(client: PorterAkkaClient)
           client.createNewAccount(req)
         }
       } ~
-      path(accountPrefix / "changePassword") {
-        handleWith { req: ChangePassword =>
-          client.changePassword(req)
+      path(accountPrefix / "changeSecrets") {
+        handleWith { req: ChangeSecrets =>
+          client.changeSecrets(req)
         }
       } ~
       path(accountPrefix / "all") {
@@ -186,7 +186,7 @@ class StoreService(client: PorterAkkaClient)
 }
 
 object StoreService {
-  def apply(porterRef: ActorRef, decider: Decider, crypt: PasswordCrypt)
+  def apply(porterRef: ActorRef, decider: Decider)
            (implicit ec: ExecutionContext, to: Timeout): StoreService =
-    new StoreService(new PorterAkkaClient(porterRef, decider, crypt))
+    new StoreService(new PorterAkkaClient(porterRef, decider))
 }

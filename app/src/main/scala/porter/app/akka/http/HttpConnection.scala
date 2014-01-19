@@ -23,12 +23,12 @@ import porter.auth.Decider
 import akka.io.Tcp.ConnectionClosed
 import porter.model.PasswordCrypt
 
-class HttpConnection(porter: ActorRef, decider: Decider, crypt: PasswordCrypt) extends HttpServiceActor with ActorLogging {
+class HttpConnection(porter: ActorRef, decider: Decider) extends HttpServiceActor with ActorLogging {
   implicit val timeout = Timeout(5000)
   import context.dispatcher
 
   private val authRoute = AuthService(porter, decider).route
-  private val storeRoute = StoreService(porter, decider, crypt).route
+  private val storeRoute = StoreService(porter, decider).route
 
   def receive = runRoute {
     authRoute ~ storeRoute
@@ -38,5 +38,5 @@ class HttpConnection(porter: ActorRef, decider: Decider, crypt: PasswordCrypt) e
 }
 
 object HttpConnection {
-  def apply(porter: ActorRef, decider: Decider, crypt: PasswordCrypt) = Props(classOf[HttpConnection], porter, decider, crypt)
+  def apply(porter: ActorRef, decider: Decider) = Props(classOf[HttpConnection], porter, decider)
 }

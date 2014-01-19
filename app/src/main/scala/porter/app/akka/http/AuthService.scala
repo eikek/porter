@@ -79,5 +79,5 @@ class AuthService(client: PorterAkkaClient)(implicit ec: ExecutionContext, to: T
 object AuthService {
   def apply(porter: ActorRef, decider: Decider = OneSuccessfulVote)
            (implicit ec: ExecutionContext, to: Timeout): AuthService =
-    new AuthService(new PorterAkkaClient(porter, decider, PasswordCrypt.randomCrypt))
+    new AuthService(new PorterAkkaClient(porter, decider))
 }

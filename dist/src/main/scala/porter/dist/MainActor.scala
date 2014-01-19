@@ -46,7 +46,7 @@ class MainActor extends Actor with ActorLogging {
   val porter = Porter(context.system).createPorter(context)
   println(s"\n---\n--- Porter remote actor listening on ${main.pathFor(porter)} \n---")
   val telnetService = context.actorOf(TelnetServer(porter), "telnet")
-  val httpService = context.actorOf(HttpHandler(porter, main.http.decider, main.http.crypt), "http")
+  val httpService = context.actorOf(HttpHandler(porter, main.http.decider), "http")
   val openIdService = context.actorOf(OpenIdHandler(porter, openidSettings), "openid")
 
   private def toTcp(actor: ActorRef, host: String, port: Int) = {

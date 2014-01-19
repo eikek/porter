@@ -22,7 +22,7 @@ import akka.actor.Terminated
 import porter.auth.Decider
 import porter.model.PasswordCrypt
 
-class HttpHandler(porter: ActorRef, decider: Decider, crypt: PasswordCrypt) extends Actor with ActorLogging {
+class HttpHandler(porter: ActorRef, decider: Decider) extends Actor with ActorLogging {
   import HttpHandler._
 
   var connections = 0
@@ -32,7 +32,7 @@ class HttpHandler(porter: ActorRef, decider: Decider, crypt: PasswordCrypt) exte
       log.info("Bound http interface to "+ addr)
 
     case Http.Connected(_, _) =>
-      val newchild = context.watch(context.actorOf(HttpConnection(porter, decider, crypt), name = s"httpconn$connections"))
+      val newchild = context.watch(context.actorOf(HttpConnection(porter, decider), name = s"httpconn$connections"))
       connections += 1
       logConnections()
       sender ! Http.Register(newchild)
@@ -54,7 +54,7 @@ object HttpHandler {
 
   case object GetConnCount extends Serializable
 
-  def apply(porter: ActorRef, decider: Decider, crypt: PasswordCrypt) =
-    Props(classOf[HttpHandler], porter, decider, crypt)
+  def apply(porter: ActorRef, decider: Decider) =
+    Props(classOf[HttpHandler], porter, decider)
 
 }

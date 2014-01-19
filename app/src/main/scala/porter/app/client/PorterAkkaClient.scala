@@ -25,7 +25,7 @@ import porter.auth.Decider
 import porter.client.Messages.auth._
 import porter.client.Messages.store._
 import porter.client.Messages.mutableStore._
-import porter.model.PasswordCrypt
+import porter.model.{Password, PasswordCrypt}
 import scala.concurrent.duration.FiniteDuration
 import akka.util.Timeout
 
@@ -34,9 +34,8 @@ import akka.util.Timeout
  *
  * @param porterRef
  * @param decider
- * @param crypt
  */
-class PorterAkkaClient(val porterRef: ActorRef, val decider: Decider, val crypt: PasswordCrypt) extends PorterClient {
+class PorterAkkaClient(val porterRef: ActorRef, val decider: Decider) extends PorterClient {
   import akka.pattern.ask
 
   private def exec[A, B: ClassTag] = new Command[A, B] {
@@ -81,13 +80,14 @@ class PorterAkkaClient(val porterRef: ActorRef, val decider: Decider, val crypt:
   def deleteGroup = exec[DeleteGroup, OperationFinished]
   def deleteRealm = exec[DeleteRealm, OperationFinished]
 
-  def changePassword = new ChangePasswordCmd {
-    def apply(req: ChangePassword)(implicit ec: ExecutionContext, timeout: FiniteDuration) = {
+  def changeSecrets = new ChangeSecretsCmd {
+    def apply(req: ChangeSecrets)(implicit ec: ExecutionContext, timeout: FiniteDuration) = {
       implicit val to: Timeout = Timeout(timeout)
-      PorterUtil.changePassword(porterRef, req.realm, req.current, req.plain, crypt, decider)
+      PorterUtil.changePassword(porterRef, req.realm, req.current, req.secrets, decider)
         .map(_ => OperationFinished(result = true))
         .recover({ case x => OperationFinished(result = false)})
     }
   }
+
   def updateAuthProps = exec[UpdateAuthProps, OperationFinished]
 }

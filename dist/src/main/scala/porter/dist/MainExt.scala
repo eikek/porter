@@ -29,7 +29,7 @@ object MainExt extends ExtensionId[MainExt] with ExtensionIdProvider {
     MainExt(system.provider.getDefaultAddress, system)
 
   case class InterfaceSettings(host: String, port: Int, enabled: Boolean)
-  case class HttpSettings(iface: InterfaceSettings, decider: Decider, crypt: PasswordCrypt)
+  case class HttpSettings(iface: InterfaceSettings, decider: Decider)
 }
 
 case class MainExt(address: Address, private val system: ExtendedActorSystem) extends Extension {
@@ -52,9 +52,7 @@ case class MainExt(address: Address, private val system: ExtendedActorSystem) ex
       config.getInt("http.port"),
       config.getBoolean("http.enabled")
     ),
-    system.dynamicAccess.getObjectFor[porter.auth.Decider](config.getString("http.decider")).get,
-    PasswordCrypt(config.getString("http.password-crypt"))
-      .getOrElse(sys.error(s"Invalid configuration for password-crypt '${config.getString("http.password-crypt")}'"))
+    system.dynamicAccess.getObjectFor[porter.auth.Decider](config.getString("http.decider")).get
   )
 
   val openid = InterfaceSettings(

@@ -212,20 +212,19 @@ object PorterUtil {
    * @param porterRef
    * @param realm
    * @param current
-   * @param plainPassword
-   * @param crypt
+   * @param newSecrets
    * @param decider
    * @param ec
    * @param timeout
    * @return
    */
-  def changePassword(porterRef: ActorRef, realm: Ident, current: Credentials, plainPassword: String, crypt: PasswordCrypt = PasswordCrypt.randomCrypt, decider: Decider = OneSuccessfulVote)
+  def changePassword(porterRef: ActorRef, realm: Ident, current: Set[Credentials], newSecrets: Seq[Secret], decider: Decider = OneSuccessfulVote)
                     (implicit ec: ExecutionContext, timeout: Timeout): Future[Account] = {
 
     import akka.pattern.ask
     for {
-      account <- authenticateAccount(porterRef, realm, Set(current), decider).map(_._2)
-      nacc <- Future.successful(account.changeSecret(Password(crypt)(plainPassword)))
+      account <- authenticateAccount(porterRef, realm, current, decider).map(_._2)
+      nacc <- Future.successful(newSecrets.foldLeft(account) { (acc, s) => acc.changeSecret(s) })
       upd <- (porterRef ? UpdateAccount(realm, nacc)).mapTo[OperationFinished]
     } yield if (upd.result) nacc else sys.error("Unable to change password")
   }

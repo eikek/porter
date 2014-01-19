@@ -43,7 +43,7 @@ trait MessageJsonProtocol extends ModelJsonProtocol {
   implicit val deleteGroupFormat = jsonFormat(DeleteGroup, "realm", "group")
   implicit val updateRealmFormat = jsonFormat(UpdateRealm, "realm")
   implicit val deleteRealmFormat = jsonFormat(DeleteRealm, "realm")
-  implicit val changePasswordFormat = jsonFormat3(ChangePassword)
+  implicit val changeSecretsFormat = jsonFormat3(ChangeSecrets)
 
   implicit val authcFormat = jsonFormat(Authenticate, "realm", "creds")
   implicit val authresultFormat = jsonFormat(AuthResult, "realm", "accountId", "votes", "props")

@@ -69,6 +69,6 @@ class PorterHttp(addr: InetSocketAddress) extends PorterClient {
   def deleteAccount = modifyCmd[DeleteAccount]("/api/account/delete")
   def deleteGroup = modifyCmd[DeleteGroup]("/api/group/delete")
   def deleteRealm = modifyCmd[DeleteRealm]("/api/realm/delete")
-  def changePassword = modifyCmd[ChangePassword]("/api/account/changePassword")
+  def changeSecrets = modifyCmd[ChangeSecrets]("/api/account/changeSecrets")
   def updateAuthProps = modifyCmd[UpdateAuthProps]("/api/account/updateAuthProps")
 }

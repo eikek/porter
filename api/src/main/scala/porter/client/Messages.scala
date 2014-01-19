@@ -60,7 +60,7 @@ object Messages {
     case class UpdateGroup(realmId: Ident, group: Group) extends MutableStoreMessage
     case class DeleteGroup(realmId: Ident, group: Ident) extends MutableStoreMessage
     case class OperationFinished(result: Boolean) extends PorterMessage
-    case class ChangePassword(realm: Ident, current: Credentials, plain: String)
+    case class ChangeSecrets(realm: Ident, current: Set[Credentials], secrets: List[Secret])
     case class UpdateAuthProps(realm: Ident, creds: Set[Credentials], success: Boolean) extends PorterMessage
   }
 

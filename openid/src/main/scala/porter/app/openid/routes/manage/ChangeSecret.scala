@@ -18,12 +18,12 @@ package porter.app.openid.routes.manage
 
 import porter.app.openid.routes.OpenIdActors
 import spray.routing.Directives._
-import porter.model.{PasswordCredentials, Ident}
+import porter.model.{Password, PasswordCredentials, Ident}
 import spray.routing._
 import scala.util.Success
 import scala.util.Failure
-import porter.client.Messages.mutableStore.ChangePassword
 import porter.app.akka.PorterUtil
+import porter.client.Messages.mutableStore.ChangeSecrets
 
 trait ChangeSecret {
   self: ManageRoutes with OpenIdActors =>
@@ -42,17 +42,18 @@ trait ChangeSecret {
       }
   }
 
-  private def changePassword(account: Ident): Directive1[ChangePassword] =
+  private def changePassword(account: Ident): Directive1[ChangeSecrets] =
     formField("porter.currentpassword").flatMap { cpw =>
       formField("porter.password1").flatMap { pw1 =>
         formField("porter.password2").flatMap { pw2 =>
-          if (pw1 == pw2) provide(ChangePassword(settings.defaultRealm, PasswordCredentials(account, cpw), pw1))
+          if (pw1 == pw2) provide(ChangeSecrets(settings.defaultRealm,
+            Set(PasswordCredentials(account, cpw)), List(Password(settings.passwordCrypt)(pw1))))
           else reject()
         }
       }
     }
 
-  private def changePwFuture(cpw: ChangePassword) =
-    PorterUtil.changePassword(porterRef, cpw.realm, cpw.current, cpw.plain, settings.passwordCrypt, settings.decider)
+  private def changePwFuture(cpw: ChangeSecrets) =
+    PorterUtil.changePassword(porterRef, cpw.realm, cpw.current, cpw.secrets, settings.decider)
 
 }
