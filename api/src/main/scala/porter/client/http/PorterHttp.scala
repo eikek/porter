@@ -24,6 +24,7 @@ import porter.client.Messages.store._
 import porter.client.Messages.mutableStore._
 import porter.client.Messages.auth._
 import scala.concurrent.duration.FiniteDuration
+import porter.model.Ident
 
 /**
  * Simple rest client providing basic porter functions. Note that "spray-json" dependency is
@@ -52,6 +53,8 @@ class PorterHttp(addr: InetSocketAddress) extends PorterClient {
 
   def authenticate = perform[Authenticate, AuthenticateResp]("/api/authc")
   def authenticateAccount = perform[Authenticate, AuthAccount]("/api/authcAccount")
+  def authenticateSimple(realm: Ident) = perform[UserPass, SimpleAuthResult]("/api/authc/simple/"+realm.name)
+
   def authorize = perform[Authorize, AuthorizeResp]("/api/authz")
   def retrieveNonce = perform[RetrieveServerNonce, RetrieveServerNonceResp]("/api/authc/serverNonce")
 

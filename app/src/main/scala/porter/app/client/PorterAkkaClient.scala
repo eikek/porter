@@ -25,9 +25,11 @@ import porter.auth.Decider
 import porter.client.Messages.auth._
 import porter.client.Messages.store._
 import porter.client.Messages.mutableStore._
-import porter.model.{Password, PasswordCrypt}
+import porter.model.{PasswordCredentials, Ident}
 import scala.concurrent.duration.FiniteDuration
 import akka.util.Timeout
+import porter.client.json.MessageJsonProtocol.UserPass
+import porter.client.json.MessageJsonProtocol.SimpleAuthResult
 
 /**
  * This class is framing the porter actor ref to provide a type safe view to it.
@@ -52,6 +54,13 @@ class PorterAkkaClient(val porterRef: ActorRef, val decider: Decider) extends Po
       PorterUtil.authenticateAccount(porterRef, req.realmId, req.creds, decider)
         .map(r => AuthAccount(success = true, Some(r._2)))
         .recover({ case x => AuthAccount(success = false, None) })
+    }
+  }
+  def authenticateSimple(realm: Ident) = new AuthcSimpleCmd {
+    def apply(req: UserPass)(implicit ec: ExecutionContext, timeout: FiniteDuration) = {
+      implicit val to: Timeout = Timeout(timeout)
+      authenticate(Authenticate(realm, Set(PasswordCredentials(req.account, req.password))))
+        .map(r => SimpleAuthResult(r.result.map(decider) getOrElse false))
     }
   }
 

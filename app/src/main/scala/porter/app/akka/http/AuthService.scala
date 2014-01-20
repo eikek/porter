@@ -23,10 +23,10 @@ import akka.util.Timeout
 import porter.app.akka.Porter.Messages.authz._
 import porter.app.akka.Porter.Messages.authc._
 import porter.auth.{OneSuccessfulVote, Decider}
-import porter.app.akka.PorterUtil
-import porter.client.Messages.auth.{RetrieveServerNonceResp, RetrieveServerNonce, AuthAccount}
+import porter.client.Messages.auth.RetrieveServerNonce
 import porter.app.client.PorterAkkaClient
-import porter.model.PasswordCrypt
+import spray.http.{HttpResponse, StatusCodes}
+import porter.client.json.MessageJsonProtocol
 
 class AuthService(client: PorterAkkaClient)(implicit ec: ExecutionContext, to: Timeout) extends Directives {
   import PorterJsonProtocol._
@@ -65,6 +65,20 @@ class AuthService(client: PorterAkkaClient)(implicit ec: ExecutionContext, to: T
       post {
         handleWith { req: Authenticate =>
           client.authenticateAccount(req)
+        }
+      }
+    } ~
+    path("api" / "authc" / "simple" / Segment) { realm =>
+      post {
+        handleWith { up: MessageJsonProtocol.UserPass =>
+          client.authenticateSimple(realm)(up)
+        } ~
+        formFields('account, 'password) { (acc, pw) =>
+          complete {
+            client.authenticateSimple(realm)(MessageJsonProtocol.UserPass(acc, pw)).map { r =>
+              if (r.result) HttpResponse() else HttpResponse(StatusCodes.Unauthorized)
+            }
+          }
         }
       }
     } ~

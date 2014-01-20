@@ -19,6 +19,7 @@ package porter.client
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.FiniteDuration
 import porter.model.Ident
+import porter.client.json.MessageJsonProtocol.{SimpleAuthResult, UserPass}
 
 trait PorterClient {
 
@@ -62,10 +63,12 @@ trait PorterClient {
   type AuthcCmd = Command[Authenticate, AuthenticateResp]
   type AuthcAccountCmd = Command[Authenticate, AuthAccount]
   type AuthzCmd = Command[Authorize, AuthorizeResp]
+  type AuthcSimpleCmd = Command[UserPass, SimpleAuthResult]
   type ServerNonceCmd = Command[RetrieveServerNonce, RetrieveServerNonceResp]
 
   def authenticate: AuthcCmd
   def authenticateAccount: AuthcAccountCmd
+  def authenticateSimple(realm: Ident): AuthcSimpleCmd
   def authorize: AuthzCmd
   def retrieveNonce: ServerNonceCmd
 }

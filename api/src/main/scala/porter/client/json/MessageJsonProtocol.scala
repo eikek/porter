@@ -22,6 +22,7 @@ import porter.client.Messages.auth._
 import porter.auth.AuthResult
 import spray.json._
 import scala.concurrent.duration.Duration
+import porter.model.Ident
 
 trait MessageJsonProtocol extends ModelJsonProtocol {
 
@@ -49,6 +50,10 @@ trait MessageJsonProtocol extends ModelJsonProtocol {
   implicit val authresultFormat = jsonFormat(AuthResult, "realm", "accountId", "votes", "props")
   implicit val authcResponse = jsonFormat1(AuthenticateResp)
   implicit val authAccountFormat = jsonFormat2(AuthAccount)
+  case class UserPass(account: Ident, password: String)
+  case class SimpleAuthResult(result: Boolean)
+  implicit val userpassFormat = jsonFormat2(UserPass)
+  implicit val simpleAuthcFormat = jsonFormat1(SimpleAuthResult)
 
   implicit val authzFormat = jsonFormat3(Authorize)
   implicit val authzResponseFormat = jsonFormat3(AuthorizeResp)
