@@ -121,13 +121,28 @@ object OpenId extends Build {
 }
 
 object Dist extends Build {
+  import com.typesafe.sbt.SbtAtmos.{Atmos, atmosSettings, AtmosKeys}
 
   lazy val module = Project(
     id = "dist",
     base = file("dist"),
     settings = Project.defaultSettings ++ Distribution.distSettings ++ Seq(
       name := "porter-dist",
-      libraryDependencies ++= Deps.logback ++ Deps.akkaRemote
+      libraryDependencies ++= Deps.logback ++ Deps.akkaRemote,
+      fork in run := true,
+      baseDirectory in (Atmos, run) := file("dist/src/main/dist"),
+      AtmosKeys.atmosJvmOptions := Seq("-Xms512m", "-Xmx1024m", "-XX:+UseParallelGC", "-Dconfig.file=etc/porter.conf"),
+      javaOptions in run := Seq(
+        "-Dconfig.file=etc/porter.conf",
+        "-Dlogback.configurationFile=etc/logback.xml",
+        "-Dporter.openid.cookie-secure=false",
+        "-Dporter.openid.registration-enabled=true",
+        "-Dporter.openid.registration-invitation-key=1"
+      ),
+      com.typesafe.sbt.SbtAtmos.traceAkka("2.2.1")
     )
-  ) dependsOn (App.module, OpenId.module)
+  )
+  .dependsOn (App.module, OpenId.module)
+  .configs(Atmos)
+  .settings(atmosSettings: _*)
 }
