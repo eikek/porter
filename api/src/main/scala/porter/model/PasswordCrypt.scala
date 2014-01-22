@@ -108,7 +108,7 @@ object PasswordCrypt {
 
   object Bcrypt {
     val name = "bcrypt"
-    def apply(): PasswordCrypt = apply(10 + intBelow(5))
+    def apply(): PasswordCrypt = apply(12)
     def apply(strength: Int): PasswordCrypt = apply(BCrypt.gensalt(strength))
     def apply(salt: String): PasswordCrypt = new PasswordCrypt {
       def apply(plain: String) = name +"$"+BCrypt.hashpw(plain, salt)
@@ -130,7 +130,7 @@ object PasswordCrypt {
   }
   object Scrypt {
     val name = "scrypt"
-    def apply(n: Int = math.pow(2, 11 + intBelow(7)).toInt, r: Int = 16, p: Int = 2): PasswordCrypt = new PasswordCrypt {
+    def apply(n: Int = math.pow(2, 15).toInt, r: Int = 16, p: Int = 2): PasswordCrypt = new PasswordCrypt {
       def apply(plain: String) = name+"$"+SCryptUtil.scrypt(plain, n, r, p)
     }
 
@@ -157,7 +157,7 @@ object PasswordCrypt {
   object Pbkdf2 {
     val name = "pbkdf2-sha1"
 
-    def apply(n: Int = 32000 + intBelow(1000), len: Int = 512, salt: Vector[Byte] = randomSalt): PasswordCrypt = new PasswordCrypt {
+    def apply(n: Int = 32000, len: Int = 512, salt: Vector[Byte] = randomSalt): PasswordCrypt = new PasswordCrypt {
       def apply(plain: String) = {
         val enc = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1")
           .generateSecret(new PBEKeySpec(plain.toCharArray, salt.toArray, n, len))
