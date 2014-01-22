@@ -81,15 +81,14 @@ object PasswordCrypt {
   type Verifier = String => Boolean
   import porter.util._
 
-  def randomCrypt = intBelow(4) match {
+  def choose = intBelow(3) match {
     case 0 => Bcrypt()
     case 1 => Scrypt()
     case 2 => Pbkdf2()
-    case 3 => Digest.sha512()
   }
 
   def apply(config: String): Option[PasswordCrypt] =
-    if (config.toLowerCase == "random") Some(randomCrypt)
+    if (config.toLowerCase == "") Some(choose)
     else Bcrypt.fromConfig(config)
       .orElse(Scrypt.fromConfig(config))
       .orElse(Pbkdf2.fromConfig(config))

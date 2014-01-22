@@ -52,7 +52,7 @@ object HelperCommands extends Commands {
       if (plain.isEmpty)
         in << "Error: Empty password."
       else
-        in << Password(PasswordCrypt.randomCrypt)(plain).asString
+        in << Password(PasswordCrypt.choose)(plain).asString
 
     case in@Input(show, conn, porter, _) if show == "show settings" =>
       val settings = (porter ? ShowSettings).mapTo[String]

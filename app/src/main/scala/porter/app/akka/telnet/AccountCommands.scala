@@ -36,7 +36,8 @@ object AccountCommands extends Commands {
       |update account           update an existing account or creates a new one
       |                         if no account with the given name exists
       |delete account <name>    delete an account with the given name
-      |la                       list all accounts
+      |la [filter]              list all accounts; filter can be a glob like pattern, eg.
+      |                         `la d*` or `la bl?b`
       |change pass              set a new (plain) password for an account
       |set pass                 sets a new crypted password for an account
       |add groups               add new groups to an account
@@ -109,7 +110,7 @@ object AccountCommands extends Commands {
     def show = {
       case in@Input(msg, conn, _, sess) if msg == "change pass" =>
         in.withRealm { r =>
-          conn ! tcp("Enter the login name and a new password. Use 'random' for password-crypt if unsure.\n")
+          conn ! tcp("Enter the login name and a new password. Leave password-crypt empty if unsure.\n")
         }
         sess.realm.isDefined
     }
