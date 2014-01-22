@@ -65,13 +65,21 @@ class AvatarActor(porterRef: ActorRef, cacheDirOpts: Option[CacheDirOpts]) exten
   import AvatarActor._
 
   val cachedir = context.actorOf(CacheDirActor(cacheDirOpts), name = "image-cache-dir")
+  var workerActive = 0
+  var workerCreated = 0
 
   def receive: Actor.Receive = {
     case m: GetAvatarImage =>
-      val worker = context.actorOf(AvatarWorker(sender, porterRef, cachedir))
+      val worker = context.watch(context.actorOf(AvatarWorker(sender, porterRef, cachedir), name = s"avatarwork$workerCreated"))
       worker forward m
+      workerCreated += 1; workerActive += 1
+
     case ClearCacheDir =>
       cachedir ! ClearCacheDir
+
+    case Terminated(ref) =>
+      workerActive -= 1
+      log.debug(s"Actor $ref terminated. Avatar workers left: $workerActive")
   }
 
   override def supervisorStrategy = new OneForOneStrategy(10)(SupervisorStrategy.defaultDecider) {

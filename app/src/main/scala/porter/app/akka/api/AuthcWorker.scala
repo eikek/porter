@@ -28,7 +28,9 @@ class AuthcWorker(store: ActorRef, validators: List[Validator]) extends Actor {
   import porter.client.Messages.auth._
   import StoreActor.messages._
 
-  val handlers = validators.map(a => context.actorOf(handlerProps(a)))
+  val handlers = validators.zipWithIndex.map { case (a,i) =>
+    context.actorOf(handlerProps(a), name = s"validator$i")
+  }
 
   if (handlers.isEmpty) context.become(empty)
 

@@ -16,13 +16,13 @@
 
 package porter.app.akka.api
 
-import akka.actor.{Status, Props, Actor}
+import akka.actor.{ActorLogging, Status, Props, Actor}
 import porter.model._
 import porter.auth.RuleFactory
 import scala.util.{Failure, Try, Success}
 import scala.Some
 
-class RuleFactoryActor(list: Iterable[PermissionFactory]) extends Actor {
+class RuleFactoryActor(list: Iterable[PermissionFactory]) extends Actor with ActorLogging {
   import RuleFactoryActor.messages._
 
   lazy val factory = RuleFactory.createRuleWith(list.head)_
@@ -40,7 +40,8 @@ class RuleFactoryActor(list: Iterable[PermissionFactory]) extends Actor {
 
   def empty: Receive = {
     case MakeRules(_) =>
-      sender ! Status.Failure(new Exception("No permission factories provided."))
+      log.warning("No permission factories provided.")
+      sender ! Set.empty
   }
 
   def normal: Receive = {

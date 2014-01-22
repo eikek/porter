@@ -25,6 +25,7 @@ import porter.model.PasswordCrypt
 class HttpHandler(porter: ActorRef, decider: Decider) extends Actor with ActorLogging {
   import HttpHandler._
 
+  var connCreated = 0
   var connections = 0
 
   def receive = {
@@ -32,22 +33,18 @@ class HttpHandler(porter: ActorRef, decider: Decider) extends Actor with ActorLo
       log.info("Bound http interface to "+ addr)
 
     case Http.Connected(_, _) =>
-      val newchild = context.watch(context.actorOf(HttpConnection(porter, decider), name = s"httpconn$connections"))
-      connections += 1
-      logConnections()
+      val newchild = context.watch(context.actorOf(HttpConnection(porter, decider), name = s"httpconn$connCreated"))
+      connections += 1; connCreated += 1
       sender ! Http.Register(newchild)
 
-    case Terminated(_) =>
+    case Terminated(ref) =>
       connections -= 1
-      logConnections()
+      log.debug(s"Actor $ref terminated. There are currently $connections http connections left.")
 
     case GetConnCount =>
       sender ! connections
   }
 
-  def logConnections() {
-    log.info(s"There are currently $connections http connections.")
-  }
 }
 
 object HttpHandler {

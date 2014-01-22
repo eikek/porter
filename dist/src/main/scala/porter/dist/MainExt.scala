@@ -25,17 +25,21 @@ import porter.model.PasswordCrypt
 object MainExt extends ExtensionId[MainExt] with ExtensionIdProvider {
   def lookup() = MainExt
 
-  def createExtension(system: ExtendedActorSystem) =
-    MainExt(system.provider.getDefaultAddress, system)
+  def createExtension(system: ExtendedActorSystem) = MainExt(system)
 
   case class InterfaceSettings(host: String, port: Int, enabled: Boolean)
   case class HttpSettings(iface: InterfaceSettings, decider: Decider)
 }
 
-case class MainExt(address: Address, private val system: ExtendedActorSystem) extends Extension {
+case class MainExt(private val system: ExtendedActorSystem) extends Extension {
 
-  def pathFor(porter: ActorRef) = ActorPath.fromString(
-    address.toString + porter.path.elements.mkString("/", "/", ""))
+  val address = system.provider.getDefaultAddress
+
+  def pathFor(porter: ActorRef) = {
+    ActorPath.fromString(address.toString + porter.path.elements.mkString("/", "/", ""))
+  }
+
+  def isRemote = address.host != None
 
   private val config = system.settings.config.getConfig("porter")
   val openidSettings = new OpenIdSettings(config.getConfig("openid"), system.dynamicAccess)

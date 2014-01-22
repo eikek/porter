@@ -16,7 +16,7 @@
 
 package porter.app.akka.api
 
-import akka.actor.{ActorLogging, Props, Actor}
+import akka.actor.{Terminated, ActorLogging, Props, Actor}
 import porter.auth.RuleFactory
 import porter.app.PorterSettings
 import porter.app.akka.api.PorterMain.ShowSettings
@@ -35,6 +35,9 @@ class PorterMain(settings: PorterSettings) extends Actor with ActorLogging {
   val policy = context.actorOf(PolicyActor(store, ruleFactory), name = "porter-policy")
   val extras = context.actorOf(ExtrasActor(store, mstore, ruleFactory, policy), name = "porter-extras")
 
+  var authcCreated = 0
+  var authcActive = 0
+
   def receive = {
     case ShowSettings => sender ! settings.toString
     case sm: StoreMessage => store forward sm
@@ -43,9 +46,13 @@ class PorterMain(settings: PorterSettings) extends Actor with ActorLogging {
     case gp: GetPolicy => policy forward gp
     case authz: Authorize => policy forward authz
     case authc: Authenticate =>
-      val w = context.actorOf(AuthcWorker(store, settings.validators))
+      val w = context.watch(context.actorOf(AuthcWorker(store, settings.validators), name = s"authc$authcCreated"))
+      authcCreated += 1
       w forward authc
     case rest: PorterMessage => extras forward rest
+    case Terminated(ref) =>
+      authcActive -= 1
+      log.debug(s"Actor $ref terminated. Active workers left: $authcActive")
   }
 }
 

@@ -24,18 +24,23 @@ import scala.Some
 import scala.util.{Failure, Success, Try}
 import scala.concurrent.Future
 
-class MutableStoreActor(stores: List[(Set[Ident], MutableStore)]) extends Actor {
+class MutableStoreActor(stores: List[(Set[Ident], MutableStore)]) extends Actor with ActorLogging {
   import MutableStoreActor._
   import messages._
 
+  private var workerCreated = 0
+  private var workerActive = 0
+  
   private def findStore(realm: Ident) =
-    stores.find({ case (id, a) => id.contains(realm) }).map(_._2)
-      .orElse(stores.headOption.map(_._2))
+    for {
+      (id, mstore) <- stores.find(_._1 contains realm) orElse stores.headOption
+    } yield mstore
 
   private def withStore(realm: Ident, f: ActorRef => Unit, g: => Unit) {
     findStore(realm) match {
       case Some(s) =>
-        val a = context.actorOf(workerProps(s))
+        val a = context.watch(context.actorOf(workerProps(s), name = s"mstore$workerCreated"))
+        workerCreated += 1; workerActive += 1
         f(a)
         a ! PoisonPill
       case None => g
@@ -45,6 +50,10 @@ class MutableStoreActor(stores: List[(Set[Ident], MutableStore)]) extends Actor 
   def receive = {
     case pm: MutableStoreMessage =>
       withStore(pm.realmId, _ forward pm, sender ! failed)
+
+    case Terminated(ref) =>
+      workerActive -= 1
+      log.debug(s"Actor $ref terminated. Active mstore workers: $workerActive")
   }
 }
 

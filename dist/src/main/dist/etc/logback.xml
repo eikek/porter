@@ -48,7 +48,7 @@
     <logger name="com" level="WARN"/>
 
     <!-- change level to DEBUG for debugging output
-    <logger name="porter" level="DEBUG">  -->
+    <logger name="porter" level="DEBUG" /> -->
 
     <root level="INFO">
         <appender-ref ref="STDOUT"/>

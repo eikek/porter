@@ -27,9 +27,11 @@ import porter.app.openid.CacheDirActor.CacheDirOpts
 class OpenIdHandler(porter: ActorRef, settings: OpenIdServiceSettings) extends Actor with ActorLogging {
   import OpenIdHandler._
   var connections = 0
+  var connCreated = 0
 
-  val assocActor = context.actorOf(AssocActor())
-  val avatarActor = context.actorOf(AvatarActor(porter, settings.avatarCacheDir.map(dir => CacheDirOpts(dir, settings.avatarCacheDirSize))))
+  val assocActor = context.actorOf(AssocActor(), name = "assoc")
+  val avatarActor = context.actorOf(AvatarActor(porter,
+    settings.avatarCacheDir.map(dir => CacheDirOpts(dir, settings.avatarCacheDirSize))), name = "avatar")
   val serviceProps = OpenIdService(porter, assocActor, avatarActor, settings)
 
   def receive = {
@@ -37,12 +39,13 @@ class OpenIdHandler(porter: ActorRef, settings: OpenIdServiceSettings) extends A
       log.info("Bound http interface to "+ addr)
 
     case Http.Connected(_, _) =>
-      val newchild = context.watch(context.actorOf(serviceProps, name = s"openidconn$connections"))
-      connections += 1
+      val newchild = context.watch(context.actorOf(serviceProps, name = s"openidconn$connCreated"))
+      connections += 1; connCreated += 1
       sender ! Http.Register(newchild)
 
-    case Terminated(_) =>
+    case Terminated(ref) =>
       connections -= 1
+      log.debug(s"Actor $ref terminated. Connections left: $connections")
 
     case GetConnCount =>
       sender ! connections

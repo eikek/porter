@@ -27,29 +27,24 @@ import akka.util.Timeout
 
 class TelnetServer(porter: ActorRef) extends Actor with ActorLogging {
 
+  private var connCreated = 0
   private var connections = 0
 
   def receive = {
     case Tcp.Connected(_, _) =>
       val tcpConnection = sender
-      val newchild = context.watch(context.actorOf(TelnetConnection.props(porter, tcpConnection)))
-      connections += 1
-      logConnections()
+      val newchild = context.watch(context.actorOf(TelnetConnection.props(porter, tcpConnection), name = s"telnetconn$connCreated"))
+      connections += 1; connCreated += 1
       sender ! Tcp.Register(newchild)
 
-    case Terminated(_) =>
+    case Terminated(ref) =>
       connections -= 1
-      logConnections()
+      log.debug(s"Actor $ref terminated. There are currently $connections telnet connections.")
 
     case GetConnCount =>
       sender ! connections
   }
-
-  def logConnections() {
-    log.info(s"There are currently $connections telnet connections.")
-  }
 }
-
 object TelnetServer {
 
   case object GetConnCount extends Serializable

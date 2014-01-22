@@ -16,24 +16,32 @@
 
 package porter.app.akka.api
 
-import akka.actor.{Status, ActorRef, Props, Actor}
+import akka.actor._
 import porter.store.Store
 import akka.util.Timeout
 import scala.util.{Failure, Success, Try}
 import scala.concurrent.Future
+import scala.util.Failure
+import scala.Some
+import scala.util.Success
 
-class StoreActor(stores: List[Store]) extends Actor {
+class StoreActor(stores: List[Store]) extends Actor with ActorLogging {
   import StoreActor.messages._
   import StoreActor.readOnlyProps
 
-  val readonly = stores.map(s => context.actorOf(readOnlyProps(s)))
-
+  val readonly = stores.zipWithIndex.map { case (s, i) =>
+    context.actorOf(readOnlyProps(s), name = s"store$i")
+  }
   if (readonly.isEmpty) context.become(empty)
+
+  var workerCreated = 0
+  var workerActive = 0
 
   def receive = normal
 
   def empty: Receive = {
-    case sm: StoreMessage => sender ! Status.Failure(new Exception("No stores provided."))
+    case sm: StoreMessage =>
+      sender ! Status.Failure(new Exception("No stores provided."))
   }
 
   def normal: Receive = {
@@ -44,10 +52,15 @@ class StoreActor(stores: List[Store]) extends Actor {
     case req: GetAllGroups => receiveGroups(sender, req)
     case req: GetAllAccounts => receiveAccounts(sender, req)
     case GetAllRealms => receiveRealms(sender, GetAllRealms)
+    case Terminated(ref) =>
+      workerActive -= 1
+      log.debug(s"Actor $ref termintated. Active workers: $workerActive")
   }
 
   private def receiveRealms(client: ActorRef, req: PorterMessage) {
-    context.actorOf(Props[CollectingActor](new CollectingActor(client, req, readonly) {
+    val name = s"realms$workerCreated"
+    workerCreated += 1; workerActive += 1
+    context.watch(context.actorOf(Props[CollectingActor](new CollectingActor(client, req, readonly) {
       type Res = FindRealmsResp
       def empty = FindRealmsResp(Set())
       def merge(r1: Res, r2: Res) = FindRealmsResp(r1.realms ++ r2.realms)
@@ -57,11 +70,13 @@ class StoreActor(stores: List[Store]) extends Actor {
           case _ => None
         }
       }
-    }))
+    }), name))
   }
 
   private def receiveAccounts(client: ActorRef, req: PorterMessage) {
-    context.actorOf(Props[CollectingActor](new CollectingActor(client, req, readonly) {
+    val name = s"accounts$workerCreated"
+    workerCreated += 1; workerActive += 1
+    context.watch(context.actorOf(Props[CollectingActor](new CollectingActor(client, req, readonly) {
       type Res = FindAccountsResp
       object Extr {
         def unapply(a: Any) = a match {
@@ -73,11 +88,13 @@ class StoreActor(stores: List[Store]) extends Actor {
 
       def merge(r1: FindAccountsResp, r2: FindAccountsResp) =
         FindAccountsResp(r1.accounts ++ r2.accounts)
-    }))
+    }), name))
   }
 
   private def receiveGroups(client: ActorRef, req: PorterMessage) {
-    context.actorOf(Props[CollectingActor](new CollectingActor(client, req, readonly) {
+    val name = s"groups$workerCreated"
+    workerCreated += 1; workerActive += 1
+    context.watch(context.actorOf(Props[CollectingActor](new CollectingActor(client, req, readonly) {
       type Res = FindGroupsResp
       def merge(r1: this.type#Res, r2: this.type#Res) =
         FindGroupsResp(r1.groups++r2.groups)
@@ -90,7 +107,7 @@ class StoreActor(stores: List[Store]) extends Actor {
         }
       }
       val request = req
-    }))
+    }), name))
   }
 
 }

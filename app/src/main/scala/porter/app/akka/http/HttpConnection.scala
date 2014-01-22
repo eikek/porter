@@ -34,7 +34,10 @@ class HttpConnection(porter: ActorRef, decider: Decider) extends HttpServiceActo
     authRoute ~ storeRoute
   }
 
-  override def onConnectionClosed(ev: ConnectionClosed) = context.stop(self)
+  override def onConnectionClosed(ev: ConnectionClosed) = {
+    log.debug(s"Http connection closed, stopping actor $self")
+    context.stop(self)
+  }
 }
 
 object HttpConnection {
