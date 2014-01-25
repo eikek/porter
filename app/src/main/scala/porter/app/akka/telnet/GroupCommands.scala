@@ -54,9 +54,9 @@ object GroupCommands extends Commands {
       } yield {
         for (g <- groups; if filter(g.name.name)) {
           val gname = g.name.name
-          val rules = g.rules.mkString("\n  ", "\n  ", "\n")
-          val props = propsToString(g.props, "  |", "\n  |", "")
-          in <~ s"$gname: $rules$props"
+          val rules = if (g.rules.isEmpty) "" else g.rules.mkString("\n  ", "\n  ", "\n")
+          val props = if (g.props.isEmpty) "" else propsToString(g.props, "  |", "\n  |", "")
+          in <~ s"$gname: $rules$props\n"
         }
         in << ""
       }

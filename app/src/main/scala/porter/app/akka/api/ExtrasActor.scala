@@ -45,8 +45,7 @@ class ExtrasActor(store: ActorRef, mstore: ActorRef, ruleFactory: ActorRef, poli
         if acc.accounts.nonEmpty
         upd <- (mstore ? UpdateAccount(realm, acc.accounts.head.updatedProps(props))).mapTo[OperationFinished]
       } yield upd
-      f.onFailure { case x =>
-        log.error(x, "Cannot update acount properties")
+      f.recover { case x =>
         OperationFinished(result = false)
       }
       f pipeTo sender
