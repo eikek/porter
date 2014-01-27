@@ -96,7 +96,7 @@ trait EndpointRoute extends Directives with AuthDirectives with PageDirectives {
    * @return
    */
   private def sendOpenIdAssertion(account: Account, realm: Ident) = {
-    paramOpt(Keys.assoc_handle.openid) { handle =>
+    parameters(Keys.assoc_handle.openid.?) { handle =>
       association(handle)(timeout) { assoc =>
         positiveAssertion(Authenticated(account, assoc), realm) { resp =>
           redirectToRelyingParty(resp)
