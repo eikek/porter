@@ -45,7 +45,7 @@ trait EndpointRoute extends Directives with AuthDirectives with PageDirectives {
       } ~
       isImmediate {
         noCredentials {
-          complete(setupNeededResponse)
+          redirectToRelyingParty(setupNeededResponse)
         } ~
         credentials { creds =>
           authenticateRoute(creds) ~
@@ -96,7 +96,7 @@ trait EndpointRoute extends Directives with AuthDirectives with PageDirectives {
    * @return
    */
   private def sendOpenIdAssertion(account: Account, realm: Ident) = {
-    parameters(Keys.assoc_handle.openid.?) { handle =>
+    anyParam(Keys.assoc_handle.openid.?) { handle =>
       association(handle)(timeout) { assoc =>
         positiveAssertion(Authenticated(account, assoc), realm) { resp =>
           redirectToRelyingParty(resp)

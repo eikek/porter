@@ -106,11 +106,11 @@ trait AssociationDirectives extends OpenIdDirectives {
         if st == SessionType.DHSha1 || st == SessionType.DHSha256
         at <- map.get(Keys.assoc_type.openid).flatMap(AssocType.apply)
         dhmod <- map.get(Keys.dh_modulus.openid).orElse(Some(Crypt.DH.defaultModulusBase64))
-        dhgen <- map.get(Keys.dh_gen.openid).orElse(Some(Crypt.DH.defaultG.toString()))
+        dhgen <- map.get(Keys.dh_gen.openid).orElse(Some(Crypt.DH.defaultGBase64))
         dhpub <- map.get(Keys.dh_consumer_public.openid)
       } yield {
         val bdhmod = BigInt(Base64.decode(dhmod).toArray)
-        val bdhgen = BigInt(dhgen)
+        val bdhgen = BigInt(Base64.decode(dhgen).toArray)
         val bdhpub = BigInt(Base64.decode(dhpub).toArray)
         CreateAssoc(at, st, Some(DHOptions(bdhmod, bdhgen, bdhpub)))
       }

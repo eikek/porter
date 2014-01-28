@@ -42,8 +42,8 @@ object Crypt {
 
     val defaultModulusBase64 = Base64.encode(defaultModulus.toByteArray)
 
-    val defaultGString = "2"
-    val defaultG = BigInt(defaultGString)
+    val defaultG = BigInt("2")
+    val defaultGBase64 = Base64.encode(defaultG.toByteArray)
 
     def generateKeyPair(spec: AlgorithmParameterSpec) =
       Crypt.generateKeyPair(name)(spec).map(new DHKeyPair(_))
