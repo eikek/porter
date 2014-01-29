@@ -84,11 +84,11 @@ object Property {
 
   case class Concat(name: String, separator: String, props: Iterable[PropertyView[String]]) extends PropertyView[String] {
     def get(map: Properties) = {
-      val s = (StringBuilder.newBuilder /: props) { (sb, p) =>
-        p.get(map).map(v => sb.append(v).append(separator))
-        sb
+      if (props.isEmpty) None
+      else {
+        val values = for (p <- props; v <- p.get(map)) yield v
+        Some(values.reduce(_ + separator + _))
       }
-      if (s.isEmpty) None else Some(s.toString())
     }
   }
 }
