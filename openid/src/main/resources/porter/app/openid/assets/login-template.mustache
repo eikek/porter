@@ -28,8 +28,14 @@
                     <input type="hidden" name="{{name}}" value="{{value}}"/>
                 {{/params}}
                 <div class="form-group">
-                    <label for="username" class="sr-only">Username</label>
-                    <input type="text" class="form-control input-lg" id="username" name="porter.username" value="{{#localId}}{{account}}{{/localId}}" placeholder="Username"/>
+                    {{#username}}
+                        <input type="text" class="form-control input-lg" id="username" value="{{username}}" disabled="disabled"/>
+                        <input type="hidden" name="porter.username" value="{{username}}"/>
+                    {{/username}}
+                    {{^username}}
+                        <label for="username" class="sr-only">Username</label>
+                        <input type="text" class="form-control input-lg" id="username" name="porter.username" placeholder="Username"/>
+                    {{/username}}
                 </div>
                 <div class="form-group">
                     <label for="password" class="sr-only">Password</label>
@@ -44,9 +50,11 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <input type="submit" name="porter.submitType" class="btn btn-primary btn-lg" value="Sign in"/>
+                    <button type="submit" name="spray-openid.submitType" class="btn btn-primary btn-lg" value="signin">Sign in
+                    </button>
                     {{#identity}}
-                    <input type="submit" name="porter.submitType" class="btn btn-default btn-lg" value="Cancel"/>
+                    <button type="submit" name="spray-openid.submitType" class="btn btn-default btn-lg" value="cancel">Cancel
+                    </button>
                     {{/identity}}
                     {{#registerUrl}}
                     <div class="pull-right">

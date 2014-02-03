@@ -23,13 +23,14 @@ import scala.concurrent.{Future, ExecutionContext}
 import akka.util.Timeout
 import akka.io.{IO, Tcp}
 import porter.app.openid.CacheDirActor.CacheDirOpts
+import org.eknet.spray.openid.provider.AssociationActor
 
 class OpenIdHandler(porter: ActorRef, settings: OpenIdServiceSettings) extends Actor with ActorLogging {
   import OpenIdHandler._
   var connections = 0
   var connCreated = 0
 
-  val assocActor = context.actorOf(AssocActor(), name = "assoc")
+  val assocActor = context.actorOf(AssociationActor(), name = "openid-assoc")
   val avatarActor = context.actorOf(AvatarActor(porter,
     settings.avatarCacheDir.map(dir => CacheDirOpts(dir, settings.avatarCacheDirSize))), name = "avatar")
   val serviceProps = OpenIdService(porter, assocActor, avatarActor, settings)

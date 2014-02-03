@@ -30,7 +30,7 @@ trait RemoveAccount {
 
   def deleteAccount: Submission = {
     case Action("removeAccount", ctx, acc) =>
-      paramOpt("porter.removeAccount") { p =>
+      formField("porter.removeAccount".?) { p =>
         if (p == Some("on")) {
           log.info(s"About to delete account '${acc.name.name}'.")
           val f = (porterRef ? DeleteAccount(settings.defaultRealm, acc.name)).mapTo[OperationFinished]

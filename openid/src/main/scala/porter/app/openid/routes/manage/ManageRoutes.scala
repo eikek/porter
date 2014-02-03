@@ -21,14 +21,13 @@ import spray.http._
 import porter.model._
 import porter.app.client.spray.PorterAuthenticator
 import java.util.Locale
-import porter.app.openid.common.MustacheContext
 import porter.app.openid.routes._
 import scala.Some
 import spray.http.HttpResponse
 import porter.model.Account
 import porter.app.client.spray.PorterContext
 
-trait ManageRoutes extends OpenIdDirectives with PageDirectives with AuthDirectives
+trait ManageRoutes extends BasicDirectives with PageDirectives with AuthDirectives
   with Registration
   with ChangeSecret
   with ClearRememberedRealms
@@ -37,7 +36,6 @@ trait ManageRoutes extends OpenIdDirectives with PageDirectives with AuthDirecti
   with RemoveAccount
   with UpdateProperties { self: OpenIdActors =>
 
-  import Directives._
   import PageDirectives._
 
   private val porterContext = PorterContext(porterRef, settings.defaultRealm, settings.decider)
@@ -49,26 +47,31 @@ trait ManageRoutes extends OpenIdDirectives with PageDirectives with AuthDirecti
 
   def homeRoute: Route = {
     path(PathMatchers.separateOnSlashes(settings.endpointBaseUrl.path.toString())) {
-      paramIs("porter.action", "register") {
+      onAction("register") {
         registrationRoute
       } ~
       parameter("register") { _ =>
         if (settings.registrationEnabled) renderRegistrationPage()
         else reject()
       } ~
-      noCredentials {
-        renderLoginPage(settings.endpointBaseUrl, failed = false)
+      emptyCredentials {
+        renderLoginPage(failed = false)
       } ~
       authenticate(PorterAuth) { acc =>
-        param("porter.action") { action =>
+        anyParam("porter.action") { action =>
           submissions.lift(Action(action, porterContext, acc)).getOrElse(reject())
         } ~
         setPorterCookieOnRememberme(acc) {
           renderUserPage(acc)
         }
       } ~
-      renderLoginPage(settings.endpointBaseUrl, failed = true)
+      renderLoginPage(failed = true)
     }
+  }
+
+  def onAction(name: String): Directive0 = formField("porter.action".?).flatMap {
+    case Some(`name`) => pass
+    case _ => reject()
   }
 
   def redirectToUserPage =
@@ -76,7 +79,6 @@ trait ManageRoutes extends OpenIdDirectives with PageDirectives with AuthDirecti
 
   def renderUserPage(account: Account, msg: Message = Message.empty) = {
     def createPage(loc: Locale) = {
-      import MustacheContext._
       import Templating._
       import PropertyList._
       val adminFields = List(lastLoginTime, successfulLogins, failedLogins)

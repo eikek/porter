@@ -20,8 +20,9 @@ import porter.model.Ident
 import spray.http.Uri
 import java.nio.file.{Path, Files}
 import scala.util.Try
-import porter.app.openid.common.{Mustache, Supplier}
+import porter.app.openid.common.Supplier
 import porter.model.PasswordCrypt
+import org.eknet.spray.openid.provider.Mustache
 
 trait OpenIdServiceSettings {
 

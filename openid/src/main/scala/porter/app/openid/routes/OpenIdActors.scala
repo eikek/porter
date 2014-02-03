@@ -31,7 +31,6 @@ trait OpenIdActors {
   implicit def dispatcher: ExecutionContext
   implicit def timeout: Timeout
 
-  def assocActor: ActorRef
   def porterRef: ActorRef
   def avatarRef: ActorRef
 }

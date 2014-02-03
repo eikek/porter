@@ -23,25 +23,44 @@ import akka.util.Timeout
 import spray.http._
 import akka.io.Tcp.ConnectionClosed
 import porter.app.openid.routes.manage.ManageRoutes
+import org.eknet.spray.openid.provider._
+import porter.app.openid.common.LocalId
+import porter.model.Account
+import porter.model.Account
+import org.eknet.spray.openid.model.CheckIdRequest
+import porter.model
 
 class OpenIdService(val porterRef: ActorRef, val assocActor: ActorRef, val avatarRef: ActorRef, val settings: OpenIdServiceSettings) extends HttpServiceActor
   with ActorLogging
   with OpenIdActors
-  with DiscoveryRoute
+  with OpenIdProviderHook
   with StaticRoute
   with ManageRoutes
-  with EndpointRoute
   with AvatarRoute {
 
   implicit def dispatcher = context.dispatcher
   implicit val timeout = Timeout(3000)
   implicit val refFactory = context
 
+  private val discoverySetting = DiscoverySettings.forPathPrefix(settings.endpointBaseUrl)
+  private val openId = new ProviderRoute(EndpointSettings(createHook, assocActor), discoverySetting)
+
   def receive = runRoute {
-    checkRoute ~ homeRoute ~ avatarRoute ~ staticRoute ~ discovery
+    homeRoute ~ avatarRoute ~ staticRoute ~ openId.route
   }
 
   override def onConnectionClosed(ev: ConnectionClosed) = context.stop(self)
+
+  object LocalIdParts {
+    def unapply(id: String): Option[LocalId] = {
+      val segments = Uri(id).path.toString().split('/').filter(_.trim.nonEmpty).toList
+      segments match {
+        case realm :: name:: Nil => Some(LocalId(realm, name))
+        case name :: Nil => Some(LocalId(settings.defaultRealm.name, name))
+        case _ => None
+      }
+    }
+  }
 }
 
 object OpenIdService {
@@ -53,7 +72,7 @@ object OpenIdService {
     Props(classOf[OpenIdActor], porter, avatarActor, settings)
 
   class OpenIdActor(porter: ActorRef, settings: OpenIdServiceSettings) extends Actor {
-    val assocActor = context.actorOf(AssocActor(), "association")
+    val assocActor = context.actorOf(AssociationActor(), "association")
     val openid = context.actorOf(OpenIdService(porter, assocActor, settings), "service")
     def receive = {
       case m => openid.forward(m)

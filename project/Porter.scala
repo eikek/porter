@@ -45,6 +45,9 @@ object Deps {
   val sprayJson = Seq(
     "io.spray" %%  "spray-json" % "1.2.5"
   )
+  val sprayOpenId = Seq(
+    "org.eknet.spray" %% "spray-openid" % "0.1.0-SNAPSHOT"
+  )
 }
 
 object Porter extends sbt.Build {
@@ -115,7 +118,7 @@ object OpenId extends Build {
     base = file("openid"),
     settings = Project.defaultSettings ++ Seq(
       name := "porter-openid",
-      libraryDependencies ++= Deps.akka ++ Deps.spray ++ Deps.testBasics
+      libraryDependencies ++= Deps.akka ++ Deps.spray ++ Deps.sprayOpenId ++ Deps.testBasics
     )
   ) dependsOn App.module
 }
