@@ -18,16 +18,15 @@ package porter.app.akka.telnet
 
 import scala.concurrent.{Future, ExecutionContext}
 import akka.util.Timeout
-import porter.model._
 import scala.util.Try
-import porter.app.akka.{PorterUtil, Porter}
-import porter.model.Account
+import porter.model._
+import porter.app.akka.PorterUtil
 
 object AccountCommands extends Commands {
   import akka.pattern.ask
   import porter.util._
-  import Porter.Messages.mutableStore._
-  import Porter.Messages.store._
+  import porter.client.Messages.mutableStore._
+  import porter.client.Messages.store._
 
   def makeDoc =
     """

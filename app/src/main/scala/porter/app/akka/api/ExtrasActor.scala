@@ -18,10 +18,11 @@ package porter.app.akka.api
 
 import akka.actor.{ActorLogging, Props, Actor, ActorRef}
 import akka.util.Timeout
-import porter.app.akka.api.StoreActor.messages._
 import porter.client.Messages.mutableStore._
+import porter.client.Messages.store._
 import porter.client.Messages.auth.{RetrieveServerNonceResp, RetrieveServerNonce}
 import porter.auth.Nonce
+import porter.app.akka.api.StoreActor.FindAccountsFor
 
 /**
  * Some additional functions.

@@ -20,11 +20,11 @@ import akka.actor.{Terminated, ActorLogging, Props, Actor}
 import porter.auth.RuleFactory
 import porter.app.PorterSettings
 import porter.app.akka.api.PorterMain.ShowSettings
-import porter.app.akka.api.StoreActor.messages.StoreMessage
-import porter.app.akka.api.RuleFactoryActor.messages.MakeRules
-import porter.app.akka.api.MutableStoreActor.messages._
-import porter.app.akka.api.PolicyActor.messages.{Authorize, GetPolicy}
-import porter.app.akka.api.AuthcWorker.messages.Authenticate
+import porter.client.Messages.store.StoreMessage
+import porter.client.Messages.mutableStore.MutableStoreMessage
+import porter.app.akka.api.RuleFactoryActor.MakeRules
+import porter.app.akka.api.PolicyActor.GetPolicy
+import porter.client.Messages.auth.{Authenticate, Authorize}
 
 class PorterMain(settings: PorterSettings) extends Actor with ActorLogging {
 

@@ -20,14 +20,14 @@ import scala.concurrent.{Future, ExecutionContext}
 import porter.model.{Ident, Realm}
 import scala.util.Try
 import akka.util.Timeout
-import porter.app.akka.Porter
+import porter.app.akka.api.StoreActor.GetAllRealms
 
 object RealmCommands extends Commands {
 
   import akka.pattern.ask
   import porter.util._
-  import Porter.Messages.store._
-  import Porter.Messages.mutableStore._
+  import porter.client.Messages.store._
+  import porter.client.Messages.mutableStore._
 
   def makeDoc =
     """

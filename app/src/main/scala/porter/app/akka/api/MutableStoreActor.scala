@@ -16,17 +16,16 @@
 
 package porter.app.akka.api
 
-import porter.store.MutableStore
-import porter.model.Ident
-import akka.actor._
-import akka.util.Timeout
-import scala.Some
 import scala.util.{Failure, Success, Try}
 import scala.concurrent.Future
+import akka.actor._
+import akka.util.Timeout
+import porter.store.MutableStore
+import porter.client.Messages.mutableStore._
+import porter.model.Ident
 
 class MutableStoreActor(stores: List[(Set[Ident], MutableStore)]) extends Actor with ActorLogging {
   import MutableStoreActor._
-  import messages._
 
   private var workerCreated = 0
   private var workerActive = 0
@@ -59,9 +58,6 @@ class MutableStoreActor(stores: List[(Set[Ident], MutableStore)]) extends Actor 
 
 object MutableStoreActor {
   import porter.model._
-
-  val messages = porter.client.Messages.mutableStore
-  import messages._
 
   def apply(stores: List[(Set[Ident], MutableStore)]) = Props(classOf[MutableStoreActor], stores)
 

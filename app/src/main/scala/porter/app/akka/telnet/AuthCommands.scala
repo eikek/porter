@@ -17,18 +17,18 @@
 package porter.app.akka.telnet
 
 import scala.concurrent.{Future, ExecutionContext}
-import akka.util.Timeout
-import scala.util.Try
-import porter.model.{Ident, PasswordCredentials}
 import scala.util.Failure
-import porter.app.akka.Porter
+import scala.util.Try
+import akka.util.Timeout
+import porter.model.{Ident, PasswordCredentials}
+import porter.app.akka.api.PolicyActor.{GetPolicyResp, GetPolicy}
+import porter.util._
+import porter.client.Messages.auth._
+import porter.client.Messages.store._
 
 object AuthCommands extends Commands {
   import akka.pattern.ask
-  import porter.util._
-  import Porter.Messages.authc._
-  import Porter.Messages.authz._
-  import Porter.Messages.store._
+
 
   def makeDoc =
     """

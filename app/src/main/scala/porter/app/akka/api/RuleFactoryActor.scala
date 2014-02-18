@@ -16,14 +16,13 @@
 
 package porter.app.akka.api
 
+import scala.util.{Failure, Try, Success}
 import akka.actor.{ActorLogging, Status, Props, Actor}
 import porter.model._
 import porter.auth.RuleFactory
-import scala.util.{Failure, Try, Success}
-import scala.Some
 
 class RuleFactoryActor(list: Iterable[PermissionFactory]) extends Actor with ActorLogging {
-  import RuleFactoryActor.messages._
+  import RuleFactoryActor._
 
   lazy val factory = RuleFactory.createRuleWith(list.head)_
   val next =
@@ -66,11 +65,9 @@ object RuleFactoryActor {
     Props(classOf[RuleFactoryActor], list)
   }
 
-  object messages {
-    case class MakeRules(rules: Set[String]) extends PorterMessage
-    case class MakeRulesResp(rules: Set[Rule]) extends PorterMessage {
-      lazy val (permissions, revocations) = Rules.partition(rules)
-    }
+  case class MakeRules(rules: Set[String]) extends PorterMessage
+  case class MakeRulesResp(rules: Set[Rule]) extends PorterMessage {
+    lazy val (permissions, revocations) = Rules.partition(rules)
   }
 
 }

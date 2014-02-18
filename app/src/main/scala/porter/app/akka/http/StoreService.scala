@@ -20,8 +20,8 @@ import akka.actor.ActorRef
 import spray.routing.{Route, Directives}
 import scala.concurrent.ExecutionContext
 import akka.util.Timeout
-import porter.app.akka.Porter.Messages.mutableStore._
-import porter.app.akka.Porter.Messages.store._
+import porter.client.Messages.mutableStore._
+import porter.client.Messages.store._
 import porter.app.akka.PorterUtil
 import porter.model._
 import porter.auth.Decider
@@ -32,7 +32,6 @@ class StoreService(client: PorterAkkaClient)
                   (implicit ec: ExecutionContext, to: Timeout) extends Directives with SprayJsonSupport {
 
   import PorterJsonProtocol._
-  import akka.pattern.ask
 
   implicit private val timeout = to.duration
   private val porterRef = client.porterRef

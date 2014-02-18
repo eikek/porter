@@ -16,13 +16,13 @@
 
 package porter.app.akka.api
 
-import akka.testkit.{ImplicitSender, TestKit}
-import akka.actor.{Status, Props, ActorSystem}
+import scala.concurrent.{Future, ExecutionContext}
 import com.typesafe.config.ConfigFactory
+import akka.testkit.{ImplicitSender, TestKit}
+import akka.actor.{Props, ActorSystem}
 import org.scalatest.{BeforeAndAfterAll, WordSpec}
 import porter.model.{Realm, Ident}
-import porter.app.akka.api.MutableStoreActor.messages.{OperationFinished, UpdateRealm}
-import scala.concurrent.{Future, ExecutionContext}
+import porter.client.Messages.mutableStore.{UpdateRealm, OperationFinished}
 
 class MutableStoreSpec extends TestKit(ActorSystem("RuleFactoryActorSpec", ConfigFactory.load("reference")))
   with WordSpec with BeforeAndAfterAll with ImplicitSender {

@@ -21,13 +21,12 @@ import akka.util.Timeout
 import porter.model._
 import scala.util.Try
 import porter.model.Group
-import porter.app.akka.Porter
+import porter.app.akka.api.RuleFactoryActor.{MakeRules, MakeRulesResp}
 
 object GroupCommands extends Commands {
   import akka.pattern.ask
-  import Porter.Messages.store._
-  import Porter.Messages.mutableStore._
-  import Porter.Messages.rules._
+  import porter.client.Messages.store._
+  import porter.client.Messages.mutableStore._
   import porter.util._
 
   def makeDoc =

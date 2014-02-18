@@ -26,7 +26,8 @@ import porter.auth._
 class AuthcWorker(store: ActorRef, validators: List[Validator]) extends Actor {
   import AuthcWorker._
   import porter.client.Messages.auth._
-  import StoreActor.messages._
+  import porter.client.Messages.store._
+  import StoreActor._
 
   val handlers = validators.zipWithIndex.map { case (a,i) =>
     context.actorOf(handlerProps(a), name = s"validator$i")
@@ -96,13 +97,6 @@ class AuthcWorker(store: ActorRef, validators: List[Validator]) extends Actor {
 }
 
 object AuthcWorker {
-  object messages {
-    type Authenticate = porter.client.Messages.auth.Authenticate
-    val Authenticate = porter.client.Messages.auth.Authenticate
-
-    type AuthenticateResp = porter.client.Messages.auth.AuthenticateResp
-    val AuthenticateResp = porter.client.Messages.auth.AuthenticateResp
-  }
 
   def apply(store: ActorRef, handlers: Iterable[Validator]) =
     Props(classOf[AuthcWorker], store, handlers)

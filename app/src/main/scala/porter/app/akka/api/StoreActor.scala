@@ -16,18 +16,17 @@
 
 package porter.app.akka.api
 
-import akka.actor._
-import porter.store.Store
-import akka.util.Timeout
-import scala.util.{Failure, Success, Try}
 import scala.concurrent.Future
+import scala.util.Try
 import scala.util.Failure
-import scala.Some
 import scala.util.Success
+import akka.actor._
+import akka.util.Timeout
+import porter.store.Store
+import porter.client.Messages.store._
 
 class StoreActor(stores: List[Store]) extends Actor with ActorLogging {
-  import StoreActor.messages._
-  import StoreActor.readOnlyProps
+  import StoreActor._
 
   val readonly = stores.zipWithIndex.map { case (s, i) =>
     context.actorOf(readOnlyProps(s), name = s"store$i")
@@ -114,7 +113,6 @@ class StoreActor(stores: List[Store]) extends Actor with ActorLogging {
 
 object StoreActor {
   import porter.model._
-  import messages._
 
   def apply(stores: List[Store]) = Props(classOf[StoreActor], stores)
 
@@ -160,29 +158,9 @@ object StoreActor {
     }
   }
 
-  object messages {
-    type StoreMessage = porter.client.Messages.store.StoreMessage
+  /** Returns all realms in a `FindRealmsResp` object */
+  case object GetAllRealms extends StoreMessage
 
-    type FindRealms = porter.client.Messages.store.FindRealms
-    val FindRealms = porter.client.Messages.store.FindRealms
-    type FindRealmsResp = porter.client.Messages.store.FindRealmsResp
-    val FindRealmsResp = porter.client.Messages.store.FindRealmsResp
-    case object GetAllRealms extends StoreMessage
-
-    case class FindAccountsFor(realm: Ident, creds: Set[Credentials]) extends StoreMessage
-    val FindAccounts = porter.client.Messages.store.FindAccounts
-    type FindAccounts = porter.client.Messages.store.FindAccounts
-    val GetAllAccounts = porter.client.Messages.store.GetAllAccounts
-    type GetAllAccounts = porter.client.Messages.store.GetAllAccounts
-    type FindAccountsResp = porter.client.Messages.store.FindAccountsResp
-    val FindAccountsResp = porter.client.Messages.store.FindAccountsResp
-
-    type FindGroups = porter.client.Messages.store.FindGroups
-    val FindGroups = porter.client.Messages.store.FindGroups
-    val GetAllGroups = porter.client.Messages.store.GetAllGroups
-    type GetAllGroups = porter.client.Messages.store.GetAllGroups
-    type FindGroupsResp = porter.client.Messages.store.FindGroupsResp
-    val FindGroupsResp = porter.client.Messages.store.FindGroupsResp
-  }
+  case class FindAccountsFor(realm: Ident, creds: Set[Credentials]) extends StoreMessage
 
 }

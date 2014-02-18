@@ -21,14 +21,14 @@ import akka.actor.{Status, ActorSystem}
 import org.scalatest.{BeforeAndAfterAll, WordSpec}
 import com.typesafe.config.ConfigFactory
 import porter.model.{Ident, Account, Realm}
-import porter.app.akka.Porter
 import porter.store.SimpleStore
 import scala.concurrent.ExecutionContext
+import porter.app.akka.api.StoreActor.GetAllRealms
+import porter.client.Messages.store._
 
 class StoreActorSpec extends TestKit(ActorSystem("StoreActorSpec", ConfigFactory.load("reference")))
   with WordSpec with BeforeAndAfterAll with ImplicitSender {
 
-  import Porter.Messages.store._
   override def afterAll() {
     system.shutdown()
   }

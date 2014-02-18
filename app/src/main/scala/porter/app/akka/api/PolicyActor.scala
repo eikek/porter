@@ -17,12 +17,13 @@
 package porter.app.akka.api
 
 import akka.actor.{Status, Props, ActorRef, Actor}
+import porter.client.Messages.auth._
+import porter.client.Messages.store._
+import porter.model._
 
 class PolicyActor(store: ActorRef, ruleFactory: ActorRef) extends Actor {
-  import PolicyActor.messages._
-  import StoreActor.messages._
-  import RuleFactoryActor.messages._
-  import porter.model._
+  import PolicyActor._
+  import RuleFactoryActor._
   import akka.actor.ActorDSL._
 
   private case object Done
@@ -95,16 +96,8 @@ class PolicyActor(store: ActorRef, ruleFactory: ActorRef) extends Actor {
 object PolicyActor {
   import porter.model._
 
-  object messages {
-    case class GetPolicy(realmId: Ident, account: Ident) extends PorterMessage
-    case class GetPolicyResp(account: Ident, policy: Policy) extends PorterMessage
-
-    type Authorize = porter.client.Messages.auth.Authorize
-    val Authorize = porter.client.Messages.auth.Authorize
-
-    type AuthorizeResp = porter.client.Messages.auth.AuthorizeResp
-    val AuthorizeResp = porter.client.Messages.auth.AuthorizeResp
-  }
+  case class GetPolicy(realmId: Ident, account: Ident) extends PorterMessage
+  case class GetPolicyResp(account: Ident, policy: Policy) extends PorterMessage
 
   def apply(store: ActorRef, ruleFactory: ActorRef) =
     Props(classOf[PolicyActor], store, ruleFactory)

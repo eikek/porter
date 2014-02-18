@@ -22,12 +22,12 @@ import com.typesafe.config.ConfigFactory
 import org.scalatest.{BeforeAndAfterAll, WordSpec}
 import porter.auth.RuleFactory
 import porter.model.Policy
-import porter.app.akka.Porter
+import porter.app.akka.api.PolicyActor.{GetPolicyResp, GetPolicy}
 
 class GetPolicySpec extends TestKit(ActorSystem("GetPolicySpec", ConfigFactory.load("reference")))
   with WordSpec with BeforeAndAfterAll with ImplicitSender {
 
-  import Porter.Messages.authz._
+  import porter.client.Messages.auth._
   override def afterAll() {
     system.shutdown()
   }

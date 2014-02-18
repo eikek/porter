@@ -16,17 +16,16 @@
 
 package porter.app.akka.http
 
-import akka.actor.ActorRef
-import spray.routing.{Route, Directives}
 import scala.concurrent.ExecutionContext
+import akka.actor.ActorRef
 import akka.util.Timeout
-import porter.app.akka.Porter.Messages.authz._
-import porter.app.akka.Porter.Messages.authc._
-import porter.auth.{OneSuccessfulVote, Decider}
-import porter.client.Messages.auth.RetrieveServerNonce
-import porter.app.client.PorterAkkaClient
+import spray.routing.{Route, Directives}
 import spray.http.{HttpResponse, StatusCodes}
+import porter.auth.{OneSuccessfulVote, Decider}
+import porter.app.client.PorterAkkaClient
 import porter.client.json.MessageJsonProtocol
+import porter.client.Messages.auth._
+import porter.app.akka.api.PolicyActor.{GetPolicyResp, GetPolicy}
 
 class AuthService(client: PorterAkkaClient)(implicit ec: ExecutionContext, to: Timeout) extends Directives {
   import PorterJsonProtocol._

@@ -21,10 +21,9 @@ import porter.model._
 import porter.auth.{AuthResult, OneSuccessfulVote, Decider}
 import scala.concurrent.{Future, ExecutionContext}
 import akka.util.Timeout
-import porter.app.akka.Porter.Messages.authc._
-import porter.app.akka.Porter.Messages.authz._
-import porter.app.akka.Porter.Messages.store._
-import porter.app.akka.Porter.Messages.mutableStore._
+import porter.client.Messages.store._
+import porter.client.Messages.auth._
+import porter.client.Messages.mutableStore._
 
 /**
  * Utility functions combining different porter messages.

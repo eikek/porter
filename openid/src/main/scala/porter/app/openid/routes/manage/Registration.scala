@@ -17,12 +17,10 @@
 package porter.app.openid.routes.manage
 
 import porter.app.openid.routes.OpenIdActors
-import spray.routing.Directives._
 import spray.http._
 import porter.app.openid.OpenIdServiceSettings
 import porter.model.{PropertyList, Password, Ident}
 import spray.routing._
-import porter.app.akka.api.StoreActor.messages._
 import porter.app.akka.PorterUtil
 import akka.pattern.ask
 import spray.http.MediaTypes._
@@ -31,6 +29,7 @@ import spray.http.HttpRequest
 import scala.util.Failure
 import porter.model.Account
 import scala.util.Success
+import porter.client.Messages.store.{FindAccountsResp, FindAccounts}
 
 trait Registration {
   self: ManageRoutes with OpenIdActors =>

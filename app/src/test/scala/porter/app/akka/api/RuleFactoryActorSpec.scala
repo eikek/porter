@@ -17,17 +17,16 @@
 package porter.app.akka.api
 
 import org.scalatest.{BeforeAndAfterAll, WordSpec}
-import akka.actor.{Status, Props, ActorSystem}
+import akka.actor.{Status, ActorSystem}
 import akka.testkit.{ImplicitSender, TestKit}
 import porter.auth.RuleFactory
 import porter.model.{ResourcePermission, DefaultPermission}
 import com.typesafe.config.ConfigFactory
-import porter.app.akka.Porter
+import porter.app.akka.api.RuleFactoryActor.{MakeRulesResp, MakeRules}
 
 class RuleFactoryActorSpec extends TestKit(ActorSystem("RuleFactoryActorSpec", ConfigFactory.load("reference")))
   with WordSpec with BeforeAndAfterAll with ImplicitSender {
 
-  import Porter.Messages.rules._
   override def afterAll() {
     system.shutdown()
   }

@@ -17,8 +17,8 @@
 package porter.app.akka.http
 
 import porter.model._
-import porter.app.akka.Porter.Messages.authz._
 import porter.client.json.MessageJsonProtocol
+import porter.app.akka.api.PolicyActor.GetPolicy
 
 object PorterJsonProtocol extends MessageJsonProtocol {
 

@@ -84,11 +84,4 @@ object Porter extends ExtensionId[Porter] with ExtensionIdProvider {
 
   def createExtension(system: ExtendedActorSystem) = new Porter(system)
   
-  object Messages {
-    val rules = RuleFactoryActor.messages
-    val store = StoreActor.messages
-    val mutableStore = porter.client.Messages.mutableStore
-    val authc = AuthcWorker.messages
-    val authz = PolicyActor.messages
-  }
 }
