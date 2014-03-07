@@ -43,7 +43,7 @@ class OpenIdService(val porterRef: ActorRef, val assocActor: ActorRef, val avata
   implicit val refFactory = context
 
   private val discoverySetting = DiscoverySettings.forPathPrefix(settings.endpointBaseUrl)
-  private val openId = new ProviderRoute(EndpointSettings(createHook, assocActor), discoverySetting)
+  private val openId = new ProviderRoute(EndpointSettings(discoverySetting.endpointUrl, createHook, assocActor), discoverySetting)
 
   def receive = runRoute {
     homeRoute ~ avatarRoute ~ staticRoute ~ openId.route
