@@ -80,7 +80,7 @@ object AccountCommands extends Commands {
   def listall(implicit executor: ExecutionContext, to: Timeout): Command = {
     case in @Input(msg, conn, porter, _) if msg startsWith "la" =>
       val filter = if (msg == "la") (s: String) => true else (s: String) => Glob.matches(msg.substring(3), s)
-      for {
+      val f = for {
         r <- in.realmFuture
         list <- (porter ? GetAllAccounts(r.id)).mapTo[FindAccountsResp].map(_.accounts)
       } yield {
@@ -89,8 +89,9 @@ object AccountCommands extends Commands {
         for (a <- list; if filter(a.name.name)) {
           in <~ s"${a.name.name} ${groups(a)}\n${props(a)}\n"
         }
-        in << ""
+        ""
       }
+      in << f
   }
 
   def delete(implicit executor: ExecutionContext, to: Timeout): Command = {

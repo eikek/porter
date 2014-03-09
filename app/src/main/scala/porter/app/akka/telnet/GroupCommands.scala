@@ -47,7 +47,7 @@ object GroupCommands extends Commands {
   def listall(implicit executor: ExecutionContext, to: Timeout): Command = {
     case in@Input(msg, conn, porter, _) if msg startsWith "lg" =>
       val filter = if (msg == "lg") (s: String) => true else (s: String) => Glob.matches(msg.substring(3), s)
-      for {
+      val f = for {
         r <- in.realmFuture
         groups <- (porter ? GetAllGroups(r.id)).mapTo[FindGroupsResp].map(_.groups)
       } yield {
@@ -57,8 +57,9 @@ object GroupCommands extends Commands {
           val props = if (g.props.isEmpty) "" else propsToString(g.props, "  |", "\n  |", "")
           in <~ s"$gname: $rules$props\n"
         }
-        in << ""
+        ""
       }
+      in << f
   }
 
   def update(implicit executor: ExecutionContext, to: Timeout): Command = new Form {
