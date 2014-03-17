@@ -22,6 +22,6 @@ object Implicits {
 
   implicit class UriAdds(uri: Uri) {
     def appendPath(path: String): Uri =
-      uri.withPath(uri.path + path)
+      if (path startsWith "/") uri.withPath(uri.path + path) else uri.withPath(uri.path +"/"+ path)
   }
 }

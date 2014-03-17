@@ -8,3 +8,8 @@
     border: 1px solid #eee;
     border-bottom: 2px solid #555;
 }
+
+.porter-openid-image {
+    width: 18px;
+    height: 18px;
+}

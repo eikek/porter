@@ -81,6 +81,7 @@ trait ManageRoutes extends BasicDirectives with PageDirectives with AuthDirectiv
     def createPage(loc: Locale) = {
       import Templating._
       import PropertyList._
+      import Implicits._
       val adminFields = List(lastLoginTime, successfulLogins, failedLogins)
         .map(p => PropertyField(p, p.name.substring(13), account, loc))
       val userFields = userProps.map(p => PropertyField(p, p.name.substring(12), account, loc)).toList
@@ -89,6 +90,7 @@ trait ManageRoutes extends BasicDirectives with PageDirectives with AuthDirectiv
         .andThen(KeyName.adminProps.put(adminFields))
         .andThen(KeyName.account.put(account))
         .andThen(KeyName.actionUrl.put(settings.endpointBaseUrl.toRelative))
+        .andThen(KeyName.userOpenId.put(settings.endpointBaseUrl.appendPath(account.name.name)))
         .andThen(KeyName.avatarUrl.put(avatarUrl(account)))
 
       settings.userTemplate(data(defaultContext(settings)))

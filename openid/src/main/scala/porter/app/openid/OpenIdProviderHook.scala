@@ -93,7 +93,7 @@ trait OpenIdProviderHook extends AuthDirectives with Directives {
      * @return
      */
     private def isContinueRemembered(account: Account): Directive0 = {
-      formField("openid.realm").flatMap { realmuri =>
+      anyParam("openid.realm").flatMap { realmuri =>
         if (rememberRealmProperty(realmuri).isTrue(account.props)) pass
         else reject()
       }

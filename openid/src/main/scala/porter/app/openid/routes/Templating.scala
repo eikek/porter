@@ -23,6 +23,7 @@ import porter.app.openid.routes.manage.Message
 import porter.app.openid.OpenIdServiceSettings
 import org.eknet.spray.openid.provider.MustacheContext
 import java.util.Locale
+import spray.http.Uri.Path
 
 trait Templating extends MustacheContext.MoreConverter {
   import MustacheContext._
@@ -43,6 +44,7 @@ trait Templating extends MustacheContext.MoreConverter {
     val registerFailedReasons = KeyedData("registerFailedReasons")
     val fields = KeyedData("fields")
     val avatarUrl = KeyedData("avatarUrl")
+    val userOpenId = KeyedData("userOpenId")
     val infoMessage = KeyedData("infoMessage")
     val staticResourcesPath = KeyedData("staticResourcesPath")
   }
@@ -98,7 +100,7 @@ trait Templating extends MustacheContext.MoreConverter {
     }
   }
 
-  implicit object LocalIdConv extends ValueConverter[LocalId] {
+  implicit object LocalIdConv extends MapConverter[LocalId] {
     def convert(obj: LocalId) = Map(
       "realm" -> obj.realm.name,
       "account" -> obj.account.name

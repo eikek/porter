@@ -24,11 +24,6 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Try, Failure, Success}
 import scala.reflect.ClassTag
 
-/**
- *
- * @since 25.11.13 09:43
- *
- */
 package object telnet {
 
   type Command = PartialFunction[Input, Unit]
