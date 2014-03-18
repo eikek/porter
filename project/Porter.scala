@@ -3,7 +3,9 @@ import sbt.Keys._
 
 object Version {
   val scala = "2.10.3"
-  val scalaTest = "1.9.1"
+  val scalaTest = "2.1.0"
+  val akka = "2.2.4"
+  val spray = "1.2.1"
 }
 
 object Deps {
@@ -19,11 +21,11 @@ object Deps {
   )
 
   val akka = Seq(
-    "com.typesafe.akka" %% "akka-actor" % "2.2.3",
-    "com.typesafe.akka" %% "akka-testkit" % "2.2.3" % "test"
+    "com.typesafe.akka" %% "akka-actor" % Version.akka,
+    "com.typesafe.akka" %% "akka-testkit" % Version.akka % "test"
   )
   val akkaRemote = Seq(
-    "com.typesafe.akka" %% "akka-remote" % "2.2.3"
+    "com.typesafe.akka" %% "akka-remote" % Version.akka
   )
 
   val casbah = Seq(
@@ -35,12 +37,12 @@ object Deps {
   val logback = Seq(
     "org.slf4j" % "slf4j-api" % "1.7.5",
     "ch.qos.logback" % "logback-classic" % "1.0.13" % "runtime",
-    "com.typesafe.akka" %% "akka-slf4j" % "2.2.3" % "runtime"
+    "com.typesafe.akka" %% "akka-slf4j" % Version.akka % "runtime"
   )
 
   val spray = Seq(
-    "io.spray" % "spray-can" % "1.2.0",
-    "io.spray" % "spray-routing" % "1.2.0"
+    "io.spray" % "spray-can" % Version.spray,
+    "io.spray" % "spray-routing" % Version.spray
   )
   val sprayJson = Seq(
     "io.spray" %%  "spray-json" % "1.2.5"
