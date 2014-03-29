@@ -148,9 +148,10 @@ class MongoStore(cfg: Config) extends Store with MutableStore {
 object MongoStore {
 
   def createClient(cfg: Config): MongoClient = {
+    val uri = Try(cfg.getString("uri")).map(MongoClientURI.apply)
     val host = Try(cfg.getString("host")).getOrElse("localhost")
     val port = Try(cfg.getInt("port")).getOrElse(27017)
-    MongoClient(host, port)
+    uri.map(u => MongoClient(u)).getOrElse(MongoClient(host, port))
   }
 
   implicit class RealmConv(realm: Realm) {
