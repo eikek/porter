@@ -20,11 +20,9 @@ import akka.actor.{Terminated, ActorLogging, Props, Actor}
 import porter.auth.RuleFactory
 import porter.app.PorterSettings
 import porter.app.akka.api.PorterMain.ShowSettings
-import porter.client.Messages.store.StoreMessage
-import porter.client.Messages.mutableStore.MutableStoreMessage
+import porter.client.messages._
 import porter.app.akka.api.RuleFactoryActor.MakeRules
 import porter.app.akka.api.PolicyActor.GetPolicy
-import porter.client.Messages.auth.{Authenticate, Authorize}
 
 class PorterMain(settings: PorterSettings) extends Actor with ActorLogging {
 
@@ -47,7 +45,7 @@ class PorterMain(settings: PorterSettings) extends Actor with ActorLogging {
     case authz: Authorize => policy forward authz
     case authc: Authenticate =>
       val w = context.watch(context.actorOf(AuthcWorker(store, settings.validators), name = s"authc$authcCreated"))
-      authcCreated += 1
+      authcCreated += 1; authcActive += 1
       w forward authc
     case rest: PorterMessage => extras forward rest
     case Terminated(ref) =>

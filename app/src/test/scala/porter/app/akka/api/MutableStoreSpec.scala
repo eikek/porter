@@ -22,7 +22,7 @@ import akka.testkit.{ImplicitSender, TestKit}
 import akka.actor.{Props, ActorSystem}
 import org.scalatest.{BeforeAndAfterAll, WordSpec}
 import porter.model.{Realm, Ident}
-import porter.client.Messages.mutableStore.{UpdateRealm, OperationFinished}
+import porter.client.messages._
 
 class MutableStoreSpec extends TestKit(ActorSystem("RuleFactoryActorSpec", ConfigFactory.load("reference")))
   with WordSpec with BeforeAndAfterAll with ImplicitSender {
@@ -46,30 +46,32 @@ class MutableStoreSpec extends TestKit(ActorSystem("RuleFactoryActorSpec", Confi
       expectMsg(0)
 
       store ! UpdateRealm(realm)
-      expectMsg(OperationFinished(result = true))
+      expectMsg(OperationFinished.success)
       this.expectNoMsg(300.millis)
       store ! "count"
       expectMsg(0)
     }
 
     "recover from store future error" in {
+      val error = new Exception()
       val failstore = new EmptyMutableStore {
-        override def updateRealm(realm: Realm)(implicit ec: ExecutionContext) = Future.failed(new Exception())
+        override def updateRealm(realm: Realm)(implicit ec: ExecutionContext) = Future.failed(error)
       }
       val store = system.actorOf(MutableStoreActor(List(Set.empty[Ident] -> failstore)))
 
       store ! UpdateRealm(realm)
-      expectMsg(OperationFinished(result = false))
+      expectMsg(OperationFinished.failure(error))
     }
 
     "recover from store error" in {
+      val error = new Exception()
       val failstore = new EmptyMutableStore {
-        override def updateRealm(realm: Realm)(implicit ec: ExecutionContext) = sys.error("failure")
+        override def updateRealm(realm: Realm)(implicit ec: ExecutionContext) = throw error
       }
       val store = system.actorOf(MutableStoreActor(List(Set.empty[Ident] -> failstore)))
 
       store ! UpdateRealm(realm)
-      expectMsg(OperationFinished(result = false))
+      expectMsg(OperationFinished.failure(error))
     }
   }
 }

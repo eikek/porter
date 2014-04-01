@@ -45,6 +45,16 @@ class Porter(system: ExtendedActorSystem) extends Extension {
 
 
   /**
+   * Selects the remote porter actor at the given location. If an [[akka.actor.ActorRef]]
+   * is needed, call `resolveOne()` on the returned selection.
+   *
+   * @param remoteUri the uri or path to the remote actor
+   * @return
+   */
+  def select(remoteUri: String): ActorSelection =
+    system.actorSelection(remoteUri)
+
+  /**
    * Creates a new porter actor using the given factory and returns the ref.
    *
    * @param settings settings to configure porter

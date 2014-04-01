@@ -23,8 +23,7 @@ import akka.util.Timeout
 import porter.model.{Ident, PasswordCredentials}
 import porter.app.akka.api.PolicyActor.{GetPolicyResp, GetPolicy}
 import porter.util._
-import porter.client.Messages.auth._
-import porter.client.Messages.store._
+import porter.client.messages._
 
 object AuthCommands extends Commands {
   import akka.pattern.ask

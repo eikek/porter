@@ -27,7 +27,6 @@ import porter.app.akka.api.PolicyActor.{GetPolicyResp, GetPolicy}
 class GetPolicySpec extends TestKit(ActorSystem("GetPolicySpec", ConfigFactory.load("reference")))
   with WordSpec with BeforeAndAfterAll with ImplicitSender {
 
-  import porter.client.Messages.auth._
   override def afterAll() {
     system.shutdown()
   }

@@ -29,9 +29,9 @@ object Deps {
   )
 
   val casbah = Seq(
-    "org.mongodb" %% "casbah-commons" % "2.6.3",
-    "org.mongodb" %% "casbah-query" % "2.6.3",
-    "org.mongodb" %% "casbah-core" % "2.6.3"
+    "org.mongodb" %% "casbah-commons" % "2.6.5",
+    "org.mongodb" %% "casbah-query" % "2.6.5",
+    "org.mongodb" %% "casbah-core" % "2.6.5"
   )
 
   val logback = Seq(

@@ -16,7 +16,7 @@
 
 package porter.app.openid.routes.manage
 
-import porter.client.Messages.mutableStore.UpdateAccount
+import porter.client.messages._
 import porter.app.openid.routes.OpenIdActors
 
 trait ClearRememberedRealms {

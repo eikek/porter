@@ -24,7 +24,7 @@ import spray.http.{HttpResponse, StatusCodes}
 import porter.auth.{OneSuccessfulVote, Decider}
 import porter.app.client.PorterAkkaClient
 import porter.client.json.MessageJsonProtocol
-import porter.client.Messages.auth._
+import porter.client.messages._
 import porter.app.akka.api.PolicyActor.{GetPolicyResp, GetPolicy}
 
 class AuthService(client: PorterAkkaClient)(implicit ec: ExecutionContext, to: Timeout) extends Directives {

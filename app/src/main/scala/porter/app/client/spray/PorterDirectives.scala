@@ -26,11 +26,13 @@ import akka.util.Timeout
 import scala.concurrent.ExecutionContext
 import porter.auth.AuthResult
 import porter.model.Account
-import scala.util.Success
+import scala.util.{Failure, Success}
 import spray.routing.AuthenticationFailedRejection.CredentialsRejected
 import porter.app.akka.PorterUtil
 import akka.actor.ActorRef
-import porter.client.Messages.auth.{RetrieveServerNonceResp, RetrieveServerNonce}
+import porter.client.messages._
+import scala.util.control.NonFatal
+import java.util.concurrent.ExecutionException
 
 trait PorterDirectives {
 
@@ -172,7 +174,15 @@ trait PorterDirectives {
                          (implicit ec: ExecutionContext, timeout: Timeout): Directive1[Account] =
     onComplete(PorterUtil.authenticateAccount(pctx.porterRef, pctx.realm, creds, pctx.decider)).flatMap {
       case Success((_, account)) => provide(account)
-      case _ => reject()
+      case Failure(x) => x match {
+        case ee: ExecutionException =>
+          ee.getCause match {
+            case NonFatal(_) => reject()
+            case t => throw t
+          }
+        case NonFatal(_) => reject()
+        case e => throw e
+      }
     }
 
   /**
@@ -187,9 +197,9 @@ trait PorterDirectives {
    */
   def authenticateResult(pctx: PorterContext, creds: Set[Credentials])
                         (implicit ec: ExecutionContext, timeout: Timeout): Directive1[AuthResult] =
-    onComplete(PorterUtil.authenticationFuture(pctx.porterRef, pctx.realm, creds, pctx.decider)).flatMap {
-      case Success(result) => provide(result)
-      case _ => reject()
+    onSuccess(PorterUtil.authenticationFuture(pctx.porterRef, pctx.realm, creds, pctx.decider)).flatMap {
+      case AuthenticateResp(Some(r)) => provide(r)
+      case AuthenticateResp(_) => reject()
     }
 
   /**

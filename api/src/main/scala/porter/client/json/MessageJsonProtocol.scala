@@ -16,9 +16,7 @@
 
 package porter.client.json
 
-import porter.client.Messages.store._
-import porter.client.Messages.mutableStore._
-import porter.client.Messages.auth._
+import porter.client.messages._
 import porter.auth.AuthResult
 import spray.json._
 import scala.concurrent.duration.Duration
@@ -35,7 +33,7 @@ trait MessageJsonProtocol extends ModelJsonProtocol {
   implicit val findRealmsFormat = jsonFormat1(FindRealms)
   implicit val findRealmsRespFormat = jsonFormat1(FindRealmsResp)
 
-  implicit val operationFinishedFormat = jsonFormat1(OperationFinished)
+  implicit val operationFinishedFormat = jsonFormat2(OperationFinished.apply)
   implicit val getAllAccountsFormat = jsonFormat(GetAllAccounts, "realm")
   implicit val updateAccountFormat = jsonFormat(UpdateAccount, "realm", "account")
   implicit val deleteAccountFormat = jsonFormat(DeleteAccount, "realm", "account")

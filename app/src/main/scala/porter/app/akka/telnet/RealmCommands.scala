@@ -26,8 +26,7 @@ object RealmCommands extends Commands {
 
   import akka.pattern.ask
   import porter.util._
-  import porter.client.Messages.store._
-  import porter.client.Messages.mutableStore._
+  import porter.client.messages._
 
   def makeDoc =
     """

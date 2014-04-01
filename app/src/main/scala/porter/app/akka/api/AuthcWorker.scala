@@ -16,17 +16,18 @@
 
 package porter.app.akka.api
 
-import akka.actor.{Status, Props, ActorRef, Actor}
+import akka.actor._
 import porter.auth._
+import porter.auth.AuthToken
+import scala.Some
 
 /**
  * Actor for processing one `Authenticate` request. After done, the actor stops itself.
  *
  */
-class AuthcWorker(store: ActorRef, validators: List[Validator]) extends Actor {
+class AuthcWorker(store: ActorRef, validators: List[Validator]) extends Actor with ActorLogging {
   import AuthcWorker._
-  import porter.client.Messages.auth._
-  import porter.client.Messages.store._
+  import porter.client.messages._
   import StoreActor._
 
   val handlers = validators.zipWithIndex.map { case (a,i) =>
@@ -53,18 +54,22 @@ class AuthcWorker(store: ActorRef, validators: List[Validator]) extends Actor {
 
   def waiting(client: ActorRef, r: Option[FindRealmsResp], a: Option[FindAccountsResp], req: Authenticate): Receive = {
     case m: FindRealmsResp =>
+      log.debug(s"Found realms ${m.realms}")
       context.become(waiting(client, Some(m), a, req))
       if (a.nonEmpty) self ! Done
 
     case m: FindAccountsResp =>
+      log.debug(s"Found accounts ${m.accounts}")
       context.become(waiting(client, r, Some(m), req))
       if (r.nonEmpty) self ! Done
 
     case err: Status.Failure =>
+      log.error(err.cause, "Received status failure while authenticating")
       client ! err
 
     case Done =>
       if (r.isEmpty || a.isEmpty) {
+        log.error("Internal error: responses not ready.")
         client ! Status.Failure(new Exception("internal error: responses not ready"))
         context.stop(self)
       } else {
@@ -72,6 +77,7 @@ class AuthcWorker(store: ActorRef, validators: List[Validator]) extends Actor {
           case (Some(realm), Some(acc)) =>
             val token = AuthToken(realm, acc, req.creds)
             if (handlers.isEmpty) {
+              log.debug(s"No handlers! Send authc response ${token.toResult}")
               client ! AuthenticateResp(Some(token.toResult))
               context.stop(self)
             } else {
@@ -88,6 +94,7 @@ class AuthcWorker(store: ActorRef, validators: List[Validator]) extends Actor {
   def authenticating(client: ActorRef, token: AuthToken, req: Authenticate, refs: Set[ActorRef]): Receive = {
     case t:AuthToken if refs.size <= 1 =>
       val merged = merge(token, t)
+      log.debug(s"Send authc response ${merged.toResult}")
       client ! AuthenticateResp(Some(merged.toResult))
       context.stop(self)
 

@@ -19,7 +19,7 @@ package porter.app
 import _root_.akka.actor.{ReflectiveDynamicAccess, DynamicAccess}
 import com.typesafe.config.Config
 import scala.reflect.ClassTag
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 import porter.auth.Validator
 import porter.store.{MutableStore, Store}
 import porter.model.{PermissionFactory, Permission, Ident}
@@ -137,7 +137,10 @@ object PorterSettings {
       lazy val configCtor = dynAccess.createInstanceFor(fqcn, args :+ (classOf[Config] -> cfg))
       val defctor = dynAccess.createInstanceFor(fqcn, args)
 
-      configCtor orElse defctor orElse loadObject
+      configCtor orElse defctor orElse loadObject match {
+        case r @ Success(_) => r
+        case Failure(ex) => Failure(new Exception(s"Unable to create instance: $fqcn", ex))
+      }
     }
   }
 

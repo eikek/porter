@@ -21,7 +21,7 @@ import scala.concurrent.Future
 import akka.actor._
 import akka.util.Timeout
 import porter.store.MutableStore
-import porter.client.Messages.mutableStore._
+import porter.client.messages._
 import porter.model.Ident
 
 class MutableStoreActor(stores: List[(Set[Ident], MutableStore)]) extends Actor with ActorLogging {
@@ -48,7 +48,7 @@ class MutableStoreActor(stores: List[(Set[Ident], MutableStore)]) extends Actor 
 
   def receive = {
     case pm: MutableStoreMessage =>
-      withStore(pm.realmId, _ forward pm, sender ! failed)
+      withStore(pm.realmId, _ forward pm, sender ! OperationFinished.failure(new Exception("No mutable store available")))
 
     case Terminated(ref) =>
       workerActive -= 1
@@ -63,8 +63,7 @@ object MutableStoreActor {
 
   private def workerProps(store: MutableStore) = Props(classOf[WorkerActor], store)
 
-  private def failed = OperationFinished(result = false)
-  private def finish(result: Boolean) = OperationFinished(result)
+  private def finish(result: Boolean) = OperationFinished(success = result, None)
 
   private class WorkerActor(store: MutableStore) extends Actor with ActorLogging {
     import akka.pattern.pipe
@@ -74,7 +73,7 @@ object MutableStoreActor {
     private def fail: PartialFunction[Throwable, OperationFinished] = {
       case x =>
         log.error(x, "Mutable store operation failed")
-        failed
+        OperationFinished.failure(x)
     }
 
     private def exec(result: Try[Future[Boolean]]) {

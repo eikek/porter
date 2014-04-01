@@ -18,8 +18,7 @@ package porter.app.openid.routes.manage
 
 import porter.app.openid.routes.OpenIdActors
 import spray.routing.Directives._
-import porter.client.Messages.mutableStore.OperationFinished
-import porter.client.Messages.mutableStore.DeleteAccount
+import porter.client.messages._
 import scala.Some
 import scala.util.{Failure, Success}
 import spray.http.StatusCodes
@@ -35,7 +34,7 @@ trait RemoveAccount {
           log.info(s"About to delete account '${acc.name.name}'.")
           val f = (porterRef ? DeleteAccount(settings.defaultRealm, acc.name)).mapTo[OperationFinished]
           onComplete(f) {
-            case Success(of) if of.result =>
+            case Success(of) if of.success =>
               log.info(s"Account '${acc.name.name}' deleted.")
               removePorterCookie() {
                 redirectToUserPage

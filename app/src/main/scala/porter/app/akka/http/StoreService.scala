@@ -20,8 +20,7 @@ import akka.actor.ActorRef
 import spray.routing.{Route, Directives}
 import scala.concurrent.ExecutionContext
 import akka.util.Timeout
-import porter.client.Messages.mutableStore._
-import porter.client.Messages.store._
+import porter.client.messages._
 import porter.app.akka.PorterUtil
 import porter.model._
 import porter.auth.Decider

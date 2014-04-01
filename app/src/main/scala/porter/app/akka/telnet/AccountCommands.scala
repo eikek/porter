@@ -25,8 +25,7 @@ import porter.app.akka.PorterUtil
 object AccountCommands extends Commands {
   import akka.pattern.ask
   import porter.util._
-  import porter.client.Messages.mutableStore._
-  import porter.client.Messages.store._
+  import porter.client.messages._
 
   def makeDoc =
     """
@@ -72,7 +71,7 @@ object AccountCommands extends Commands {
       val result = for {
         r <- in.realmFuture
         op <- (in.porter ? UpdateAccount(r.id, ad.get)).mapTo[OperationFinished]
-      } yield "Account updated: " + op.result
+      } yield "Account updated: " + op.success
       in << result
     }
   }
@@ -100,7 +99,7 @@ object AccountCommands extends Commands {
         realm <- in.realmFuture
         id <- Future.immediate(Ident(msg.substring("delete account".length).trim))
         op <- (porter ? DeleteAccount(realm.id, id)).mapTo[OperationFinished]
-      } yield "Account deleted: "+ op.result
+      } yield "Account deleted: "+ op.success
       in << result
   }
 
@@ -126,7 +125,7 @@ object AccountCommands extends Commands {
       val crypt = in.session[PasswordCrypt]("password-crypt")
       in.withRealm { realm =>
         val f = PorterUtil.updateAccount(in.porter, realm.id, login, _.changeSecret(Password(crypt)(passw)))
-        in << f.map(or => s"Password changed: ${or.result}")
+        in << f.map(or => s"Password changed: ${or.success}")
       }
     }
   }
@@ -151,7 +150,7 @@ object AccountCommands extends Commands {
       val passw = in.session[String]("password")
       in.withRealm { realm =>
         val f = PorterUtil.updateAccount(in.porter, realm.id, login, _.changeSecret(Password.crypted(passw)))
-        in << f.map(or => s"Password set: ${or.result}")
+        in << f.map(or => s"Password set: ${or.success}")
       }
     }
   }
@@ -175,7 +174,7 @@ object AccountCommands extends Commands {
       in.withRealm { realm =>
         val change: Account => Account = _.updatedGroups(g => alter(g, toadd))
         val f = PorterUtil.updateAccount(in.porter, realm.id, login, change)
-        in << f.map(or => if (or.result) "Success" else "Failed")
+        in << f.map(or => if (or.success) "Success" else "Failed")
       }
     }
   }

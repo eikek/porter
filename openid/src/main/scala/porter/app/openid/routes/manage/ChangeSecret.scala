@@ -17,13 +17,12 @@
 package porter.app.openid.routes.manage
 
 import porter.app.openid.routes.OpenIdActors
-import spray.routing.Directives._
 import porter.model.{Password, PasswordCredentials, Ident}
 import spray.routing._
 import scala.util.Success
 import scala.util.Failure
 import porter.app.akka.PorterUtil
-import porter.client.Messages.mutableStore.ChangeSecrets
+import porter.client.messages.ChangeSecrets
 
 trait ChangeSecret {
   self: ManageRoutes with OpenIdActors =>

@@ -17,14 +17,12 @@
 package porter.app.client
 
 import porter.client.PorterClient
-import akka.actor.ActorRef
+import akka.actor.{ActorSelection, ActorRef}
 import scala.concurrent.ExecutionContext
 import scala.reflect.ClassTag
-import porter.app.akka.PorterUtil
+import porter.app.akka.{PorterRef, PorterUtil}
 import porter.auth.Decider
-import porter.client.Messages.auth._
-import porter.client.Messages.store._
-import porter.client.Messages.mutableStore._
+import porter.client.messages._
 import porter.model.{PasswordCredentials, Ident}
 import scala.concurrent.duration.FiniteDuration
 import akka.util.Timeout
@@ -37,7 +35,7 @@ import porter.client.json.MessageJsonProtocol.SimpleAuthResult
  * @param porterRef
  * @param decider
  */
-class PorterAkkaClient(val porterRef: ActorRef, val decider: Decider) extends PorterClient {
+class PorterAkkaClient(val porterRef: PorterRef, val decider: Decider) extends PorterClient {
   import akka.pattern.ask
 
   private def exec[A, B: ClassTag] = new Command[A, B] {
@@ -79,8 +77,8 @@ class PorterAkkaClient(val porterRef: ActorRef, val decider: Decider) extends Po
     def apply(req: UpdateAccount)(implicit ec: ExecutionContext, timeout: FiniteDuration) = {
       implicit val to: Timeout = Timeout(timeout)
       PorterUtil.createNewAccount(porterRef, req.realmId, req.account)
-        .map(_ => OperationFinished(result = true))
-        .recover({ case x => OperationFinished(result = false) })
+        .map(_ => OperationFinished.success)
+        .recover({ case x => OperationFinished.failure(x) })
     }
   }
   def updateGroup = exec[UpdateGroup, OperationFinished]
@@ -93,8 +91,8 @@ class PorterAkkaClient(val porterRef: ActorRef, val decider: Decider) extends Po
     def apply(req: ChangeSecrets)(implicit ec: ExecutionContext, timeout: FiniteDuration) = {
       implicit val to: Timeout = Timeout(timeout)
       PorterUtil.changePassword(porterRef, req.realm, req.current, req.secrets, decider)
-        .map(_ => OperationFinished(result = true))
-        .recover({ case x => OperationFinished(result = false)})
+        .map(_ => OperationFinished.success)
+        .recover({ case x => OperationFinished.failure(x) })
     }
   }
 

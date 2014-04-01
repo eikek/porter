@@ -17,11 +17,9 @@
 package porter.app.openid.routes.manage
 
 import porter.app.openid.routes.OpenIdActors
-import spray.routing.Directives._
-import spray.http.{HttpHeader, HttpHeaders, BodyPart, MultipartFormData}
+import spray.http.{HttpHeader, HttpHeaders, MultipartFormData}
 import porter.model._
-import porter.client.Messages.mutableStore.UpdateAccount
-import porter.client.Messages.mutableStore.OperationFinished
+import porter.client.messages._
 import scala.util.Success
 import porter.model.Property.BinaryValue
 import akka.pattern.ask
@@ -37,7 +35,7 @@ trait UpdateProperties {
             val nacc = acc.updatedProps(fun)
             val upd = UpdateAccount(settings.defaultRealm, nacc)
             onComplete((porterRef ? upd).mapTo[OperationFinished]) {
-              case Success(OperationFinished(true)) => renderUserPage(nacc, Message.success("Account saved."))
+              case Success(OperationFinished.success) => renderUserPage(nacc, Message.success("Account saved."))
               case _ => renderUserPage(acc, Message.error("Error saving account."))
             }
           case Left(msgs) =>

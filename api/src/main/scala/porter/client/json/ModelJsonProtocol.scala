@@ -23,6 +23,14 @@ import porter.auth.Vote
 import scala.util.{Try, Success, Failure}
 
 trait ModelJsonProtocol extends DefaultJsonProtocol {
+
+  implicit val throwableFormat = new JsonFormat[Throwable] {
+    case class ErrorMessage(exception: String)
+    private val helper = jsonFormat1(ErrorMessage)
+    def read(json: JsValue) = new Exception(helper.read(json).exception)
+    def write(obj: Throwable) = helper.write(ErrorMessage(obj.getLocalizedMessage))
+  }
+
   implicit val identFormat = new JsonFormat[Ident] {
     def write(obj: Ident) = StringJsonFormat.write(obj.name)
     def read(json: JsValue) = Ident.fromString(StringJsonFormat.read(json)) match {

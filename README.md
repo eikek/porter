@@ -276,11 +276,11 @@ The `Porter` extension can help with this:
 Porter(system).select()
 ```
 
-The porter messages are defined in `Porter.Messages`, authenticating a
+The porter messages are defined in `porter.client.messages`, authenticating a
 user could be as follows:
 
 ```scala
-import Porter.Messages.authc._
+import porter.client.messages._
 val porter = Porter(system).select()
 (porter ? Authenticate("realm", Set(PasswordCredentials("eike", "test"))).mapTo[AuthenticateResp]
 ```

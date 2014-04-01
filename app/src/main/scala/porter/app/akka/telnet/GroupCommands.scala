@@ -25,8 +25,7 @@ import porter.app.akka.api.RuleFactoryActor.{MakeRules, MakeRulesResp}
 
 object GroupCommands extends Commands {
   import akka.pattern.ask
-  import porter.client.Messages.store._
-  import porter.client.Messages.mutableStore._
+  import porter.client.messages._
   import porter.util._
 
   def makeDoc =

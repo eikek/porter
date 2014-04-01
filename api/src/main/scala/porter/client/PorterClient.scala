@@ -23,9 +23,7 @@ import porter.client.json.MessageJsonProtocol.{SimpleAuthResult, UserPass}
 
 trait PorterClient {
 
-  import Messages.store._
-  import Messages.mutableStore._
-  import Messages.auth._
+  import messages._
 
   trait Command[A, B] {
     def apply(req: A)(implicit ec: ExecutionContext, timeout: FiniteDuration): Future[B]

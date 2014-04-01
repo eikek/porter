@@ -17,8 +17,7 @@
 package porter.app.akka.api
 
 import akka.actor.{Status, Props, ActorRef, Actor}
-import porter.client.Messages.auth._
-import porter.client.Messages.store._
+import porter.client.messages._
 import porter.model._
 
 class PolicyActor(store: ActorRef, ruleFactory: ActorRef) extends Actor {

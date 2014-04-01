@@ -96,7 +96,7 @@ object HelperCommands extends Commands {
             (a: Account) => a.updatedProps(_ ++ props)
           }
           val f = PorterUtil.updateAccount(in.porter, realm.id, name, changeFun)
-          in << f.map(of => if (of.result) "Success" else "Failed")
+          in << f.map(of => if (of.success) "Success" else "Failed")
         } else {
           val changeFun = if (verb == "remove") {
             val props = in.session[List[String]]("Properties")
@@ -106,7 +106,7 @@ object HelperCommands extends Commands {
             (g: Group) => g.updatedProps(_ ++ props)
           }
           val f = PorterUtil.updateGroup(in.porter, realm.id, name, changeFun)
-          in << f.map(of => if (of.result) "Success" else "Failed")
+          in << f.map(of => if (of.success) "Success" else "Failed")
         }
       }
     }

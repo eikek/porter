@@ -24,7 +24,7 @@ import spray.routing.{StandardRoute, RequestContext}
 import akka.actor.ActorRef
 import akka.util.Timeout
 import spray.routing.AuthenticationFailedRejection.CredentialsRejected
-import porter.app.akka.PorterUtil
+import porter.app.akka.{PorterRef, PorterUtil}
 
 class PorterAuthenticator(porterContext: PorterContext,
                           cookieKey: Vector[Byte],
@@ -68,7 +68,7 @@ object PorterAuthenticator {
    * @param timeout
    * @return
    */
-  def authenticate(porter: ActorRef,
+  def authenticate(porter: PorterRef,
                    realm: Ident,
                    creds: Set[Credentials],
                    decider: Decider = OneSuccessfulVote)(implicit ec: ExecutionContext, timeout: Timeout): Future[Authentication[Account]] = {

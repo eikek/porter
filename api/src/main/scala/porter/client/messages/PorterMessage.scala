@@ -14,12 +14,6 @@
  * limitations under the License.
  */
 
-package porter.app.akka
+package porter.client.messages
 
-package object api {
-
-  case object Unknown extends Serializable
-
-  type PorterMessage = porter.client.messages.PorterMessage
-
-}
+trait PorterMessage extends Serializable

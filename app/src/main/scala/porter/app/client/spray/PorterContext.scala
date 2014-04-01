@@ -19,5 +19,9 @@ package porter.app.client.spray
 import akka.actor.ActorRef
 import porter.auth.{OneSuccessfulVote, Decider}
 import porter.model.Ident
+import porter.app.client.PorterAkkaClient
+import porter.app.akka.PorterRef
 
-case class PorterContext(porterRef: ActorRef, realm: Ident, decider: Decider = OneSuccessfulVote)
+case class PorterContext(porterRef: PorterRef, realm: Ident, decider: Decider = OneSuccessfulVote) {
+  val client = new PorterAkkaClient(porterRef, decider)
+}

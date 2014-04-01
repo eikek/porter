@@ -20,9 +20,7 @@ import java.net.InetSocketAddress
 import scala.concurrent.ExecutionContext
 import porter.client.json.MessageJsonProtocol
 import porter.client.PorterClient
-import porter.client.Messages.store._
-import porter.client.Messages.mutableStore._
-import porter.client.Messages.auth._
+import porter.client.messages._
 import scala.concurrent.duration.FiniteDuration
 import porter.model.Ident
 

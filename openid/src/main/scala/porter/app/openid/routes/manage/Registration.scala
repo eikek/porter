@@ -29,7 +29,7 @@ import spray.http.HttpRequest
 import scala.util.Failure
 import porter.model.Account
 import scala.util.Success
-import porter.client.Messages.store.{FindAccountsResp, FindAccounts}
+import porter.client.messages._
 
 trait Registration {
   self: ManageRoutes with OpenIdActors =>

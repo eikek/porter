@@ -18,9 +18,7 @@ package porter.app.akka.api
 
 import akka.actor.{ActorLogging, Props, Actor, ActorRef}
 import akka.util.Timeout
-import porter.client.Messages.mutableStore._
-import porter.client.Messages.store._
-import porter.client.Messages.auth.{RetrieveServerNonceResp, RetrieveServerNonce}
+import porter.client.messages._
 import porter.auth.Nonce
 import porter.app.akka.api.StoreActor.FindAccountsFor
 
@@ -47,7 +45,7 @@ class ExtrasActor(store: ActorRef, mstore: ActorRef, ruleFactory: ActorRef, poli
         upd <- (mstore ? UpdateAccount(realm, acc.accounts.head.updatedProps(props))).mapTo[OperationFinished]
       } yield upd
       f.recover { case x =>
-        OperationFinished(result = false)
+        OperationFinished.failure(x)
       }
       f pipeTo sender
 

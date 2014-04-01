@@ -24,7 +24,7 @@ import porter.model.{Ident, Account, Realm}
 import porter.store.SimpleStore
 import scala.concurrent.ExecutionContext
 import porter.app.akka.api.StoreActor.GetAllRealms
-import porter.client.Messages.store._
+import porter.client.messages._
 
 class StoreActorSpec extends TestKit(ActorSystem("StoreActorSpec", ConfigFactory.load("reference")))
   with WordSpec with BeforeAndAfterAll with ImplicitSender {

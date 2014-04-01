@@ -26,7 +26,7 @@ import java.awt.image.BufferedImage
 import java.awt.RenderingHints
 import akka.util.Timeout
 import porter.util.Hash
-import porter.client.Messages.PorterMessage
+import porter.client.messages._
 import porter.app.openid.CacheDirActor._
 import porter.app.openid.AvatarActor.AvatarImageResp
 import porter.app.openid.CacheDirActor.FileResponse
@@ -37,9 +37,7 @@ import porter.app.openid.CacheDirActor.FindFile
 import porter.app.openid.common.Harmonicon.ImageSettings
 import porter.app.openid.AvatarActor.GetAvatarImage
 import porter.app.openid.CacheDirActor.WriteImage
-import porter.client.Messages.store.FindAccountsResp
 import porter.app.openid.CacheDirActor.CacheDirOpts
-import porter.client.Messages.store.FindAccounts
 
 /**
  * Generates or retrieves avatar images for an account.

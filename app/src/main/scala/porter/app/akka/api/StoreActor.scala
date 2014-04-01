@@ -23,7 +23,7 @@ import scala.util.Success
 import akka.actor._
 import akka.util.Timeout
 import porter.store.Store
-import porter.client.Messages.store._
+import porter.client.messages._
 
 class StoreActor(stores: List[Store]) extends Actor with ActorLogging {
   import StoreActor._

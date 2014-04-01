@@ -25,11 +25,8 @@ import org.eknet.spray.openid.provider.{SRegExtension, AccountIdentity, Provider
 import org.eknet.spray.openid.provider.MustacheContext.KeyedData
 import porter.app.openid.routes.{OpenIdActors, AuthDirectives}
 import porter.model._
-import porter.client.Messages.mutableStore.UpdateAccount
-import porter.client.Messages.store.FindAccountsResp
+import porter.client.messages._
 import porter.app.openid.common.LocalId
-import porter.client.Messages.mutableStore.OperationFinished
-import porter.client.Messages.store.FindAccounts
 
 trait OpenIdProviderHook extends AuthDirectives with Directives {
   self: OpenIdActors =>
