@@ -25,6 +25,11 @@ object PropertyList extends ObjectRegistry {
 
   private def reg[T <: Property[_]](prop: T): T = { register(prop); prop }
 
+  /** A synthetic property that indicates whether the record is
+    * originating from a mutable data store or not.
+    */
+  val mutableSource = reg(BoolProperty("porter-admin-mutablesource"))
+
   /** Property to indicate that an account has been automatically disabled (maybe
     * due to too many failed logins).
     */

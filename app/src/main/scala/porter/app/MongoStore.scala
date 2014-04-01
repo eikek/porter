@@ -210,7 +210,7 @@ object MongoStore {
       }
       Account(
         id,
-        props,
+        PropertyList.mutableSource.toTrue(props),
         groups,
         secrets
       )
@@ -220,7 +220,7 @@ object MongoStore {
       val id = dbo.get("_id").toString.substring(2)
       val props = dbo.getAs[BasicDBObject]("props").get.toList.map(t => (t._1, t._2.toString)).toMap
       val rules = dbo.getAs[MongoDBList]("rules").get.map(_.toString).toSet
-      Group(id, props, rules)
+      Group(id, PropertyList.mutableSource.toTrue(props), rules)
     }
   }
 }

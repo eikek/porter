@@ -75,8 +75,10 @@ class ConfigStore(cfg: Config) extends SimpleStore {
       Seq(Password.crypted(cfg.getString(s"${r.id.name}.accounts.$a.secret")))
     )
 
-  private def getProps(cfg: Config): Properties =
-    (for (k <- cfg.root().keySet().asScala) yield k -> cfg.getString(k)).toMap
+  private def getProps(cfg: Config): Properties = {
+    val props = (for (k <- cfg.root().keySet().asScala) yield k -> cfg.getString(k)).toMap
+    PropertyList.mutableSource.toFalse(props)
+  }
 
 
 }

@@ -19,6 +19,7 @@ package porter.store
 import java.io.File
 import scala.util.Try
 import porter.util.Properties
+import porter.model.PropertyList
 
 /**
  * Simple store based on java's properties files.
@@ -86,10 +87,13 @@ object PropertiesStore {
     def propList(key: String) =
       map.get(key).getOrElse("").split(',').map(_.trim).filterNot(_.isEmpty)
 
-    def propMap(key: String): Map[String, String] = (for {
-      kv <- propList(key)
-      pair <- List(kv.split("\\Q->\\E"))
-      if pair.length == 2
-    } yield pair(0).trim -> pair(1).trim).toMap
+    def propMap(key: String): Map[String, String] =  {
+      val props = (for {
+        kv <- propList(key)
+        pair <- List(kv.split("\\Q->\\E"))
+        if pair.length == 2
+      } yield pair(0).trim -> pair(1).trim).toMap
+      PropertyList.mutableSource.toFalse(props)
+    }
   }
 }

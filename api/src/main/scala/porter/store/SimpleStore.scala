@@ -37,7 +37,7 @@ trait SimpleStore extends Store {
     for {
       (r, a) <- accounts
       if r.id == realm && names.contains(a.name)
-    } yield a
+    } yield a.updatedProps(PropertyList.mutableSource.toFalse)
   }
 
   def findAccountsFor(realm: Ident, creds: Set[Credentials])(implicit ec: ExecutionContext) = {
@@ -49,7 +49,7 @@ trait SimpleStore extends Store {
     for {
       (r, g) <- groups
       if r.id == realm && names.contains(g.name)
-    } yield g
+    } yield g.updatedProps(PropertyList.mutableSource.toFalse)
   }
 
   def allRealms(implicit ec: ExecutionContext) = Future.immediate(realms)

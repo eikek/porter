@@ -89,11 +89,17 @@ object MutableStoreActor {
       case DeleteRealm(realm) =>
         exec(Try(store.deleteRealm(realm)))
       case UpdateAccount(realm, account) =>
-        exec(Try(store.updateAccount(realm, account)))
+        if (PropertyList.mutableSource.get(account.props).getOrElse(true))
+          exec(Try(store.updateAccount(realm, account)))
+        else
+          sender ! fail(new Exception(s"Account '${account.name.name}' is not mutable"))
       case DeleteAccount(realm, account) =>
         exec(Try(store.deleteAccount(realm, account)))
       case UpdateGroup(realm, group) =>
-        exec(Try(store.updateGroup(realm, group)))
+        if (PropertyList.mutableSource.get(group.props).getOrElse(true))
+          exec(Try(store.updateGroup(realm, group)))
+        else
+          sender ! fail(new Exception(s"Group '${group.name.name}' is not mutable"))
       case DeleteGroup(realm, group) =>
         exec(Try(store.deleteGroup(realm, group)))
     }
