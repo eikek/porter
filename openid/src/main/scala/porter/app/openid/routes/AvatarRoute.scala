@@ -17,16 +17,8 @@
 package porter.app.openid.routes
 
 import spray.routing.{Directive0, PathMatchers, Directives, Route}
-import porter.app.client.spray.{PorterContext, PorterDirectives}
-import porter.model.{PropertyList, Account, Ident}
+import porter.app.client.spray.PorterDirectives
 import spray.http.{HttpData, MediaType, HttpEntity, ContentType}
-import porter.app.openid.common.Harmonicon
-import porter.util.Hash
-import javax.imageio.ImageIO
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
-import porter.app.openid.common.Harmonicon.{ImageSettings, Timespan}
-import java.awt.image.BufferedImage
-import java.awt.{RenderingHints, Graphics2D, Transparency}
 import porter.app.openid.AvatarActor.{AvatarImageResp, GetAvatarImage}
 
 trait AvatarRoute extends Directives with PorterDirectives {

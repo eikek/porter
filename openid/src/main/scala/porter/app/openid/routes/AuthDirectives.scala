@@ -23,7 +23,8 @@ import porter.util.Hash
 import scala.Some
 import porter.model.Account
 import porter.model.Property.BoolProperty
-import porter.app.client.spray.{CookieSettings, PorterContext, PorterDirectives}
+import porter.app.client.spray.{CookieSettings, PorterDirectives}
+import porter.app.client.PorterContext
 
 trait AuthDirectives extends BasicDirectives with PorterDirectives {
   self: OpenIdActors =>

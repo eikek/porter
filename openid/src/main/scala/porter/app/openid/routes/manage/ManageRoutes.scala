@@ -25,7 +25,7 @@ import porter.app.openid.routes._
 import scala.Some
 import spray.http.HttpResponse
 import porter.model.Account
-import porter.app.client.spray.PorterContext
+import porter.app.client.PorterContext
 
 trait ManageRoutes extends BasicDirectives with PageDirectives with AuthDirectives
   with Registration

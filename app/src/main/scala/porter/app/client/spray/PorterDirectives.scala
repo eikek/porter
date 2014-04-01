@@ -33,6 +33,7 @@ import akka.actor.ActorRef
 import porter.client.messages._
 import scala.util.control.NonFatal
 import java.util.concurrent.ExecutionException
+import porter.app.client.PorterContext
 
 trait PorterDirectives {
 

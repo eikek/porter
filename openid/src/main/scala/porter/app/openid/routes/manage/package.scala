@@ -18,7 +18,7 @@ package porter.app.openid.routes
 
 import porter.model.Account
 import spray.routing.Route
-import porter.app.client.spray.PorterContext
+import porter.app.client.PorterContext
 
 package object manage {
 

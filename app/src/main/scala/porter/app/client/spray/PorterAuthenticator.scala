@@ -21,10 +21,10 @@ import scala.concurrent.{Future, ExecutionContext, Promise}
 import porter.auth.{OneSuccessfulVote, Decider}
 import porter.model.{Credentials, Ident, Account}
 import spray.routing.{StandardRoute, RequestContext}
-import akka.actor.ActorRef
 import akka.util.Timeout
 import spray.routing.AuthenticationFailedRejection.CredentialsRejected
 import porter.app.akka.{PorterRef, PorterUtil}
+import porter.app.client.PorterContext
 
 class PorterAuthenticator(porterContext: PorterContext,
                           cookieKey: Vector[Byte],
