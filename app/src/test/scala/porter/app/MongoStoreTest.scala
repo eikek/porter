@@ -31,8 +31,8 @@ class MongoStoreTest extends FunSuite with ShouldMatchers with BeforeAndAfterAll
   //note, these tests only work with a running mongodb instance
 
   val config = ConfigFactory.load().getConfig("porter-mongo-test")
-
   val store = new MongoStore(config)
+  val mutable = PropertyList.mutableSource.toTrue
 
 
   override protected def afterAll() = {
@@ -54,8 +54,8 @@ class MongoStoreTest extends FunSuite with ShouldMatchers with BeforeAndAfterAll
 
   test("create and list groups") {
     val r = createRealm()
-    val g1 = Group("g1", Map("enabled" -> "true"), Set("some:perm:1"))
-    val g2 = Group("g2", Map.empty, Set("some:perm:2", "!some:perm:3"))
+    val g1 = Group("g1", mutable(Map("enabled" -> "true")), Set("some:perm:1"))
+    val g2 = Group("g2", mutable(Map.empty), Set("some:perm:2", "!some:perm:3"))
     Await.result(store.updateGroup(r.id, g1), 5 seconds)
     Await.result(store.updateGroup(r.id, g2), 5 seconds)
     val all = Await.result(store.allGroups(r.id), 5 seconds).toSet
@@ -79,8 +79,8 @@ class MongoStoreTest extends FunSuite with ShouldMatchers with BeforeAndAfterAll
   test("create and list accounts") {
     val r = createRealm()
     val passw = Password("test")
-    val acc1 = Account("john", Map("enabled" -> "true"), Set("g1", "g3"), Seq(passw))
-    val acc2 = Account("mary", Map("enabled" -> "false"), Set("g1", "g2"), Seq(passw))
+    val acc1 = Account("john", mutable(Map("enabled" -> "true")), Set("g1", "g3"), Seq(passw))
+    val acc2 = Account("mary", mutable(Map("enabled" -> "false")), Set("g1", "g2"), Seq(passw))
 
     Await.ready(store.updateAccount(r.id, acc1), 5 seconds)
     Await.ready(store.updateAccount(r.id, acc2), 5 seconds)
@@ -108,8 +108,8 @@ class MongoStoreTest extends FunSuite with ShouldMatchers with BeforeAndAfterAll
 
   test("find groups") {
     val r = createRealm()
-    val g1 = Group("g1", Map("enabled" -> "true"), Set("some:perm:1"))
-    val g2 = Group("g2", Map.empty, Set("some:perm:2", "!some:perm:3"))
+    val g1 = Group("g1", mutable(Map("enabled" -> "true")), Set("some:perm:1"))
+    val g2 = Group("g2", mutable(Map.empty), Set("some:perm:2", "!some:perm:3"))
     Await.result(store.updateGroup(r.id, g1), 5 seconds)
     Await.result(store.updateGroup(r.id, g2), 5 seconds)
     val list = Await.result(store.findGroups(r.id, Set("g1", "g2")), 5 seconds)

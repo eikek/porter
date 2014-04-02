@@ -18,11 +18,12 @@ package porter.app
 
 import org.scalatest.FunSuite
 import org.scalatest.matchers.ShouldMatchers
-import porter.model.{Password, Ident, Realm, Secret}
+import porter.model._
 import com.typesafe.config.ConfigFactory
+import porter.model.Realm
 
 class ConfigStoreTest extends FunSuite with ShouldMatchers {
-
+  val readOnly = PropertyList.mutableSource.toFalse
   val testpw = Password("test")
 
   test("read one realm with one account and two groups") {
@@ -65,7 +66,7 @@ class ConfigStoreTest extends FunSuite with ShouldMatchers {
     val users = if (groups(0).name.is("users")) groups(0) else groups(1)
     admin.name should be (Ident("admin"))
     users.name should be (Ident("users"))
-    admin.props should be (Map("key" -> "value"))
+    admin.props should be (readOnly(Map("key" -> "value")))
     users.props should have size 0
     admin.rules should be (Set("bla.bla", "!bla.bla.blop"))
     users.rules should be (Set("resource:read:/**"))
@@ -75,6 +76,6 @@ class ConfigStoreTest extends FunSuite with ShouldMatchers {
     john.name should be (Ident("john"))
     john.secrets should be (Seq(testpw))
     john.groups should be (Set("users", "admin").map(Ident.apply))
-    john.props should be (Map("enabled" -> "true"))
+    john.props should be (readOnly(Map("enabled" -> "true")))
   }
 }

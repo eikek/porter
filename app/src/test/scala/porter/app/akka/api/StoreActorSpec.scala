@@ -20,7 +20,7 @@ import akka.testkit.{ImplicitSender, TestKit}
 import akka.actor.{Status, ActorSystem}
 import org.scalatest.{BeforeAndAfterAll, WordSpec}
 import com.typesafe.config.ConfigFactory
-import porter.model.{Ident, Account, Realm}
+import porter.model.{PropertyList, Ident, Account, Realm}
 import porter.store.SimpleStore
 import scala.concurrent.ExecutionContext
 import porter.app.akka.api.StoreActor.GetAllRealms
@@ -28,6 +28,8 @@ import porter.client.messages._
 
 class StoreActorSpec extends TestKit(ActorSystem("StoreActorSpec", ConfigFactory.load("reference")))
   with WordSpec with BeforeAndAfterAll with ImplicitSender {
+
+  val readOnly = PropertyList.mutableSource.toFalse
 
   override def afterAll() {
     system.shutdown()
@@ -49,13 +51,13 @@ class StoreActorSpec extends TestKit(ActorSystem("StoreActorSpec", ConfigFactory
     "return accounts from all stores" in {
       val store = system.actorOf(StoreActor(List(store1, store2)))
       store ! FindAccounts(realm.id, Set("john", "gloria"))
-      expectMsg(FindAccountsResp(Set(john, Account(name = "gloria"))))
+      expectMsg(FindAccountsResp(Set(john.updatedProps(readOnly), Account(name = "gloria", props = readOnly(Map.empty)))))
     }
 
     "return groups from all stores" in {
       val store = system.actorOf(StoreActor(List(store1, store2)))
       store ! FindGroups("r1", Set("g4", "g2"))
-      expectMsg(FindGroupsResp(Set(g2, g4)))
+      expectMsg(FindGroupsResp(Set(g2.updatedProps(readOnly), g4.updatedProps(readOnly))))
 
       store ! GetAllGroups("r1")
       expectMsg(FindGroupsResp(Set(g1, g2, g3, g4)))

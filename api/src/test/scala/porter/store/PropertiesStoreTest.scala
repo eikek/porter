@@ -18,16 +18,17 @@ package porter.store
 
 import org.scalatest.FunSuite
 import org.scalatest.matchers.ShouldMatchers
-import scala.util.Success
 import scala.concurrent.Await
+import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
+import porter.model._
+import porter.model.PropertyList.mutableSource
 
 class PropertiesStoreTest extends FunSuite with ShouldMatchers {
-  import porter.model._
-  import scala.concurrent.duration._
-  import scala.concurrent.ExecutionContext.Implicits.global
 
   val testPw = Password("test")
-  val acc = Account("john", Map("email" -> "john@mail.com", "enabled" -> "true"), Set("users", "admin"), Seq(testPw))
+  val readOnly = mutableSource.toFalse
+  val acc = Account("john", readOnly(Map("email" -> "john@mail.com", "enabled" -> "true")), Set("users", "admin"), Seq(testPw))
 
   private def createProps() = {
     val props = new java.util.Properties()
@@ -69,12 +70,12 @@ class PropertiesStoreTest extends FunSuite with ShouldMatchers {
   test("list groups") {
     val store = PropertiesStore(createProps())
     Await.result(store.allGroups("app1"), 5.seconds) should be (List(
-      Group(name = "admin", rules = Set("resource:read:/main/**", "base:manage")), Group("users")))
+      Group("admin", readOnly(Map.empty), Set("resource:read:/main/**", "base:manage")), Group("users", readOnly(Map.empty))))
   }
 
   test ("find groups") {
     val store = PropertiesStore(createProps())
-    Await.result(store.findGroups("app1", Set("users")), 5.seconds) should be (List(Group("users")))
+    Await.result(store.findGroups("app1", Set("users")), 5.seconds) should be (List(Group("users", readOnly(Map.empty))))
   }
 
   test ("list accounts") {
