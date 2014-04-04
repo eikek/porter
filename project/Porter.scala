@@ -6,6 +6,7 @@ object Version {
   val scalaTest = "2.1.0"
   val akka = "2.2.4"
   val spray = "1.2.1"
+  val casbah = "2.7.0"
 }
 
 object Deps {
@@ -29,9 +30,9 @@ object Deps {
   )
 
   val casbah = Seq(
-    "org.mongodb" %% "casbah-commons" % "2.6.5",
-    "org.mongodb" %% "casbah-query" % "2.6.5",
-    "org.mongodb" %% "casbah-core" % "2.6.5"
+    "org.mongodb" %% "casbah-commons" % Version.casbah,
+    "org.mongodb" %% "casbah-query" % Version.casbah,
+    "org.mongodb" %% "casbah-core" % Version.casbah
   )
 
   val logback = Seq(
