@@ -22,8 +22,9 @@ import spray.routing._
 import porter.auth.Decider
 import akka.io.Tcp.ConnectionClosed
 import porter.model.PasswordCrypt
+import porter.app.akka.PorterRef
 
-class HttpConnection(porter: ActorRef, decider: Decider) extends HttpServiceActor with ActorLogging {
+class HttpConnection(porter: PorterRef, decider: Decider) extends HttpServiceActor with ActorLogging {
   implicit val timeout = Timeout(5000)
   import context.dispatcher
 
@@ -41,5 +42,5 @@ class HttpConnection(porter: ActorRef, decider: Decider) extends HttpServiceActo
 }
 
 object HttpConnection {
-  def apply(porter: ActorRef, decider: Decider) = Props(classOf[HttpConnection], porter, decider)
+  def apply(porter: PorterRef, decider: Decider) = Props(classOf[HttpConnection], porter, decider)
 }

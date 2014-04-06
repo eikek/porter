@@ -59,12 +59,15 @@ object RealmCommands extends Commands {
   def listRealms(implicit executor: ExecutionContext, to: Timeout): Command = {
     case in @ Input(msg, conn, porter, _) if msg startsWith "lr" =>
       val filter = if (msg == "lr") (s: String) => true else (s: String) => Glob.matches(msg.substring(3), s)
-      for (iter <- (porter ? GetAllRealms).mapTo[FindRealmsResp].map(_.realms)) {
-        for (r <- iter; if filter(r.id.name) || filter(r.name)) {
+      val f = for {
+        iter <- (porter ? GetAllRealms).mapTo[FindRealmsResp].map(_.realms)
+      } yield {
+        for (r <- iter; if filter(r.id.name) || filter(r.name)) yield {
           in <~ s" ${r.id.name}: ${r.name}\n"
         }
-        in << ""
+        ""
       }
+      in << f
   }
 
   def updateRealm(implicit ec: ExecutionContext, to: Timeout): Command = new Form {

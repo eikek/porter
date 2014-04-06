@@ -24,8 +24,9 @@ import java.net.InetSocketAddress
 import scala.concurrent.ExecutionContext
 import akka.io.Tcp.Event
 import akka.util.Timeout
+import porter.app.akka.PorterRef
 
-class TelnetServer(porter: ActorRef) extends Actor with ActorLogging {
+class TelnetServer(porter: PorterRef) extends Actor with ActorLogging {
 
   private var connCreated = 0
   private var connections = 0
@@ -49,7 +50,7 @@ object TelnetServer {
 
   case object GetConnCount extends Serializable
 
-  def apply(porter: ActorRef) = Props(classOf[TelnetServer], porter)
+  def apply(porter: PorterRef) = Props(classOf[TelnetServer], porter)
 
   /**
    * Binds the telnet service to the given address. The Future is completed
@@ -61,7 +62,7 @@ object TelnetServer {
    * @param ec
    * @return
    */
-  def bind(porter: ActorRef, host: String, port: Int)
+  def bind(porter: PorterRef, host: String, port: Int)
           (implicit system: ActorSystem, ec: ExecutionContext, bindTimeout: Timeout) = {
     import akka.pattern.ask
     val telnetEndpoint = new InetSocketAddress(host, port)

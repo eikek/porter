@@ -26,6 +26,7 @@ import porter.app.client.PorterAkkaClient
 import porter.client.json.MessageJsonProtocol
 import porter.client.messages._
 import porter.app.akka.api.PolicyActor.{GetPolicyResp, GetPolicy}
+import porter.app.akka.PorterRef
 
 class AuthService(client: PorterAkkaClient)(implicit ec: ExecutionContext, to: Timeout) extends Directives {
   import PorterJsonProtocol._
@@ -90,7 +91,7 @@ class AuthService(client: PorterAkkaClient)(implicit ec: ExecutionContext, to: T
 }
 
 object AuthService {
-  def apply(porter: ActorRef, decider: Decider = OneSuccessfulVote)
+  def apply(porter: PorterRef, decider: Decider = OneSuccessfulVote)
            (implicit ec: ExecutionContext, to: Timeout): AuthService =
     new AuthService(new PorterAkkaClient(porter, decider))
 }

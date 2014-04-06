@@ -20,8 +20,9 @@ import akka.actor.{Props, Terminated, ActorRef, Actor}
 import akka.io.Tcp
 import akka.util.{Timeout, ByteString}
 import porter.BuildInfo
+import porter.app.akka.PorterRef
 
-private[telnet] class TelnetConnection(porter: ActorRef, conn: ActorRef) extends Actor {
+private[telnet] class TelnetConnection(porter: PorterRef, conn: ActorRef) extends Actor {
   context.watch(conn)
 
   implicit val executor = context.dispatcher
@@ -74,7 +75,7 @@ private[telnet] class TelnetConnection(porter: ActorRef, conn: ActorRef) extends
 }
 
 object TelnetConnection {
-  private[telnet] def props(porter:ActorRef, conn: ActorRef) = Props(classOf[TelnetConnection], porter, conn)
+  private[telnet] def props(porter: PorterRef, conn: ActorRef) = Props(classOf[TelnetConnection], porter, conn)
 
   private val allCommands = HelperCommands ++ RealmCommands ++ AccountCommands ++ GroupCommands ++ AuthCommands
   val documentation = allCommands.makeDoc

@@ -21,7 +21,7 @@ import spray.routing.{Route, Directives}
 import scala.concurrent.ExecutionContext
 import akka.util.Timeout
 import porter.client.messages._
-import porter.app.akka.PorterUtil
+import porter.app.akka.{PorterRef, PorterUtil}
 import porter.model._
 import porter.auth.Decider
 import spray.httpx.SprayJsonSupport
@@ -184,7 +184,7 @@ class StoreService(client: PorterAkkaClient)
 }
 
 object StoreService {
-  def apply(porterRef: ActorRef, decider: Decider)
+  def apply(porterRef: PorterRef, decider: Decider)
            (implicit ec: ExecutionContext, to: Timeout): StoreService =
     new StoreService(new PorterAkkaClient(porterRef, decider))
 }

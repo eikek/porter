@@ -21,8 +21,9 @@ import spray.can.Http
 import akka.actor.Terminated
 import porter.auth.Decider
 import porter.model.PasswordCrypt
+import porter.app.akka.PorterRef
 
-class HttpHandler(porter: ActorRef, decider: Decider) extends Actor with ActorLogging {
+class HttpHandler(porter: PorterRef, decider: Decider) extends Actor with ActorLogging {
   import HttpHandler._
 
   var connCreated = 0
@@ -51,7 +52,7 @@ object HttpHandler {
 
   case object GetConnCount extends Serializable
 
-  def apply(porter: ActorRef, decider: Decider) =
+  def apply(porter: PorterRef, decider: Decider) =
     Props(classOf[HttpHandler], porter, decider)
 
 }
