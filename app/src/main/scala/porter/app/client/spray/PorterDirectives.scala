@@ -67,11 +67,11 @@ trait PorterDirectives {
    *
    * @return
    */
-  def formCredentials: Directive1[Set[Credentials]] =
+  def formCredentials(usernameField: String = "porter.username", passwordField: String = "porter.password"): Directive1[Set[Credentials]] =
     (for {
-      un <- formField("porter.username")
-      pw <- formField("porter.password")
-    } yield Set[Credentials](PasswordCredentials(un, pw))) | provide(Set.empty)
+      un <- formField(usernameField)
+      pw <- formField(passwordField)
+    } yield Set[Credentials](PasswordCredentials(un, pw))).recover(_ => provide(Set.empty))
 
   /**
    * Retrieves credentials from a cookie.
@@ -123,7 +123,7 @@ trait PorterDirectives {
    * @return
    */
   def allCredentials(cookieKey: Vector[Byte], cookieName: String = "PORTER"): Directive1[Set[Credentials]] =
-    formCredentials ++ cookieCredentials(cookieKey, cookieName) ++ basicCredentials ++ digestCredentials
+    formCredentials() ++ cookieCredentials(cookieKey, cookieName) ++ basicCredentials ++ digestCredentials
 
   /**
    * Rejects the request, if there is at least one credentials supplied with the request.
@@ -147,11 +147,13 @@ trait PorterDirectives {
    *
    * @param account
    * @param cookieSettings
+   * @param selectSecret a function to select a secret from the account that should be encoded
+   *                     in the cookie
    * @return
    */
-  def setPorterCookie(account: Account, cookieSettings: CookieSettings): Directive0 = {
+  def setPorterCookie(account: Account, cookieSettings: CookieSettings, selectSecret: Account => Secret = _.secrets.head): Directive0 = {
     val valid = cookieSettings.persistAge.orElse(cookieSettings.sessionAge).getOrElse(1.days)
-    val data = DerivedCredentials(account.name, account.secrets.head, valid).encode(cookieSettings.cookieKey)
+    val data = DerivedCredentials(account.name, selectSecret(account), valid).encode(cookieSettings.cookieKey)
     setCookie(HttpCookie(name = cookieSettings.cookieName,
       content = data,
       maxAge = cookieSettings.persistAge.map(_.toSeconds),

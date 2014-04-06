@@ -40,7 +40,7 @@ trait AuthDirectives extends BasicDirectives with PorterDirectives {
   def cookieCredentials: Directive1[Set[Credentials]] =
     PorterDirectives.cookieCredentials(settings.cookieKey, settings.cookieName)
 
-  def credentials: Directive1[Set[Credentials]] = cookieCredentials ++ formCredentials
+  def credentials: Directive1[Set[Credentials]] = cookieCredentials ++ formCredentials()
 
   def emptyCredentials: Directive0 = credentials.isEmpty
 
