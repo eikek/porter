@@ -16,6 +16,8 @@
 
 package porter.auth
 
+import porter.model.{Password, Ident}
+
 /**
  * Decides for a given [[porter.auth.AuthResult]] if it represents
  * a successful authentication.
@@ -44,6 +46,16 @@ object SomeSuccessfulVote extends Decider {
   def apply(result: AuthResult) = notDisabled(result) && result.successCount > 0
 }
 
+/**
+ * Returns `true` if there exists at least one successful vote for
+ * the default password secret.
+ */
+object DefaultPasswordVote extends Decider {
+  import Decider._
+  def apply(result: AuthResult) = notDisabled(result) &&
+    result.successCount > 0 && existsSuccessVote(result, _ == Password.defaultSecretName)
+}
+
 object Decider {
   import porter.model.PropertyList._
 
@@ -52,4 +64,6 @@ object Decider {
 
   def notDisabled(result: AuthResult) = !isDisabled(result)
 
+  def existsSuccessVote(result: AuthResult, check: Ident => Boolean) =
+    result.votes.exists { case (k, v) => v == Vote.Success && check(k) }
 }

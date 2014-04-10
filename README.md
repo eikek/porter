@@ -72,9 +72,9 @@ certain properties of an account or may require the client to supply
 at least two valid credentials.  The `Decider`, which is a function
 `AuthResult => Boolean`, is meant to decide whether an `AuthResult`
 presents a successful authentication. There are two implementations
-provided. The most common one `OneSuccessfulVote` returns `true` if
-there is at least on successful vote and no failed ones and the
-account is not disabled.
+provided. The default one `DefaultPasswordVote` returns `true` if
+there is at least one successful vote for the standard `Password`
+and the account is not disabled.
 
 ### Authorization
 
