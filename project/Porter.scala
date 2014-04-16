@@ -2,11 +2,12 @@ import sbt._
 import sbt.Keys._
 
 object Version {
-  val scala = "2.10.3"
+  val scala = "2.10.4"
   val scalaTest = "2.1.0"
   val akka = "2.2.4"
   val spray = "1.2.1"
   val casbah = "2.7.0"
+  val reactiveMongo = "0.10.0"
 }
 
 object Deps {
@@ -33,6 +34,20 @@ object Deps {
     "org.mongodb" %% "casbah-commons" % Version.casbah,
     "org.mongodb" %% "casbah-query" % Version.casbah,
     "org.mongodb" %% "casbah-core" % Version.casbah
+  )
+
+  val reactiveMongo = Seq(
+    //use a new version of log4j2, ran into this: https://issues.apache.org/jira/browse/LOG4J2-477
+    //also remove the 14mb dependency scala-compiler
+    "org.reactivemongo" %% "reactivemongo" % Version.reactiveMongo excludeAll (
+      ExclusionRule("org.apache.logging.log4j", "log4j-api"),
+      ExclusionRule("org.apache.logging.log4j", "log4j-core"),
+      ExclusionRule("org.scala-lang", "scala-compiler"),
+      ExclusionRule("org.scala-lang", "scala-reflect")
+      ),
+    "org.reactivemongo" %% "reactivemongo-bson" % Version.reactiveMongo intransitive(),
+    "org.apache.logging.log4j" % "log4j-core" % "2.0-rc1",
+    "org.apache.logging.log4j" % "log4j-api" % "2.0-rc1"
   )
 
   val logback = Seq(
@@ -69,7 +84,7 @@ object Porter extends sbt.Build {
 
   override lazy val settings = super.settings ++ Seq(
     version := "0.2.0-SNAPSHOT",
-    resolvers ++= Seq("spray repo" at "http://repo.spray.io", "eknet-maven2" at "https://eknet.org/maven2"),
+    resolvers ++= Seq("spray repo" at "http://repo.spray.io", "eknet-maven2" at "https://eknet.org/maven2", "typesafe-releases" at "http://repo.typesafe.com/typesafe/releases"),
     publishTo := Some("eknet-maven2" at "https://eknet.org/maven2"),
     credentials += Credentials(Path.userHome / ".ivy2" / ".credentials"),
     pomIncludeRepository := { _ => false },
@@ -110,7 +125,7 @@ object App extends sbt.Build {
     base = file("app"),
     settings = Project.defaultSettings ++ Seq(
       name := "porter-app",
-      libraryDependencies ++= Deps.akka ++ Deps.testBasics ++ Deps.casbah ++ Deps.spray ++ Deps.sprayJson
+      libraryDependencies ++= Deps.akka ++ Deps.testBasics ++ Deps.casbah ++ Deps.reactiveMongo ++ Deps.spray ++ Deps.sprayJson
     )
   ) dependsOn Api.module
 }

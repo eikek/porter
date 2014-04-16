@@ -43,7 +43,7 @@ class MainActor extends Actor with ActorLogging {
   val main = MainExt(context.system)
   val openidSettings = OpenIdSettings(context.system)
 
-  val porter = Porter(context.system).createPorter(context)
+  val porter = Porter(context.system).fromSubConfig(context)
   if (main.isRemote) {
     println(s"\n---\n--- Porter remote actor listening on ${main.pathFor(porter)} \n---")
   }

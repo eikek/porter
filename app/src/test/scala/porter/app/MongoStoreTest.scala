@@ -16,6 +16,7 @@
 
 package porter.app
 
+import _root_.akka.actor.ActorSystem
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
 import org.scalatest.matchers.ShouldMatchers
 import com.typesafe.config.ConfigFactory
@@ -29,15 +30,16 @@ class MongoStoreTest extends FunSuite with ShouldMatchers with BeforeAndAfterAll
   import porter.model._
 
   //note, these tests only work with a running mongodb instance
-
+  val system = ActorSystem("MongoStoreTest")
   val config = ConfigFactory.load().getConfig("porter-mongo-test")
-  val store = new MongoStore(config)
+  val store = new MongoStore(system, config)
   val mutable = PropertyList.mutableSource.toTrue
 
 
   override protected def afterAll() = {
     val client = MongoStore.createClient(config)
     client(config.getString("dbname")).dropDatabase()
+    system.shutdown()
   }
 
   private def createRealm(): Realm = {

@@ -16,7 +16,7 @@
 
 package porter.app
 
-import _root_.akka.actor.{ReflectiveDynamicAccess, DynamicAccess}
+import _root_.akka.actor.{ActorSystem, ReflectiveDynamicAccess, DynamicAccess}
 import com.typesafe.config.Config
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
@@ -92,11 +92,10 @@ object PorterSettings {
    * }}}
    *
    */
-  def fromConfig(cfg: Config, dynamicAccess: DynamicAccess = dynamicAccess): PorterSettings =
-    new ConfigPorterSettings(cfg, dynamicAccess)
+  def fromConfig(system: ActorSystem, cfg: Config, dynamicAccess: DynamicAccess = dynamicAccess): PorterSettings =
+    new ConfigPorterSettings(system, cfg, dynamicAccess)
 
-
-  private class ConfigPorterSettings(cfg: Config, dynamicAccess: DynamicAccess = new ReflectiveDynamicAccess(classOf[PorterSettings].getClassLoader)) extends PorterSettings {
+  private class ConfigPorterSettings(system: ActorSystem, cfg: Config, dynamicAccess: DynamicAccess = new ReflectiveDynamicAccess(classOf[PorterSettings].getClassLoader)) extends PorterSettings {
     import scala.collection.JavaConverters._
 
     val validators = {
@@ -135,9 +134,11 @@ object PorterSettings {
       lazy val loadObject = dynAccess.getObjectFor(fqcn)
       val args = scala.collection.immutable.Seq.empty[(Class[_], AnyRef)]
       lazy val configCtor = dynAccess.createInstanceFor(fqcn, args :+ (classOf[Config] -> cfg))
+      lazy val systemCtor = dynAccess.createInstanceFor(fqcn, args :+ (classOf[ActorSystem] -> system))
+      lazy val sysconfCtor = dynAccess.createInstanceFor(fqcn, args :+ (classOf[ActorSystem] -> system) :+ (classOf[Config] -> cfg))
       val defctor = dynAccess.createInstanceFor(fqcn, args)
 
-      configCtor orElse defctor orElse loadObject match {
+      configCtor orElse sysconfCtor orElse systemCtor orElse defctor orElse loadObject match {
         case r @ Success(_) => r
         case Failure(ex) => Failure(new Exception(s"Unable to create instance: $fqcn", ex))
       }

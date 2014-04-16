@@ -16,8 +16,9 @@
 
 package porter.app
 
+import _root_.akka.actor.ActorSystem
 import porter.auth.PasswordValidator
-import org.scalatest.FunSuite
+import org.scalatest.{BeforeAndAfterAll, FunSuite}
 import org.scalatest.matchers.ShouldMatchers
 import com.typesafe.config.ConfigFactory
 import porter.store.{Store, MutableStore}
@@ -27,7 +28,12 @@ import porter.model.Realm
 import porter.model.Account
 import scala.concurrent.ExecutionContext
 
-class PorterSettingsTest extends FunSuite with ShouldMatchers {
+class PorterSettingsTest extends FunSuite with ShouldMatchers with BeforeAndAfterAll {
+
+  val system = ActorSystem("PorterSettingsTest")
+  override  def afterAll() {
+    system.shutdown()
+  }
 
   test("read config") {
     val cfg = ConfigFactory.parseString(
@@ -45,7 +51,7 @@ class PorterSettingsTest extends FunSuite with ShouldMatchers {
         |}
       """.stripMargin)
 
-    val settings = PorterSettings.fromConfig(cfg.resolve())
+    val settings = PorterSettings.fromConfig(system, cfg.resolve())
     settings.validators should have size 1
     settings.validators(0) should be (PasswordValidator)
     settings.stores should have size 2

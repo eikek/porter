@@ -16,6 +16,7 @@
 
 package porter.app
 
+import _root_.akka.actor.ActorSystem
 import porter.store.{MutableStore, Store}
 import com.mongodb.casbah.Imports._
 import com.typesafe.config.Config
@@ -27,7 +28,7 @@ import porter.model.Account
 import scala.concurrent.{ExecutionContext, Future}
 import porter.util.Base64
 
-class MongoStore(cfg: Config) extends Store with MutableStore {
+class MongoStore(system: ActorSystem, cfg: Config) extends Store with MutableStore {
 
   private def mongoClient = MongoStore.createClient(cfg)
   private val dbname = Try(cfg.getString("dbname")).getOrElse("porterdb")
