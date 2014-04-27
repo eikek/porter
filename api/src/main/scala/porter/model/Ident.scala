@@ -88,7 +88,7 @@ object Ident {
    * Creates some random identifier.
    * @return
    */
-  def randomIdent = Ident(UUID.randomUUID().toString)
+  def randomIdent = Ident(UUID.randomUUID().toString.replace("-", ""))
 }
 
 object ValidIdent {

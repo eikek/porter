@@ -6,7 +6,6 @@ object Version {
   val scalaTest = "2.1.0"
   val akka = "2.2.4"
   val spray = "1.2.1"
-  val casbah = "2.7.0"
   val reactiveMongo = "0.10.0"
 }
 
@@ -28,12 +27,6 @@ object Deps {
   )
   val akkaRemote = Seq(
     "com.typesafe.akka" %% "akka-remote" % Version.akka
-  )
-
-  val casbah = Seq(
-    "org.mongodb" %% "casbah-commons" % Version.casbah,
-    "org.mongodb" %% "casbah-query" % Version.casbah,
-    "org.mongodb" %% "casbah-core" % Version.casbah
   )
 
   val reactiveMongo = Seq(
@@ -125,7 +118,7 @@ object App extends sbt.Build {
     base = file("app"),
     settings = Project.defaultSettings ++ Seq(
       name := "porter-app",
-      libraryDependencies ++= Deps.akka ++ Deps.testBasics ++ Deps.casbah ++ Deps.reactiveMongo ++ Deps.spray ++ Deps.sprayJson
+      libraryDependencies ++= Deps.akka ++ Deps.testBasics ++ Deps.reactiveMongo ++ Deps.spray ++ Deps.sprayJson
     )
   ) dependsOn Api.module
 }

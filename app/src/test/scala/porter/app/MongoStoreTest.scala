@@ -22,6 +22,7 @@ import org.scalatest.matchers.ShouldMatchers
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.Await
 import porter.auth.{AuthToken, PasswordValidator}
+import reactivemongo.api.MongoDriver
 
 class MongoStoreTest extends FunSuite with ShouldMatchers with BeforeAndAfterAll {
   import scala.concurrent.ExecutionContext.Implicits.global
@@ -37,8 +38,8 @@ class MongoStoreTest extends FunSuite with ShouldMatchers with BeforeAndAfterAll
 
 
   override protected def afterAll() = {
-    val client = MongoStore.createClient(config)
-    client(config.getString("dbname")).dropDatabase()
+    val client = MongoStore.createMongo(new MongoDriver(system), config)
+    Await.ready(client.db(config.getString("dbname")).drop(), 5.seconds)
     system.shutdown()
   }
 

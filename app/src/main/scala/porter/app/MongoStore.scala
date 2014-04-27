@@ -16,35 +16,33 @@
 
 package porter.app
 
-import _root_.akka.actor.ActorSystem
-import porter.store.{MutableStore, Store}
-import com.mongodb.casbah.Imports._
-import com.typesafe.config.Config
 import scala.util.Try
+import scala.concurrent.{ExecutionContext, Future}
+import _root_.akka.actor.ActorSystem
+import com.typesafe.config.Config
+import reactivemongo.api._
+import reactivemongo.bson._
 import porter.model._
 import porter.model.Group
 import porter.model.Realm
 import porter.model.Account
-import scala.concurrent.{ExecutionContext, Future}
+import porter.store.{MutableStore, Store}
 import porter.util.Base64
+import reactivemongo.api.collections.default.BSONCollection
 
 class MongoStore(system: ActorSystem, cfg: Config) extends Store with MutableStore {
 
-  private def mongoClient = MongoStore.createClient(cfg)
   private val dbname = Try(cfg.getString("dbname")).getOrElse("porterdb")
+  private val db = MongoStore.createMongo(new MongoDriver(system), cfg).apply(dbname)(system.dispatcher)
+  private def collection(name: Ident): BSONCollection = db(name.name)
 
   import MongoStore._
-
-  private def withDb[A](body: MongoDB => A): A = {
-    val client = mongoClient
-    val db = client(dbname)
-    try { body(db) } finally { client.close() }
+  final class IdWriter[T](prefix: String)(f: T => Ident) extends BW[T] {
+    def write(t: T) = BSONDocument("_id" -> s"$prefix:${f(t).name}")
   }
-
-  private def withColl[A](coll: Ident)(body: MongoCollection => A): A = withDb { client =>
-    val collection = client(coll.name)
-    body(collection)
-  }
+  implicit val realmIdWriter: BW[RealmId] = new IdWriter[RealmId]("r")(_.name)
+  implicit val groupIdWriter: BW[GroupId] = new IdWriter[GroupId]("g")(_.name)
+  implicit val accountIdWriter: BW[AccountId] = new IdWriter[AccountId]("a")(_.name)
 
   def close() {
   }
@@ -53,11 +51,11 @@ class MongoStore(system: ActorSystem, cfg: Config) extends Store with MutableSto
     allRealms.map(s => s.filter(r => names.contains(r.id)))
   }
 
-  def findAccounts(realm: Ident, names: Set[Ident])(implicit ec: ExecutionContext) = Future {
-    val q = "_id" $in names.map(n => "a:"+ n.name).toSeq
-    withColl(realm) { coll =>
-      (for (dbo <- coll.find(q)) yield dbo.toAccount).toList
-    }
+  def findAccounts(realm: Ident, names: Set[Ident])(implicit ec: ExecutionContext) = {
+    val q = BSONDocument("_id" -> BSONDocument("$in" -> names.map(n => "a:"+ n.name).toSeq))
+    collection(realm).find(q)
+      .cursor[Account]
+      .collect[List]()
   }
 
   def findAccountsFor(realm: Ident, creds: Set[Credentials])(implicit ec: ExecutionContext) = {
@@ -65,163 +63,194 @@ class MongoStore(system: ActorSystem, cfg: Config) extends Store with MutableSto
     findAccounts(realm, names)
   }
 
-  def findGroups(realm: Ident, names: Set[Ident])(implicit ec: ExecutionContext) = Future {
-    val q = "_id" $in names.map(n => "g:"+n.name).toSeq
-    withColl(realm.name) { coll =>
-      (for (dbo <- coll.find(q)) yield dbo.toGroup).toList
-    }
+  def findGroups(realm: Ident, names: Set[Ident])(implicit ec: ExecutionContext) = {
+    val q = BSONDocument("_id" -> BSONDocument("$in" -> names.map(n => "g:"+n.name)))
+    collection(realm).find(q)
+      .cursor[Group]
+      .collect[List]()
   }
 
-  def allRealms(implicit ec: ExecutionContext) = Future {
-    withDb { client =>
-      for {
-        coll <- client.collectionNames
-        dbo <- client(coll).findOne(MongoDBObject("_id" -> ("r:"+coll)))
-      } yield dbo.toRealm
-    }
-  }
-
-  def allAccounts(realm: Ident)(implicit ec: ExecutionContext) = Future {
-    withColl(realm) { coll =>
-      (for (dbo <- coll.find(MongoDBObject("type" -> "account")))
-       yield dbo.toAccount).toList
-    }
-  }
-
-  def allGroups(realm: Ident)(implicit ec: ExecutionContext) = Future {
-    withColl(realm) { coll =>
-      (for {
-        dbo <- coll.find(MongoDBObject("type" -> "group"))
-      } yield dbo.toGroup).toList
-    }
-  }
-
-  def updateRealm(realm: Realm)(implicit ec: ExecutionContext) = Future {
-    withColl(realm.id) { coll =>
-      val result = coll.save(realm.toDBObject)
-      result.getN == 1
-    }
-  }
-
-  def deleteRealm(realm: Ident)(implicit ec: ExecutionContext) = Future {
-    withDb { db =>
-      val set = db.collectionNames
-      if (set.contains(realm.name)) {
-        db(realm.name).dropCollection()
-        true
-      } else {
-        throw new IllegalStateException(s"Realm '${realm.name}' does not exist")
+  def allRealms(implicit ec: ExecutionContext) = {
+    def findRealms(names: List[String]) = {
+      val f = Future.sequence {
+        for (name <- names)
+        yield collection(name).find(RealmId(name)).one[Realm]
       }
+      f.map(_.flatten)
     }
+    for {
+      coll <- db.collectionNames
+      realms <- findRealms(coll)
+    } yield realms
   }
 
-  def updateAccount(realm: Ident, account: Account)(implicit ec: ExecutionContext) = Future {
-    withColl(realm) { coll =>
-      val result = coll.save(account.toDBObject)
-      result.getN == 1
-    }
+  def allAccounts(realm: Ident)(implicit ec: ExecutionContext) = {
+    collection(realm).find(Type.account)
+      .cursor[Account]
+      .collect[List]()
   }
 
-  def deleteAccount(realm: Ident, accId: Ident)(implicit ec: ExecutionContext) = Future {
-    val q = MongoDBObject("_id" -> s"a:${accId.name}")
-    withColl(realm) { coll =>
-      val result = coll.remove(q)
-      result.getN == 1
-    }
+
+  def allGroups(realm: Ident)(implicit ec: ExecutionContext) = {
+    collection(realm).find(Type.group)
+      .cursor[Group]
+      .collect[List]()
   }
 
-  def updateGroup(realm: Ident, group: Group)(implicit ec: ExecutionContext) = Future {
-    withColl(realm) { coll =>
-      val result = coll.save(group.toDBObject)
-      result.getN == 1
-    }
+  def updateRealm(realm: Realm)(implicit ec: ExecutionContext) = {
+    collection(realm.id)
+      .update(RealmId(realm.id), realm, upsert = true, multi = false)
+      .map(e => e.ok)
   }
 
-  def deleteGroup(realm: Ident, groupId: Ident)(implicit ec: ExecutionContext) = Future {
-    val q = MongoDBObject("_id" -> s"g:${groupId.name}")
-    withColl(realm) { coll =>
-      val result = coll.remove(q)
-      result.getN == 1
-    }
+  def deleteRealm(realm: Ident)(implicit ec: ExecutionContext) = {
+    collection(realm).drop()
+  }
+
+  def updateAccount(realm: Ident, account: Account)(implicit ec: ExecutionContext) = {
+    collection(realm)
+      .update(AccountId(account.name), account, upsert = true, multi = false)
+      .map(_.ok)
+  }
+
+  def deleteAccount(realm: Ident, accId: Ident)(implicit ec: ExecutionContext) = {
+    collection(realm).remove(AccountId(accId)).map(_.ok)
+  }
+
+  def updateGroup(realm: Ident, group: Group)(implicit ec: ExecutionContext) = {
+    collection(realm)
+      .update(GroupId(group.name), group, upsert = true, multi = false)
+      .map(_.ok)
+  }
+
+  def deleteGroup(realm: Ident, groupId: Ident)(implicit ec: ExecutionContext) = {
+    collection(realm).remove(GroupId(groupId)).map(_.ok)
   }
 }
 
 object MongoStore {
 
-  def createClient(cfg: Config): MongoClient = {
-    val uri = Try(cfg.getString("uri")).map(MongoClientURI.apply)
+  def createMongo(driver: MongoDriver, cfg: Config): reactivemongo.api.MongoConnection = {
+    val uri = Try(cfg.getString("uri")).flatMap(reactivemongo.api.MongoConnection.parseURI)
     val host = Try(cfg.getString("host")).getOrElse("localhost")
     val port = Try(cfg.getInt("port")).getOrElse(27017)
-    uri.map(u => MongoClient(u)).getOrElse(MongoClient(host, port))
+    uri.map(driver.connection).getOrElse(driver.connection(s"$host:$port" :: Nil))
   }
 
-  implicit class RealmConv(realm: Realm) {
-    def toDBObject = MongoDBObject(
-      "_id" -> ("r:"+realm.id.name),
-      "name" -> realm.name
+  type BR[T] = BSONDocumentReader[T]
+  type BW[T] = BSONDocumentWriter[T]
+  type BH[B <: BSONValue, T] = BSONHandler[B, T]
+
+  case class RealmId(name: Ident)
+  case class GroupId(name: Ident)
+  case class AccountId(name: Ident)
+
+  final class IdHandler[T](prefix: String)(dtor: T => String)(ctor: String => T) extends BH[BSONString, T] {
+    def read(bson: BSONString) = {
+      val s = bson.value
+      if (s startsWith s"$prefix:") ctor(s.substring(2))
+      else sys.error(s"Unable to create '$prefix'-id from '$s'")
+    }
+    def write(t: T) = BSONString(s"$prefix:${dtor(t)}")
+  }
+  private implicit val realmIdHandler: BH[BSONString, RealmId] = new IdHandler[RealmId]("r")(_.name.name)(RealmId(_))
+  private implicit val groupIdHandler: BH[BSONString, GroupId] = new IdHandler[GroupId]("g")(_.name.name)(GroupId(_))
+  private implicit val accountIdHandler: BH[BSONString, AccountId] = new IdHandler[AccountId]("a")(_.name.name)(AccountId(_))
+
+  implicit val identHandler: BH[BSONString, Ident] = new BH[BSONString, Ident] {
+    def read(bson: BSONString) = bson.value
+    def write(t: Ident) = BSONString(t.name)
+  }
+
+  implicit val secretHandler: BH[BSONDocument, Secret] = new BH[BSONDocument, Secret] {
+    def read(bson: BSONDocument) = {
+      val data = bson.getAs[String]("data").map(Base64.decode).getOrElse(Seq.empty)
+      Secret(bson.getAs[String]("name").get, data.toArray)
+    }
+    def write(t: Secret) = {
+      BSONDocument(
+        "name" -> t.name.name,
+        "data" -> Base64.encode(t.data)
+      )
+    }
+  }
+
+  implicit val propertiesHandler: BH[BSONDocument, Properties] = new BH[BSONDocument, Properties] {
+    def read(bson: BSONDocument) = {
+      val els = bson.elements.collect({ case (k, v: BSONString) => (k, v.value)})
+      els.toMap
+    }
+
+    def write(t: Properties) = BSONDocument(t.mapValues(BSONString.apply).toSeq)
+  }
+
+  case class Type(name: String)
+  object Type {
+    val account = Type("account")
+    val group = Type("group")
+  }
+  implicit val typeIdWriter: BW[Type] = new BW[Type] {
+    def write(t: Type) = BSONDocument("type" -> t.name)
+  }
+
+  implicit val realmReader: BR[Realm] = new BR[Realm] {
+    def read(bson: BSONDocument) = {
+      Realm(
+        bson.getAs[RealmId]("_id").get.name,
+        bson.getAs[String]("name").getOrElse("")
+      )
+    }
+  }
+  implicit val realmWriter: BW[Realm] = new BW[Realm] {
+    def write(t: Realm) = BSONDocument (
+      "_id" -> RealmId(t.id),
+      "name" -> t.name,
+      "type" -> "realm"
     )
   }
 
-  implicit class AccountConv(account: Account) {
-    def toDBObject = {
-      val groups = MongoDBList(account.groups.map(_.name).toSeq: _*)
-      val props = MongoDBObject(account.props.toList)
-      val secrets = MongoDBList(account.secrets.map(s => 
-        MongoDBObject("name" -> s.name.name, "data" -> Base64.encode(s.data))): _*)
-      MongoDBObject(
-        "_id" -> s"a:${account.name.name}",
-        "props" -> props,
-        "groups" -> groups,
-        "secrets" -> secrets,
-        "type" -> "account"
-      )
-    }
-  }
-
-  implicit class GroupConv(group: Group) {
-    def toDBObject = {
-      val props = MongoDBObject(group.props.toList)
-      val rules = MongoDBList(group.rules.toSeq: _*)
-      MongoDBObject(
-        "_id" -> s"g:${group.name.name}",
-        "props" -> props,
-        "rules" -> rules,
-        "type" -> "group"
-      )
-    }
-  }
-
-  implicit class DBObjectModel(dbo: DBObject) {
-    def toRealm = {
-      val id = dbo.get("_id").toString.substring(2)
-      val name = dbo.get("name").toString
-      Realm(id, name)
-    }
-
-    def toAccount = {
-      val id = dbo.get("_id").toString.substring(2)
-      val props = dbo.getAs[BasicDBObject]("props").get.toList.map(t => (t._1, t._2.toString)).toMap
-      val groups = dbo.getAs[MongoDBList]("groups").get.map(x => Ident(x.toString)).toSet
-      val secretDbos = dbo.getAs[MongoDBList]("secrets").getOrElse(MongoDBList())
-      val secrets = for (so <- secretDbos) yield {
-        val smo = so.asInstanceOf[BasicDBObject]
-        val name = smo.getAs[String]("name").get
-        val data = smo.getAs[String]("data").get
-        Secret(name, Base64.decode(data).toVector)
-      }
+  implicit val accountReader: BR[Account] = new BR[Account] {
+    def read(bson: BSONDocument) = {
+      val groups = bson.getAs[Set[Ident]]("groups").getOrElse(Set.empty)
+      val props = bson.getAs[Properties]("props").getOrElse(Map.empty)
+      val secrets = bson.getAs[Seq[Secret]]("secrets").getOrElse(Seq.empty)
       Account(
-        id,
-        PropertyList.mutableSource.toTrue(props),
+        bson.getAs[AccountId]("_id").get.name,
+        props,
         groups,
         secrets
       )
     }
+  }
 
-    def toGroup = {
-      val id = dbo.get("_id").toString.substring(2)
-      val props = dbo.getAs[BasicDBObject]("props").get.toList.map(t => (t._1, t._2.toString)).toMap
-      val rules = dbo.getAs[MongoDBList]("rules").get.map(_.toString).toSet
-      Group(id, PropertyList.mutableSource.toTrue(props), rules)
+  implicit val accountWriter: BW[Account] = new BW[Account] {
+    def write(t: Account) = BSONDocument(
+      "_id" -> AccountId(t.name),
+      "props" -> t.props,
+      "groups" -> t.groups,
+      "secrets" -> t.secrets,
+      "type" -> "account"
+    )
+  }
+
+  implicit val groupReader: BR[Group] = new BR[Group] {
+    def read(bson: BSONDocument) = {
+      val props = bson.getAs[Properties]("props").getOrElse(Map.empty)
+      val rules = bson.getAs[Set[String]]("rules").getOrElse(Set.empty)
+      Group(
+        bson.getAs[GroupId]("_id").get.name,
+        props,
+        rules
+      )
     }
+  }
+
+  implicit val groupWriter: BW[Group] = new BW[Group] {
+    def write(t: Group) = BSONDocument(
+      "_id" -> GroupId(t.name),
+      "props" -> t.props,
+      "rules" -> t.rules,
+      "type" -> "group"
+    )
   }
 }
