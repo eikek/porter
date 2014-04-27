@@ -43,7 +43,7 @@ class PorterHttp(addr: InetSocketAddress) extends PorterClient {
   private def perform[A, B](path: String)(implicit rfa: RootJsonFormat[A], rfb: RootJsonFormat[B]) =
     new Command[A, B] {
       def apply(req: A)(implicit ec: ExecutionContext, timeout: FiniteDuration) = {
-        post(path, req).map(_.asJson.convertTo[B])
+        post(path, req).map(_.parseJson.convertTo[B])
       }
     }
 

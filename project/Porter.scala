@@ -54,10 +54,10 @@ object Deps {
     "io.spray" % "spray-routing" % Version.spray
   )
   val sprayJson = Seq(
-    "io.spray" %%  "spray-json" % "1.2.5"
+    "io.spray" %%  "spray-json" % "1.2.6"
   )
   val sprayOpenId = Seq(
-    "org.eknet.spray" %% "spray-openid" % "0.1.0-SNAPSHOT"
+    "org.eknet.spray" %% "spray-openid" % "0.1.0"
   )
 }
 
