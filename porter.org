@@ -1,0 +1,30 @@
+#+TODO: TODO BUG | WONTFIX DONE
+* Porter
+
+Porter is an effort to ease dealing with user accounts and its related
+functions: authentication and authorization.
+
+** Issues
+
+*** TODO manage multiple passwords for different apps
+
+Multiple apps can use porter for authentication. Users should be able
+to control which password to use for which app.
+
+Maybe like this:
+- configure mapping (config file): appid -> app name 
+- web ui lets you set passwords for each configured app
+  (possible to refer to other apps password)
+- permission 'porter:app:<id>' determines whether a user is allowed to
+  login (and change password) for app <id>
+- when logging in, the app sends its id.
+  - porter first determines whether the user is allowed to by checking "porter:app:<id>"
+  - then it can validate the password against the correct secret
+  - think about something sensible, if the app does not send an id
+    - for backwards-compat it would need to validate against all
+      secrets, which means that every password would match
+    - or let the user specify a "default password" and use this
+
+*** BUG openId provider fails for so 
+
+Cannot login at stackoverflow with porter's openid provider.
