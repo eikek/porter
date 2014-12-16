@@ -50,10 +50,15 @@ trait AuthC {
     for {
       r <- store.findRealms(Set(realm))
       if r.nonEmpty
-      a <- store.findAccountsFor(realm, creds)
-      if a.nonEmpty
-    } yield auth(AuthToken(r.toList(0), a.take(1).toList(0), creds)).toResult
+      a <- store.findAccountsFor(realm, creds).map(findAccount(creds, _).getOrElse(sys.error("Account not found.")))
+    } yield auth(AuthToken(r.toList(0), a, creds)).toResult
   }
+
+  private def findAccount(creds: Set[Credentials], accounts: Iterable[Account]): Option[Account] =
+    accounts.headOption.orElse {
+      val name = creds.collect({ case pw: AccountCredentials => pw.accountName.name})
+      name.headOption.map(Account.apply(_))
+    }
 
   final def authenticate(realm: Ident, account: Account, creds: Set[Credentials])(implicit ec: ExecutionContext): Future[AuthResult] = {
     for {

@@ -28,8 +28,8 @@ object DerivedValidator extends Validator {
       accsecr <- token.account.secrets.find(s => s.name == cred.secret.name)
     } yield accsecr -> (!cred.isExpired && cred.secret.data == Hash.sha512(accsecr.data))
     found.foldLeft(token) { case (t, (s, bool)) =>
-      if (bool) t vote (s -> Vote.Success)
-      else t vote (s -> Vote.Failed())
+      if (bool) t vote (s.name -> Vote.Success)
+      else t vote (s.name -> Vote.Failed())
     }
   }
 }

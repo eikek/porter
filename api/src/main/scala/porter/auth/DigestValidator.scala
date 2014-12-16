@@ -38,7 +38,7 @@ object DigestValidator extends Validator {
           case Success(ts) => Reasons.nonceExpired
           case Failure(ex) => Reasons.invalidCred
         }
-        token.vote(sec -> vote)
+        token.vote(sec.name -> vote)
       }
     }
   }

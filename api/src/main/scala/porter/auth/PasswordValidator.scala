@@ -25,8 +25,8 @@ object PasswordValidator extends Validator {
     val secrets = token.account.secrets.filter(_.name.name.startsWith("password."))
     userpass.foldLeft(token) { (token, up) =>
       secrets.foldLeft(token) { (token, sec) =>
-        if (verifyPassword(up.password, sec.asString)) token.vote(sec -> Vote.Success)
-        else token.vote(sec -> Vote.Failed())
+        if (verifyPassword(up.password, sec.asString)) token.vote(sec.name -> Vote.Success)
+        else token.vote(sec.name -> Vote.Failed())
       }
     }
   }

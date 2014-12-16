@@ -19,6 +19,7 @@ package porter.app.akka.api
 import akka.actor._
 import porter.auth._
 import porter.auth.AuthToken
+import porter.model.{AccountCredentials, PasswordCredentials, Account}
 import scala.Some
 
 /**
@@ -73,7 +74,7 @@ class AuthcWorker(store: ActorRef, validators: List[Validator]) extends Actor wi
         client ! Status.Failure(new Exception("internal error: responses not ready"))
         context.stop(self)
       } else {
-        (r.get.realms.headOption, a.get.accounts.headOption) match {
+        (r.get.realms.headOption, extractAccount(req, a.get)) match {
           case (Some(realm), Some(acc)) =>
             val token = AuthToken(realm, acc, req.creds)
             if (handlers.isEmpty) {
@@ -90,6 +91,12 @@ class AuthcWorker(store: ActorRef, validators: List[Validator]) extends Actor wi
         }
       }
   }
+
+  private def extractAccount(req: Authenticate, resp: FindAccountsResp): Option[Account] =
+    resp.accounts.headOption.orElse {
+      val name = req.creds.collect({ case pw: AccountCredentials => pw.accountName.name})
+      name.headOption.map(Account.apply(_))
+    }
 
   def authenticating(client: ActorRef, token: AuthToken, req: Authenticate, refs: Set[ActorRef]): Receive = {
     case t:AuthToken if refs.size <= 1 =>

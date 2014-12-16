@@ -26,7 +26,7 @@ final case class AuthToken(realm: Realm,
                            credentials: Set[Credentials],
                            votes: Map[Ident, Vote] = Map.empty) extends Serializable {
 
-  def vote(v: (Secret, Vote)) = copy(votes = votes + (v._1.name -> v._2))
+  def vote(v: (Ident, Vote)) = copy(votes = votes + (v._1 -> v._2))
 
   def toResult = AuthResult(realm, account.name, votes, account.props)
 }
